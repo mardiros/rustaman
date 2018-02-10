@@ -1,0 +1,6 @@
+[package]
+name = "rustaman"
+version = "0.1.0"
+authors = ["Guillaume Gauvrit <guillaume@gauvr.it>"]
+
+[dependencies]
