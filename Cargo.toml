@@ -4,3 +4,11 @@ version = "0.1.0"
 authors = ["Guillaume Gauvrit <guillaume@gauvr.it>"]
 
 [dependencies]
+
+gtk = "0.3.0"
+
+relm = "0.11.0"
+relm-attributes =  "0.11.0"
+relm-derive =  "0.11.0"
+
+sourceview = "0.3.1"
