@@ -1,3 +1,5 @@
+use gdk;
+use gdk::enums::key;
 use gtk;
 use gtk::WindowType::Toplevel;
 use gtk::prelude::*;
@@ -7,9 +9,11 @@ use relm::{Relm, Update, Widget};
 #[derive(Msg)]
 pub enum Msg {
     Quit,
+    KeyPress(gdk::EventKey),
 }
 
 pub struct Window {
+    relm: Relm<Window>,
     win: gtk::Window,
 }
 
@@ -25,6 +29,17 @@ impl Update for Window {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::Quit => gtk::main_quit(),
+            Msg::KeyPress(key) => {
+                let keyval = key.get_keyval();
+                let keystate = key.get_state();
+
+                if keystate.intersects(gdk::ModifierType::CONTROL_MASK) {
+                    match keyval {
+                        key::w => self.relm.stream().emit(Msg::Quit),
+                        _ => {}
+                    }
+                }
+            }
         }
     }
 }
@@ -50,7 +65,18 @@ impl Widget for Window {
             connect_delete_event(_, _),
             return (Some(Msg::Quit), Inhibit(false))
         );
+
+        connect!(
+            relm,
+            window,
+            connect_key_press_event(_, key),
+            return (Msg::KeyPress(key.clone()), Inhibit(false))
+        );
+
         window.show_all();
-        Window { win: window }
+        Window {
+            win: window,
+            relm: relm.clone(),
+        }
     }
 }
