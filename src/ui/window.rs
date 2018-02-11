@@ -4,6 +4,7 @@ use gtk;
 use gtk::WindowType::Toplevel;
 use gtk::prelude::*;
 
+use super::super::models::Workspace;
 use relm::{Relm, Update, Widget};
 
 #[derive(Msg)]
@@ -15,15 +16,16 @@ pub enum Msg {
 pub struct Window {
     relm: Relm<Window>,
     win: gtk::Window,
+    model: Workspace,
 }
 
 impl Update for Window {
-    type Model = ();
-    type ModelParam = ();
+    type Model = Workspace;
+    type ModelParam = Workspace;
     type Msg = Msg;
 
-    fn model(_: &Relm<Self>, _: ()) -> () {
-        ()
+    fn model(_: &Relm<Self>, workspace: Workspace) -> Workspace {
+        workspace
     }
 
     fn update(&mut self, event: Msg) {
@@ -51,10 +53,10 @@ impl Widget for Window {
         self.win.clone()
     }
 
-    fn view(relm: &Relm<Self>, model: ()) -> Self {
+    fn view(relm: &Relm<Self>, model: Workspace) -> Self {
         let window = gtk::Window::new(Toplevel);
 
-        window.set_title("Rustaman");
+        window.set_title(model.name());
         window.set_border_width(10);
         window.set_position(gtk::WindowPosition::Center);
         window.set_default_size(1280, 1024);
@@ -77,6 +79,7 @@ impl Widget for Window {
         Window {
             win: window,
             relm: relm.clone(),
+            model: model,
         }
     }
 }
