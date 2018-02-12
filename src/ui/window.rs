@@ -16,7 +16,7 @@ pub enum Msg {
 
 pub struct Window {
     relm: Relm<Window>,
-    win: gtk::Window,
+    window: gtk::Window,
     model: Workspace,
 }
 
@@ -51,7 +51,7 @@ impl Widget for Window {
     type Root = gtk::Window;
 
     fn root(&self) -> Self::Root {
-        self.win.clone()
+        self.window.clone()
     }
 
     fn view(relm: &Relm<Self>, model: Workspace) -> Self {
@@ -86,7 +86,7 @@ impl Widget for Window {
 
         window.show_all();
         Window {
-            win: window,
+            window: window,
             relm: relm.clone(),
             model: model,
         }
