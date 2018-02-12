@@ -1,6 +1,7 @@
 #![feature(proc_macro)]
 
 extern crate gdk;
+extern crate glib;
 extern crate gtk;
 
 #[macro_use]

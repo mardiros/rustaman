@@ -5,6 +5,7 @@ authors = ["Guillaume Gauvrit <guillaume@gauvr.it>"]
 
 [dependencies]
 
+glib = "^0.4.1"
 gtk = "^0.3.0"
 gdk = "^0.7.0"
 

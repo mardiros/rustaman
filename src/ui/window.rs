@@ -3,6 +3,7 @@ use gdk::enums::key;
 use gtk;
 use gtk::WindowType::Toplevel;
 use gtk::prelude::*;
+use glib::translate::ToGlib;
 
 use super::super::models::Workspace;
 use relm::{Relm, Update, Widget};
@@ -73,6 +74,14 @@ impl Widget for Window {
             window,
             connect_key_press_event(_, key),
             return (Msg::KeyPress(key.clone()), Inhibit(false))
+        );
+
+        let settings = gtk::Settings::get_default().unwrap();
+        let use_dark = true;
+        settings.set_long_property(
+            "gtk-application-prefer-dark-theme",
+            use_dark.to_glib() as _,
+            "",
         );
 
         window.show_all();
