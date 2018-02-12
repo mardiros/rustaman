@@ -1,7 +1,6 @@
 use gdk;
 use gdk::enums::key;
-use gtk;
-use gtk::WindowType::Toplevel;
+use gtk::{self, Orientation, WindowPosition, WindowType};
 use gtk::prelude::*;
 use glib::translate::ToGlib;
 
@@ -17,6 +16,7 @@ pub enum Msg {
 pub struct Window {
     relm: Relm<Window>,
     window: gtk::Window,
+    hbox: gtk::Box,
     model: Workspace,
 }
 
@@ -55,11 +55,11 @@ impl Widget for Window {
     }
 
     fn view(relm: &Relm<Self>, model: Workspace) -> Self {
-        let window = gtk::Window::new(Toplevel);
+        let window = gtk::Window::new(WindowType::Toplevel);
 
         window.set_title(model.name());
         window.set_border_width(10);
-        window.set_position(gtk::WindowPosition::Center);
+        window.set_position(WindowPosition::Center);
         window.set_default_size(1280, 1024);
 
         connect!(
@@ -84,9 +84,13 @@ impl Widget for Window {
             "",
         );
 
+        let hbox = gtk::Box::new(Orientation::Horizontal, 0);
+
+        window.add(&hbox);
         window.show_all();
         Window {
             window: window,
+            hbox: hbox,
             relm: relm.clone(),
             model: model,
         }
