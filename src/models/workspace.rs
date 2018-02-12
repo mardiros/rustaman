@@ -64,9 +64,12 @@ impl Workspace {
 
     pub fn sync(&self) -> Result<(), path::IOError> {
         let filepath = path::workspace(self.filename())?;
-        let filepath = filepath.to_str().unwrap(); // Could panic! TODO Refactor errors
+        let filepath = filepath
+            .to_str()
+            .expect("Cannot create a filepath for the current workspace");
         let filecontent = serde_json::to_string_pretty(&self.payload);
-        let filecontent = filecontent.unwrap(); // Could panic! TODO Refactor errors
+        let filecontent =
+            filecontent.expect("Unable to save workspace, cannot serilizing it to json");
         path::write_file(filepath, filecontent.as_str())?;
         Ok(())
     }
