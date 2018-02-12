@@ -3,9 +3,10 @@ use gdk::enums::key;
 use gtk::{self, Orientation, WindowPosition, WindowType};
 use gtk::prelude::*;
 use glib::translate::ToGlib;
+use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
 use super::super::models::Workspace;
-use relm::{Relm, Update, Widget};
+use super::menu::Menu;
 
 #[derive(Msg)]
 pub enum Msg {
@@ -14,10 +15,11 @@ pub enum Msg {
 }
 
 pub struct Window {
-    relm: Relm<Window>,
+    model: Workspace,
+    menu: Component<Menu>,
     window: gtk::Window,
     hbox: gtk::Box,
-    model: Workspace,
+    relm: Relm<Window>,
 }
 
 impl Update for Window {
@@ -85,14 +87,16 @@ impl Widget for Window {
         );
 
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
+        let menu = hbox.add_widget::<Menu, _>(relm, ());
 
         window.add(&hbox);
         window.show_all();
         Window {
+            model: model,
+            menu: menu,
             window: window,
             hbox: hbox,
             relm: relm.clone(),
-            model: model,
         }
     }
 }
