@@ -18,3 +18,11 @@ sourceview = "^0.3.1"
 serde = "^1.0.27"
 serde_derive = "^1.0.27"
 serde_json = "^1.0.9"
+
+[features]
+default = ["gtk_3_22"]
+gtk_3_10 = ["gtk/v3_10"]
+gtk_3_16 = ["gtk_3_10", "gtk/v3_16"]
+gtk_3_18 = ["gtk_3_16", "gtk/v3_18"] #for CI tools
+gtk_3_20 = ["gtk_3_18", "gtk/v3_20"] #for CI tools
+gtk_3_22 = ["gtk_3_20", "gtk/v3_22"] #for CI tools

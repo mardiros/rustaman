@@ -36,6 +36,11 @@ impl Widget for Menu {
     fn view(_relm: &Relm<Self>, _model: ()) -> Self {
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
 
+        let hbox = gtk::Box::new(Orientation::Horizontal, 0);
+        let search = gtk::SearchEntry::new();
+        hbox.add(&search);
+
+        vbox.add(&hbox);
         vbox.show_all();
         Menu {
             vbox: vbox,
