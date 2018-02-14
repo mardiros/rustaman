@@ -28,14 +28,14 @@ pub struct Payload {
 
 #[derive(Debug, Clone)]
 pub struct Workspace {
-    filename: String,
+    filepath: String,
     payload: Payload,
 }
 
 impl Workspace {
-    pub fn new() -> Self {
+    pub fn new(filepath: &str) -> Self {
         Workspace {
-            filename: "rustaman.json".to_owned(),
+            filepath: filepath.to_owned(),
             payload: Payload {
                 name: "Rustaman".to_owned(),
                 queries: vec![],
@@ -43,41 +43,44 @@ impl Workspace {
         }
     }
 
-    pub fn from_file(filename: &str) -> Result<Self, path::IOError> {
-        let cfg = path::read_file(filename)?;
+    pub fn from_file(filepath: &str) -> Result<Self, path::IOError> {
+        info!("Try loading workspace from file {}", filepath);
+        let cfg = path::read_file(filepath)?;
+        debug!("File {} readed ({} chars.)", filepath, cfg.len());
         let payload = serde_json::from_str::<Payload>(cfg.as_str()).unwrap(); // crash if the format
         let workspace = Workspace {
-            filename: filename.to_owned(),
+            filepath: filepath.to_owned(),
             payload: payload,
         };
+        info!("Workspace loaded from file {}", filepath);
         Ok(workspace)
     }
 
     pub fn default() -> Self {
-        match Workspace::from_file("rustaman.json") {
+        let filepath = path::workspace("rustaman.json").expect("Cannot build default workspace filename");
+        match Workspace::from_file(filepath.to_str().unwrap()) {
             Ok(res) => res,
-            Err(_) => {
-                let workspace = Workspace::new();
+            Err(err) => {
+                error!("Error while loading workspace from filem creating default: {}", err);
+                let workspace = Workspace::new(filepath.to_str().unwrap());
                 workspace.sync().unwrap();
+                info!("New workspace created");
                 workspace
             }
         }
     }
 
     pub fn sync(&self) -> Result<(), path::IOError> {
-        let filepath = path::workspace(self.filename())?;
-        let filepath = filepath
-            .to_str()
-            .expect("Cannot create a filepath for the current workspace");
+        info!("Wrting workspace in file {}", self.filepath);
         let filecontent = serde_json::to_string_pretty(&self.payload);
         let filecontent =
             filecontent.expect("Unable to save workspace, cannot serilizing it to json");
-        path::write_file(filepath, filecontent.as_str())?;
+        path::write_file(self.filepath.as_str(), filecontent.as_str())?;
         Ok(())
     }
 
-    fn filename(&self) -> &str {
-        self.filename.as_str()
+    fn filepath(&self) -> &str {
+        self.filepath.as_str()
     }
 
     pub fn name(&self) -> &str {
