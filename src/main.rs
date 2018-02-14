@@ -1,5 +1,9 @@
 #![feature(proc_macro)]
 
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
+
 extern crate gdk;
 extern crate glib;
 extern crate gtk;
@@ -23,6 +27,8 @@ use relm::Widget;
 use ui::window::Window;
 
 fn main() {
+    pretty_env_logger::init();
+    info!("Starting Rustaman");
     let workspace = models::Workspace::default();
     Window::run(workspace).unwrap();
 }
