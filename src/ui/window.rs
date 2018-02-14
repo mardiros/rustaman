@@ -12,6 +12,7 @@ use super::menu::{Menu, Msg as MenuMsg};
 pub enum Msg {
     CreateRequest,
     ToggleRequest(usize, bool),
+    RequestNameChanged(usize, String),
     Quit,
     KeyPress(gdk::EventKey),
 }
@@ -67,6 +68,8 @@ impl Update for Window {
                 if active {
                     self.model.id = id;
                 }
+            }
+            Msg::RequestNameChanged(id, name) => {
             }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
@@ -141,6 +144,13 @@ impl Widget for Window {
             relm,
             Msg::ToggleRequest(idx, active)
         );
+
+        connect!(
+            menu@MenuMsg::RequestNameChanged(idx, ref name),
+            relm,
+            Msg::RequestNameChanged(idx, name.to_owned())
+        );
+
 
         window.add(&hbox);
         window.show_all();

@@ -18,6 +18,7 @@ pub enum Msg {
     NewRequest,
     CreateRequest(usize),
     ToggleRequest(usize, bool),
+    RequestNameChanged(usize, String),
 }
 
 pub struct Menu {
@@ -48,6 +49,12 @@ impl Update for Menu {
                     item@MenuItemMsg::ToggleRequest(id, active),
                     self.relm,
                     Msg::ToggleRequest(id, active)
+                );
+
+                connect!(
+                    item@MenuItemMsg::RequestNameChanged(id, ref name),
+                    self.relm,
+                    Msg::RequestNameChanged(id, name.to_owned())
                 );
 
                 item.stream().emit(MenuItemMsg::SetActive(true));
