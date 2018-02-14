@@ -4,7 +4,7 @@ use serde_json;
 
 use super::super::helpers::path;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Template {
     verb: String,
     url: String,
@@ -12,19 +12,21 @@ pub struct Template {
     body: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Query {
     name: String,
     template: Template,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+pub type Queries = Vec<Query>;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Payload {
     name: String,
-    queries: Vec<Query>,
+    queries: Queries,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Workspace {
     filename: String,
     payload: Payload,
@@ -80,5 +82,9 @@ impl Workspace {
 
     pub fn name(&self) -> &str {
         self.payload.name.as_str()
+    }
+
+    pub fn queries(&self) -> &[Query] {
+        self.payload.queries.as_slice()
     }
 }

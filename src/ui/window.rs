@@ -5,17 +5,38 @@ use gtk::prelude::*;
 use glib::translate::ToGlib;
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
-use super::super::models::Workspace;
-use super::menu::Menu;
+use super::super::models::{Query, Workspace};
+use super::menu::{Menu, Msg as MenuMsg};
 
 #[derive(Msg)]
 pub enum Msg {
+    CreateRequest,
+    ToggleRequest(usize, bool),
     Quit,
     KeyPress(gdk::EventKey),
 }
 
+pub struct Model {
+    workspace: Workspace,
+    id_generator: usize,
+    id: usize,
+}
+
+impl Model {
+    pub fn name(&self) -> &str {
+        self.workspace.name()
+    }
+    pub fn queries(&self) -> &[Query] {
+        self.workspace.queries()
+    }
+    pub fn next_id(&mut self) -> usize {
+        self.id_generator += 1;
+        return self.id_generator;
+    }
+}
+
 pub struct Window {
-    model: Workspace,
+    model: Model,
     menu: Component<Menu>,
     window: gtk::Window,
     hbox: gtk::Box,
@@ -23,16 +44,30 @@ pub struct Window {
 }
 
 impl Update for Window {
-    type Model = Workspace;
+    type Model = Model;
     type ModelParam = Workspace;
     type Msg = Msg;
 
-    fn model(_: &Relm<Self>, workspace: Workspace) -> Workspace {
-        workspace
+    fn model(_: &Relm<Self>, workspace: Workspace) -> Model {
+        let id_generator = workspace.queries().len();
+        Model {
+            workspace: workspace,
+            id_generator: id_generator,
+            id: 0,
+        }
     }
 
     fn update(&mut self, event: Msg) {
         match event {
+            Msg::CreateRequest => {
+                let idx = self.model.next_id();
+                self.menu.stream().emit(MenuMsg::CreateRequest(idx))
+            }
+            Msg::ToggleRequest(id, active) => {
+                if active {
+                    self.model.id = id;
+                }
+            }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
                 let keyval = key.get_keyval();
@@ -41,6 +76,7 @@ impl Update for Window {
                 if keystate.intersects(gdk::ModifierType::CONTROL_MASK) {
                     match keyval {
                         key::w => self.relm.stream().emit(Msg::Quit),
+                        key::n => self.relm.stream().emit(Msg::CreateRequest),
                         _ => {}
                     }
                 }
@@ -56,7 +92,7 @@ impl Widget for Window {
         self.window.clone()
     }
 
-    fn view(relm: &Relm<Self>, model: Workspace) -> Self {
+    fn view(relm: &Relm<Self>, model: Model) -> Self {
         let window = gtk::Window::new(WindowType::Toplevel);
 
         window.set_title(model.name());
@@ -87,7 +123,24 @@ impl Widget for Window {
         );
 
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
-        let menu = hbox.add_widget::<Menu, _>(relm, ());
+        hbox.set_hexpand(true);
+        hbox.set_vexpand(true);
+        let queries = model.queries().to_vec();
+        let menu = hbox.add_widget::<Menu, _>(relm, queries);
+        window.set_hexpand(true);
+        window.set_vexpand(true);
+
+        connect!(
+            menu@MenuMsg::NewRequest,
+            relm,
+            Msg::CreateRequest
+        );
+
+        connect!(
+            menu@MenuMsg::ToggleRequest(idx, active),
+            relm,
+            Msg::ToggleRequest(idx, active)
+        );
 
         window.add(&hbox);
         window.show_all();
