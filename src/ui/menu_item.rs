@@ -7,6 +7,7 @@ use relm::{Relm, Update, Widget};
 
 pub struct Model {
     id: usize,
+    name: String,
 }
 
 #[derive(Msg)]
@@ -33,7 +34,11 @@ impl Update for MenuItem {
     type Msg = Msg;
 
     fn model(_: &Relm<Self>, request_id: usize) -> Model {
-        Model { id: request_id }
+        let name = format!("Req #{}", request_id);
+        Model {
+            id: request_id,
+            name: name.to_owned(),
+        }
     }
 
     fn update(&mut self, event: Msg) {
@@ -67,6 +72,15 @@ impl Update for MenuItem {
                                 .emit(Msg::RequestNameChanged(self.model.id, name.to_owned()))
                         }
                     }
+                    key::Escape => {
+                        let name = self.model.name.as_str();
+                        self.entry.set_text(&name);
+                        self.entry.hide();
+                        self.displaybox.show();
+                        self.relm
+                            .stream()
+                            .emit(Msg::RequestNameChanged(self.model.id, name.to_owned()))
+                    }
                     _ => {}
                 }
             }
@@ -87,11 +101,10 @@ impl Widget for MenuItem {
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
         hbox.set_hexpand(true);
 
-        let name = format!("Req #{}", &model.id);
         let entry = gtk::Entry::new();
-        entry.set_text(name.as_str());
+        entry.set_text(model.name.as_str());
         entry.set_can_focus(true);
-        entry.select_region(0, name.len() as i32);
+        entry.select_region(0, model.name.len() as i32);
         connect!(
             relm,
             entry,
@@ -105,7 +118,7 @@ impl Widget for MenuItem {
         let displaybox = gtk::Box::new(Orientation::Horizontal, 0);
         displaybox.set_hexpand(true);
 
-        let toggle_btn = gtk::ToggleButton::new_with_label(name.as_str());
+        let toggle_btn = gtk::ToggleButton::new_with_label(model.name.as_str());
         toggle_btn.set_hexpand(true);
         toggle_btn.set_focus_on_click(false);
         toggle_btn.set_relief(gtk::ReliefStyle::Half);
