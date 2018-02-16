@@ -69,8 +69,7 @@ impl Update for Window {
                     self.model.id = id;
                 }
             }
-            Msg::RequestNameChanged(id, name) => {
-            }
+            Msg::RequestNameChanged(id, name) => {}
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
                 let keyval = key.get_keyval();
@@ -150,7 +149,6 @@ impl Widget for Window {
             relm,
             Msg::RequestNameChanged(idx, name.to_owned())
         );
-
 
         window.add(&hbox);
         window.show_all();

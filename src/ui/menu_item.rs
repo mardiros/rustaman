@@ -14,11 +14,12 @@ pub enum Msg {
     ToggleRequest(usize, bool),
     RequestNameChanged(usize, String),
     SetActive(bool),
-    EntryKeyPress(gdk::EventKey)
+    EntryKeyPress(gdk::EventKey),
 }
 
 pub struct MenuItem {
     hbox: gtk::Box,
+    displaybox: gtk::Box,
     toggle_btn: gtk::ToggleButton,
     entry: gtk::Entry,
     relm: Relm<MenuItem>,
@@ -39,8 +40,7 @@ impl Update for MenuItem {
             Msg::SetActive(active) => {
                 if self.entry.is_visible() {
                     self.entry.grab_focus();
-                }
-                else {
+                } else {
                     self.toggle_btn.set_active(active);
                 }
             }
@@ -54,10 +54,12 @@ impl Update for MenuItem {
                             let name = text.unwrap();
                             self.toggle_btn.set_label(name.as_str());
                             self.entry.hide();
-                            self.toggle_btn.show();
-                            self.relm.stream().emit(Msg::RequestNameChanged(self.model.id, name.to_owned()))
+                            self.displaybox.show();
+                            self.relm
+                                .stream()
+                                .emit(Msg::RequestNameChanged(self.model.id, name.to_owned()))
                         }
-                    },
+                    }
                     _ => {}
                 }
             }
@@ -93,11 +95,29 @@ impl Widget for MenuItem {
         entry.show();
         hbox.add(&entry);
 
+        let displaybox = gtk::Box::new(Orientation::Horizontal, 0);
+        displaybox.set_hexpand(true);
+
         let toggle_btn = gtk::ToggleButton::new_with_label(name.as_str());
         toggle_btn.set_hexpand(true);
         toggle_btn.set_focus_on_click(false);
         toggle_btn.set_relief(gtk::ReliefStyle::Half);
-        hbox.add(&toggle_btn);
+        toggle_btn.show();
+        displaybox.add(&toggle_btn);
+
+        let menu = gtk::Menu::new();
+        let rename = gtk::MenuItem::new_with_label("Rename");
+        menu.append(&rename);
+        let delete = gtk::MenuItem::new_with_label("Delete");
+        menu.append(&delete);
+        rename.show();
+        delete.show();
+        let combo_btn = gtk::MenuButton::new();
+        combo_btn.set_popup(&menu);
+        combo_btn.set_use_popover(true);
+        combo_btn.show();
+        displaybox.add(&combo_btn);
+        hbox.add(&displaybox);
 
         let model_id = model.id;
         connect!(
@@ -110,6 +130,7 @@ impl Widget for MenuItem {
         hbox.show();
         MenuItem {
             hbox: hbox,
+            displaybox: displaybox,
             toggle_btn: toggle_btn,
             entry: entry,
             relm: relm.clone(),

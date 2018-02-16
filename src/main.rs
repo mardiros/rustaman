@@ -1,8 +1,8 @@
 #![feature(proc_macro)]
 
-extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
+extern crate pretty_env_logger;
 
 extern crate gdk;
 extern crate glib;
