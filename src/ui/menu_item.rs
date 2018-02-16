@@ -15,6 +15,7 @@ pub enum Msg {
     RequestNameChanged(usize, String),
     SetActive(bool),
     EntryKeyPress(gdk::EventKey),
+    RenameRequest,
 }
 
 pub struct MenuItem {
@@ -37,6 +38,12 @@ impl Update for MenuItem {
 
     fn update(&mut self, event: Msg) {
         match event {
+            Msg::RenameRequest => {
+                self.displaybox.hide();
+                self.entry.show();
+                self.entry.grab_focus();
+            }
+
             Msg::SetActive(active) => {
                 if self.entry.is_visible() {
                     self.entry.grab_focus();
@@ -118,6 +125,8 @@ impl Widget for MenuItem {
         combo_btn.show();
         displaybox.add(&combo_btn);
         hbox.add(&displaybox);
+
+        connect!(relm, rename, connect_activate(_), Msg::RenameRequest);
 
         let model_id = model.id;
         connect!(
