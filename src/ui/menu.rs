@@ -17,6 +17,7 @@ pub struct Model {
 pub enum Msg {
     NewRequest,
     CreateRequest(usize),
+    RenameRequest(usize),
     ToggleRequest(usize, bool),
     RequestNameChanged(usize, String),
 }
@@ -68,6 +69,15 @@ impl Update for Menu {
                         item.stream().emit(MenuItemMsg::SetActive(false));
                     }
                     self.model.current = idx;
+                }
+            },
+            Msg::RenameRequest(id) => {
+                let item = self.items.get_mut(&self.model.current);
+                if item.is_some() {
+                    item.unwrap().stream().emit(MenuItemMsg::RenameRequest);
+                }
+                else {
+                    error!("Cannot rename unexisting query #{}", id);
                 }
             }
             _ => {}

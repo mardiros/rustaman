@@ -61,8 +61,8 @@ impl Update for Window {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::CreateRequest => {
-                let idx = self.model.next_id();
-                self.menu.stream().emit(MenuMsg::CreateRequest(idx))
+                let id = self.model.next_id();
+                self.menu.stream().emit(MenuMsg::CreateRequest(id))
             }
             Msg::ToggleRequest(id, active) => {
                 if active {
@@ -82,6 +82,17 @@ impl Update for Window {
                         _ => {}
                     }
                 }
+                else {
+                    match keyval {
+                        key::F2 => {
+                            if self.model.id > 0 {
+                                self.menu.stream().emit(MenuMsg::RenameRequest(self.model.id))
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
             }
         }
     }
