@@ -43,8 +43,8 @@ impl Update for Menu {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::CreateRequest(idx) => {
-                let item = self.vbox.add_widget::<MenuItem, _>(&self.relm, idx);
+            Msg::CreateRequest(id) => {
+                let item = self.vbox.add_widget::<MenuItem, _>(&self.relm, id);
 
                 connect!(
                     item@MenuItemMsg::ToggleRequest(id, active),
@@ -59,24 +59,25 @@ impl Update for Menu {
                 );
 
                 item.stream().emit(MenuItemMsg::SetActive(true));
-                self.items.insert(idx, item);
+                self.items.insert(id, item);
             }
-            Msg::ToggleRequest(idx, active) => {
+            Msg::ToggleRequest(id, active) => {
                 if active {
                     let current = self.model.current;
-                    if current > 0 && current != idx {
+                    if current > 0 && current != id {
                         let item = self.items.get_mut(&self.model.current).unwrap();
                         item.stream().emit(MenuItemMsg::SetActive(false));
                     }
-                    self.model.current = idx;
+                    self.model.current = id;
+                } else if self.model.current == id {
+                    self.model.current = 0;
                 }
-            },
+            }
             Msg::RenameRequest(id) => {
                 let item = self.items.get_mut(&self.model.current);
                 if item.is_some() {
                     item.unwrap().stream().emit(MenuItemMsg::RenameRequest);
-                }
-                else {
+                } else {
                     error!("Cannot rename unexisting query #{}", id);
                 }
             }

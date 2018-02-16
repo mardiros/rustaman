@@ -67,6 +67,8 @@ impl Update for Window {
             Msg::ToggleRequest(id, active) => {
                 if active {
                     self.model.id = id;
+                } else if self.model.id == id {
+                    self.model.id = 0;
                 }
             }
             Msg::RequestNameChanged(id, name) => {}
@@ -81,18 +83,18 @@ impl Update for Window {
                         key::n => self.relm.stream().emit(Msg::CreateRequest),
                         _ => {}
                     }
-                }
-                else {
+                } else {
                     match keyval {
                         key::F2 => {
                             if self.model.id > 0 {
-                                self.menu.stream().emit(MenuMsg::RenameRequest(self.model.id))
+                                self.menu
+                                    .stream()
+                                    .emit(MenuMsg::RenameRequest(self.model.id))
                             }
                         }
                         _ => {}
                     }
                 }
-
             }
         }
     }
