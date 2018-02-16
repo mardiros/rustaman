@@ -20,7 +20,7 @@ pub enum Msg {
 pub struct Model {
     workspace: Workspace,
     id_generator: usize,
-    id: usize,
+    current: usize,
 }
 
 impl Model {
@@ -54,7 +54,7 @@ impl Update for Window {
         Model {
             workspace: workspace,
             id_generator: id_generator,
-            id: 0,
+            current: 0,
         }
     }
 
@@ -66,9 +66,9 @@ impl Update for Window {
             }
             Msg::ToggleRequest(id, active) => {
                 if active {
-                    self.model.id = id;
-                } else if self.model.id == id {
-                    self.model.id = 0;
+                    self.model.current = id;
+                } else if self.model.current == id {
+                    self.model.current = 0;
                 }
             }
             Msg::RequestNameChanged(id, name) => {}
@@ -86,10 +86,10 @@ impl Update for Window {
                 } else {
                     match keyval {
                         key::F2 => {
-                            if self.model.id > 0 {
+                            if self.model.current > 0 {
                                 self.menu
                                     .stream()
-                                    .emit(MenuMsg::RenameRequest(self.model.id))
+                                    .emit(MenuMsg::RenameRequest(self.model.current))
                             }
                         }
                         _ => {}
