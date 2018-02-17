@@ -108,11 +108,11 @@ impl Workspace {
     }
 
     pub fn sync(&self) -> Result<(), path::IOError> {
-        info!("Writing workspace in file {}", self.filepath);
+        info!("Writing workspace in file {}", self.filepath());
         let filecontent = serde_json::to_string_pretty(&self.payload);
         let filecontent =
             filecontent.expect("Unable to save workspace, cannot serilizing it to json");
-        path::write_file(self.filepath.as_str(), filecontent.as_str())?;
+        path::write_file(self.filepath(), filecontent.as_str())?;
         Ok(())
     }
 

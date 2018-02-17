@@ -43,7 +43,6 @@ pub struct Window {
     model: Model,
     menu: Component<Menu>,
     window: gtk::Window,
-    hbox: gtk::Box,
     relm: Relm<Window>,
     request_editor: Component<RequestEditor>,
 }
@@ -198,7 +197,6 @@ impl Widget for Window {
             model: model,
             menu: menu,
             window: window,
-            hbox: hbox,
             request_editor: editor,
             relm: relm.clone(),
         }
