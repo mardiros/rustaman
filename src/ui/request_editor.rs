@@ -1,5 +1,5 @@
-//use gdk;
-//use gdk::enums::key;
+use gdk;
+use gdk::enums::key;
 use gtk::{self, Orientation};
 use gtk::prelude::*;
 use sourceview::View as SourceView;
@@ -22,6 +22,8 @@ pub enum Msg {
     SaveRequest(usize),
     Save(usize, Template),
     TemplateChanged(Template),
+    RequestSourceKeyPress(gdk::EventKey),
+    Execute(Template),
 }
 
 pub struct RequestEditor {
@@ -30,6 +32,16 @@ pub struct RequestEditor {
     relm: Relm<RequestEditor>,
     model: Model,
 }
+
+impl RequestEditor {
+    fn get_text(&self) -> Option<String> {
+        let buffer = self.request_source.get_buffer().unwrap();
+        let start_iter = buffer.get_start_iter();
+        let end_iter = buffer.get_end_iter();
+        buffer.get_text(&start_iter, &end_iter, true)
+    }
+}
+
 
 impl Update for RequestEditor {
     type Model = Model;
@@ -52,16 +64,35 @@ impl Update for RequestEditor {
             }
             Msg::SaveRequest(id) => {
                 info!("Save Template request");
-                let buffer = self.request_source.get_buffer().unwrap();
-                let start_iter = buffer.get_start_iter();
-                let end_iter = buffer.get_end_iter();
-                let text = buffer.get_text(&start_iter, &end_iter, true);
+                let text = self.get_text();
                 match text {
                     Some(ref data) => {
                         self.relm.stream().emit(Msg::Save(id, data.to_owned()));
                     }
                     None => {
                         error!("No data to save");
+                    }
+                }
+            }
+            Msg::RequestSourceKeyPress(key) => {
+                let keystate = key.get_state();
+                if keystate.intersects(gdk::ModifierType::CONTROL_MASK) {
+                    let keyval = key.get_keyval();
+                    match keyval {
+                        key::Return => {
+                            let text = self.get_text();
+                            match text {
+                                Some(ref data) => {
+                                    error!("Running query");
+                                    self.relm.stream().emit(Msg::Execute(data.to_owned()));
+                                }
+                                None => {
+                                    error!("No requests to execute");
+                                    // Alert something here
+                                }
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -86,6 +117,21 @@ impl Widget for RequestEditor {
         request_source.set_margin_left(10);
         request_source.set_hexpand(true);
         request_source.set_vexpand(true);
+
+        connect!(
+            relm,
+            request_source,
+            connect_key_press_event(_, key_),
+            return (Msg::RequestSourceKeyPress(key_.clone()),
+                    Inhibit(
+                        key_.get_state().intersects(gdk::ModifierType::CONTROL_MASK) &&
+                        match key_.get_keyval() {
+                            key::Return => true,
+                            _ => false
+                        }
+                    ))
+        );
+
         hbox.add(&request_source);
 
         hbox.show_all();

@@ -15,6 +15,7 @@ pub enum Msg {
     ToggleRequest(usize, bool),
     RequestNameChanged(usize, String),
     RequestTemplateChanged(usize, Template),
+    ExecuteRequestTemplate(Template),
     Quit,
     KeyPress(gdk::EventKey),
 }
@@ -95,6 +96,9 @@ impl Update for Window {
                 self.model
                     .workspace
                     .set_request_template(id, template.as_str());
+            }
+            Msg::ExecuteRequestTemplate(template) => {
+                self.relm.stream().emit(Msg::RequestTemplateChanged(self.model.current, template));
             }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
@@ -194,6 +198,11 @@ impl Widget for Window {
             editor@EditorMsg::Save(id, ref template),
             relm,
             Msg::RequestTemplateChanged(id, template.to_owned())
+        );
+        connect!(
+            editor@EditorMsg::Execute(ref template),
+            relm,
+            Msg::ExecuteRequestTemplate(template.to_owned())
         );
         hbox.add(&editor_box);
 
