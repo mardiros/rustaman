@@ -5,14 +5,16 @@ use gtk::prelude::*;
 use glib::translate::ToGlib;
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
-use super::super::models::{Request, Workspace};
+use super::super::models::{Request, Template, Workspace};
 use super::menu::{Menu, Msg as MenuMsg};
+use super::request_editor::{Msg as EditorMsg, RequestEditor};
 
 #[derive(Msg)]
 pub enum Msg {
     CreateRequest,
     ToggleRequest(usize, bool),
     RequestNameChanged(usize, String),
+    RequestTemplateChanged(usize, Template),
     Quit,
     KeyPress(gdk::EventKey),
 }
@@ -29,6 +31,9 @@ impl Model {
     pub fn requests(&self) -> &[Request] {
         self.workspace.requests()
     }
+    pub fn current_request(&self) -> Option<&Request> {
+        self.workspace.request(self.current)
+    }
     pub fn create_request(&mut self) -> &Request {
         self.workspace.create_request()
     }
@@ -40,6 +45,7 @@ pub struct Window {
     window: gtk::Window,
     hbox: gtk::Box,
     relm: Relm<Window>,
+    request_editor: Component<RequestEditor>,
 }
 
 impl Update for Window {
@@ -63,14 +69,29 @@ impl Update for Window {
                     .emit(MenuMsg::CreateRequest(request.clone()))
             }
             Msg::ToggleRequest(id, active) => {
+                if self.model.current > 0 {
+                    self.request_editor
+                        .stream()
+                        .emit(EditorMsg::SaveRequest(self.model.current));
+                }
                 if active {
                     self.model.current = id;
+                    let req = self.model.current_request().unwrap(); // XXX
+                    self.request_editor
+                        .stream()
+                        .emit(EditorMsg::TemplateChanged(req.template().to_owned()));
                 } else if self.model.current == id {
                     self.model.current = 0;
                 }
             }
             Msg::RequestNameChanged(id, name) => {
                 self.model.workspace.set_request_name(id, name.as_str());
+            }
+            Msg::RequestTemplateChanged(id, template) => {
+                info!("Save Template Changes {} {}", id, template);
+                self.model
+                    .workspace
+                    .set_request_template(id, template.as_str());
             }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
@@ -152,15 +173,23 @@ impl Widget for Window {
         );
 
         connect!(
-            menu@MenuMsg::ToggleRequest(idx, active),
+            menu@MenuMsg::ToggleRequest(id, active),
             relm,
-            Msg::ToggleRequest(idx, active)
+            Msg::ToggleRequest(id, active)
         );
 
         connect!(
-            menu@MenuMsg::RequestNameChanged(idx, ref name),
+            menu@MenuMsg::RequestNameChanged(id, ref name),
             relm,
-            Msg::RequestNameChanged(idx, name.to_owned())
+            Msg::RequestNameChanged(id, name.to_owned())
+        );
+
+        let editor = hbox.add_widget::<RequestEditor, _>(relm, ());
+
+        connect!(
+            editor@EditorMsg::Save(id, ref template),
+            relm,
+            Msg::RequestTemplateChanged(id, template.to_owned())
         );
 
         window.add(&hbox);
@@ -170,6 +199,7 @@ impl Widget for Window {
             menu: menu,
             window: window,
             hbox: hbox,
+            request_editor: editor,
             relm: relm.clone(),
         }
     }

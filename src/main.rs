@@ -7,6 +7,7 @@ extern crate pretty_env_logger;
 extern crate gdk;
 extern crate glib;
 extern crate gtk;
+extern crate sourceview;
 
 #[macro_use]
 extern crate relm;

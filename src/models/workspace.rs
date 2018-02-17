@@ -3,25 +3,10 @@ use std::vec::Vec;
 use serde_json;
 
 use super::super::helpers::path;
+use super::template::Template;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Template {
-    verb: String,
-    url: String,
-    headers: Vec<String>,
-    body: String,
-}
-
-impl Template {
-    pub fn new() -> Self {
-        Template {
-            verb: "GET".to_owned(),
-            url: "http://localhost/".to_owned(),
-            headers: vec![],
-            body: "".to_owned(),
-        }
-    }
-}
+const DEFAULT_TEMPLATE: &'static str =
+    "# List resources\n\nGET http://localhost/\nUser-Agent: Rustaman\n";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Status {
@@ -56,6 +41,13 @@ impl Request {
     }
     pub fn activate(&mut self) {
         self.status = Status::Active;
+    }
+
+    pub fn template(&self) -> &str {
+        self.template.as_str()
+    }
+    pub fn set_template(&mut self, template: &str) {
+        self.template = template.to_owned();
     }
 }
 
@@ -116,7 +108,7 @@ impl Workspace {
     }
 
     pub fn sync(&self) -> Result<(), path::IOError> {
-        info!("Wrting workspace in file {}", self.filepath);
+        info!("Writing workspace in file {}", self.filepath);
         let filecontent = serde_json::to_string_pretty(&self.payload);
         let filecontent =
             filecontent.expect("Unable to save workspace, cannot serilizing it to json");
@@ -142,18 +134,26 @@ impl Workspace {
         self.payload.requests.as_slice()
     }
 
-    pub fn create_request(&mut self) -> &Request {
+    pub fn request(&self, id: usize) -> Option<&Request> {
+        for request in self.requests().iter() {
+            if request.id() == id {
+                return Some(&request);
+            }
+        }
+        None
+    }
 
+    pub fn create_request(&mut self) -> &Request {
         let id = match self.payload.requests.last() {
             None => 1,
-            Some(req) => req.id + 1
+            Some(req) => req.id + 1,
         };
         let name = format!("Req #{}", id);
         let request = Request {
             id: id,
             name: name.to_owned(),
             status: Status::BeingCreated,
-            template: Template::new(),
+            template: DEFAULT_TEMPLATE.to_owned(),
         };
         self.payload.requests.push(request);
         self.payload.requests.last().unwrap()
@@ -164,6 +164,17 @@ impl Workspace {
             if request.id() == id {
                 request.activate();
                 request.set_name(name);
+                break;
+            }
+        }
+        self.safe_sync();
+    }
+
+    pub fn set_request_template(&mut self, id: usize, template: &str) {
+        for request in self.payload.requests.iter_mut() {
+            if request.id() == id {
+                request.activate();
+                request.set_template(template);
                 break;
             }
         }
