@@ -1,22 +1,28 @@
 use std::collections::HashMap;
+use std::slice::Iter;
 
 use gtk::{self, IconSize, Orientation};
 use gtk::prelude::*;
-
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
 use super::menu_item::{MenuItem, Msg as MenuItemMsg};
-use super::super::models::Queries;
+use super::super::models::{Request, Requests};
 
 pub struct Model {
-    queries: Queries,
+    requests: Requests,
     current: usize,
+}
+
+impl Model {
+    pub fn requests_iter(&self) -> Iter<Request> {
+        return self.requests.iter();
+    }
 }
 
 #[derive(Msg)]
 pub enum Msg {
     NewRequest,
-    CreateRequest(usize),
+    CreateRequest(Request),
     RenameRequest(usize),
     ToggleRequest(usize, bool),
     RequestNameChanged(usize, String),
@@ -31,37 +37,41 @@ pub struct Menu {
 
 impl Update for Menu {
     type Model = Model;
-    type ModelParam = Queries;
+    type ModelParam = Requests;
     type Msg = Msg;
 
-    fn model(_: &Relm<Self>, queries: Queries) -> Model {
+    fn model(_: &Relm<Self>, requests: Requests) -> Model {
         Model {
-            queries: queries,
+            requests: requests,
             current: 0,
         }
     }
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::CreateRequest(id) => {
-                let item = self.vbox.add_widget::<MenuItem, _>(&self.relm, id);
+            Msg::CreateRequest(request) => {
+                info!("Create request in menu {:?}", request);
+                let id = request.id();
+                let req_active = request.active();
+                let item = self.vbox.add_widget::<MenuItem, _>(&self.relm, request);
 
                 connect!(
                     item@MenuItemMsg::ToggleRequest(id, active),
                     self.relm,
                     Msg::ToggleRequest(id, active)
                 );
-
                 connect!(
                     item@MenuItemMsg::RequestNameChanged(id, ref name),
                     self.relm,
                     Msg::RequestNameChanged(id, name.to_owned())
                 );
-
-                item.stream().emit(MenuItemMsg::SetActive(true));
+                if !req_active {
+                    item.stream().emit(MenuItemMsg::SetActive(true));
+                }
                 self.items.insert(id, item);
             }
             Msg::ToggleRequest(id, active) => {
+                info!("Toggle request in menu {} {}", id, active);
                 if active {
                     let current = self.model.current;
                     if current > 0 && current != id {
@@ -74,11 +84,12 @@ impl Update for Menu {
                 }
             }
             Msg::RenameRequest(id) => {
+                info!("Rename request in menu {}", id);
                 let item = self.items.get_mut(&self.model.current);
                 if item.is_some() {
                     item.unwrap().stream().emit(MenuItemMsg::RenameRequest);
                 } else {
-                    error!("Cannot rename unexisting query #{}", id);
+                    error!("Cannot rename unexisting request #{}", id);
                 }
             }
             _ => {}
@@ -94,6 +105,7 @@ impl Widget for Menu {
     }
 
     fn view(relm: &Relm<Self>, model: Model) -> Self {
+        info!("Creating menu widget");
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
         vbox.set_hexpand(false);
 
@@ -112,11 +124,12 @@ impl Widget for Menu {
 
         let search = gtk::SearchEntry::new();
         hbox.add(&search);
+        vbox.add(&hbox);
 
         let items = HashMap::new();
-        // TODO: Fill items with model.queries here
-
-        vbox.add(&hbox);
+        for request in model.requests_iter() {
+            relm.stream().emit(Msg::CreateRequest(request.clone()));
+        }
         vbox.show_all();
         Menu {
             vbox: vbox,

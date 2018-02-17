@@ -2,12 +2,26 @@ use gdk;
 use gdk::enums::key;
 use gtk::{self, Orientation};
 use gtk::prelude::*;
-
 use relm::{Relm, Update, Widget};
 
+use super::super::models::Request;
+
 pub struct Model {
-    id: usize,
-    name: String,
+    request: Request,
+}
+
+impl Model {
+    pub fn id(&self) -> usize {
+        self.request.id()
+    }
+
+    pub fn name(&self) -> &str {
+        self.request.name()
+    }
+
+    pub fn active(&self) -> bool {
+        self.request.active()
+    }
 }
 
 #[derive(Msg)]
@@ -30,14 +44,12 @@ pub struct MenuItem {
 
 impl Update for MenuItem {
     type Model = Model;
-    type ModelParam = usize;
+    type ModelParam = Request;
     type Msg = Msg;
 
-    fn model(_: &Relm<Self>, request_id: usize) -> Model {
-        let name = format!("Req #{}", request_id);
+    fn model(_: &Relm<Self>, request: Request) -> Model {
         Model {
-            id: request_id,
-            name: name.to_owned(),
+            request: request.clone(),
         }
     }
 
@@ -69,17 +81,17 @@ impl Update for MenuItem {
                             self.displaybox.show();
                             self.relm
                                 .stream()
-                                .emit(Msg::RequestNameChanged(self.model.id, name.to_owned()))
+                                .emit(Msg::RequestNameChanged(self.model.id(), name.to_owned()))
                         }
                     }
                     key::Escape => {
-                        let name = self.model.name.as_str();
+                        let name = self.model.name();
                         self.entry.set_text(&name);
                         self.entry.hide();
                         self.displaybox.show();
                         self.relm
                             .stream()
-                            .emit(Msg::RequestNameChanged(self.model.id, name.to_owned()))
+                            .emit(Msg::RequestNameChanged(self.model.id(), name.to_owned()))
                     }
                     _ => {}
                 }
@@ -98,13 +110,14 @@ impl Widget for MenuItem {
     }
 
     fn view(relm: &Relm<Self>, model: Model) -> Self {
+        info!("Creating menu item widget {:?}", model.request);
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
         hbox.set_hexpand(true);
 
         let entry = gtk::Entry::new();
-        entry.set_text(model.name.as_str());
+        entry.set_text(model.name());
         entry.set_can_focus(true);
-        entry.select_region(0, model.name.len() as i32);
+        entry.select_region(0, model.name().len() as i32);
         connect!(
             relm,
             entry,
@@ -112,13 +125,12 @@ impl Widget for MenuItem {
             return (Msg::EntryKeyPress(key.clone()), Inhibit(false))
         );
         entry.set_hexpand(true);
-        entry.show();
         hbox.add(&entry);
 
         let displaybox = gtk::Box::new(Orientation::Horizontal, 0);
         displaybox.set_hexpand(true);
 
-        let toggle_btn = gtk::ToggleButton::new_with_label(model.name.as_str());
+        let toggle_btn = gtk::ToggleButton::new_with_label(model.name());
         toggle_btn.set_hexpand(true);
         toggle_btn.set_focus_on_click(false);
         toggle_btn.set_relief(gtk::ReliefStyle::Half);
@@ -141,14 +153,18 @@ impl Widget for MenuItem {
 
         connect!(relm, rename, connect_activate(_), Msg::RenameRequest);
 
-        let model_id = model.id;
+        let model_id = model.id();
         connect!(
             relm,
             toggle_btn,
             connect_clicked(btn),
             Msg::ToggleRequest(model_id, btn.get_active())
         );
-
+        if model.active() {
+            displaybox.show();
+        } else {
+            entry.show();
+        }
         hbox.show();
         MenuItem {
             hbox: hbox,

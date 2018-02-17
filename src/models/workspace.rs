@@ -12,18 +12,59 @@ pub struct Template {
     body: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Query {
-    name: String,
-    template: Template,
+impl Template {
+    pub fn new() -> Self {
+        Template {
+            verb: "GET".to_owned(),
+            url: "http://localhost/".to_owned(),
+            headers: vec![],
+            body: "".to_owned(),
+        }
+    }
 }
 
-pub type Queries = Vec<Query>;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Status {
+    BeingCreated,
+    Active,
+    Deleted,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Request {
+    id: usize,
+    name: String,
+    template: Template,
+    status: Status,
+}
+
+impl Request {
+    pub fn id(&self) -> usize {
+        self.id
+    }
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+    pub fn set_name(&mut self, name: &str) {
+        self.name = name.to_owned();
+    }
+    pub fn active(&self) -> bool {
+        match self.status {
+            Status::Active => true,
+            _ => false,
+        }
+    }
+    pub fn activate(&mut self) {
+        self.status = Status::Active;
+    }
+}
+
+pub type Requests = Vec<Request>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Payload {
     name: String,
-    queries: Queries,
+    requests: Requests,
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +79,7 @@ impl Workspace {
             filepath: filepath.to_owned(),
             payload: Payload {
                 name: "Rustaman".to_owned(),
-                queries: vec![],
+                requests: vec![],
             },
         }
     }
@@ -83,6 +124,12 @@ impl Workspace {
         Ok(())
     }
 
+    pub fn safe_sync(&self) {
+        self.sync().unwrap_or_else(|err| {
+            error!{"Workspace not synchronized: {}", err}
+        });
+    }
+
     fn filepath(&self) -> &str {
         self.filepath.as_str()
     }
@@ -91,7 +138,35 @@ impl Workspace {
         self.payload.name.as_str()
     }
 
-    pub fn queries(&self) -> &[Query] {
-        self.payload.queries.as_slice()
+    pub fn requests(&self) -> &[Request] {
+        self.payload.requests.as_slice()
+    }
+
+    pub fn create_request(&mut self) -> &Request {
+
+        let id = match self.payload.requests.last() {
+            None => 1,
+            Some(req) => req.id + 1
+        };
+        let name = format!("Req #{}", id);
+        let request = Request {
+            id: id,
+            name: name.to_owned(),
+            status: Status::BeingCreated,
+            template: Template::new(),
+        };
+        self.payload.requests.push(request);
+        self.payload.requests.last().unwrap()
+    }
+
+    pub fn set_request_name(&mut self, id: usize, name: &str) {
+        for request in self.payload.requests.iter_mut() {
+            if request.id() == id {
+                request.activate();
+                request.set_name(name);
+                break;
+            }
+        }
+        self.safe_sync();
     }
 }

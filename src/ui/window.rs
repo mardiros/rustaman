@@ -5,7 +5,7 @@ use gtk::prelude::*;
 use glib::translate::ToGlib;
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
-use super::super::models::{Query, Workspace};
+use super::super::models::{Request, Workspace};
 use super::menu::{Menu, Msg as MenuMsg};
 
 #[derive(Msg)]
@@ -19,7 +19,6 @@ pub enum Msg {
 
 pub struct Model {
     workspace: Workspace,
-    id_generator: usize,
     current: usize,
 }
 
@@ -27,12 +26,11 @@ impl Model {
     pub fn name(&self) -> &str {
         self.workspace.name()
     }
-    pub fn queries(&self) -> &[Query] {
-        self.workspace.queries()
+    pub fn requests(&self) -> &[Request] {
+        self.workspace.requests()
     }
-    pub fn next_id(&mut self) -> usize {
-        self.id_generator += 1;
-        return self.id_generator;
+    pub fn create_request(&mut self) -> &Request {
+        self.workspace.create_request()
     }
 }
 
@@ -50,10 +48,8 @@ impl Update for Window {
     type Msg = Msg;
 
     fn model(_: &Relm<Self>, workspace: Workspace) -> Model {
-        let id_generator = workspace.queries().len();
         Model {
             workspace: workspace,
-            id_generator: id_generator,
             current: 0,
         }
     }
@@ -61,8 +57,10 @@ impl Update for Window {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::CreateRequest => {
-                let id = self.model.next_id();
-                self.menu.stream().emit(MenuMsg::CreateRequest(id))
+                let request = self.model.create_request();
+                self.menu
+                    .stream()
+                    .emit(MenuMsg::CreateRequest(request.clone()))
             }
             Msg::ToggleRequest(id, active) => {
                 if active {
@@ -71,7 +69,9 @@ impl Update for Window {
                     self.model.current = 0;
                 }
             }
-            Msg::RequestNameChanged(id, name) => {}
+            Msg::RequestNameChanged(id, name) => {
+                self.model.workspace.set_request_name(id, name.as_str());
+            }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
                 let keyval = key.get_keyval();
@@ -140,8 +140,8 @@ impl Widget for Window {
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
         hbox.set_hexpand(true);
         hbox.set_vexpand(true);
-        let queries = model.queries().to_vec();
-        let menu = hbox.add_widget::<Menu, _>(relm, queries);
+        let requests = model.requests().to_vec();
+        let menu = hbox.add_widget::<Menu, _>(relm, requests);
         window.set_hexpand(true);
         window.set_vexpand(true);
 

@@ -1,3 +1,3 @@
 mod workspace;
 
-pub use self::workspace::{Queries, Query, Workspace};
+pub use self::workspace::{Request, Requests, Status, Workspace};
