@@ -43,6 +43,7 @@ pub struct Window {
     model: Model,
     menu: Component<Menu>,
     window: gtk::Window,
+    editor_box: gtk::Box,
     relm: Relm<Window>,
     request_editor: Component<RequestEditor>,
 }
@@ -74,12 +75,15 @@ impl Update for Window {
                         .emit(EditorMsg::SaveRequest(self.model.current));
                 }
                 if active {
+                    self.editor_box.show();
                     self.model.current = id;
                     let req = self.model.current_request().unwrap(); // XXX
+                    self.editor_box.show();
                     self.request_editor
                         .stream()
                         .emit(EditorMsg::TemplateChanged(req.template().to_owned()));
                 } else if self.model.current == id {
+                    self.editor_box.hide();
                     self.model.current = 0;
                 }
             }
@@ -182,21 +186,24 @@ impl Widget for Window {
             relm,
             Msg::RequestNameChanged(id, name.to_owned())
         );
+        hbox.show_all();
 
-        let editor = hbox.add_widget::<RequestEditor, _>(relm, ());
-
+        let editor_box = gtk::Box::new(Orientation::Horizontal, 0);
+        let editor = editor_box.add_widget::<RequestEditor, _>(relm, ());
         connect!(
             editor@EditorMsg::Save(id, ref template),
             relm,
             Msg::RequestTemplateChanged(id, template.to_owned())
         );
+        hbox.add(&editor_box);
 
         window.add(&hbox);
-        window.show_all();
+        window.show();
         Window {
             model: model,
             menu: menu,
             window: window,
+            editor_box: editor_box,
             request_editor: editor,
             relm: relm.clone(),
         }
