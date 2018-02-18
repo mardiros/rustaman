@@ -42,7 +42,6 @@ impl RequestEditor {
     }
 }
 
-
 impl Update for RequestEditor {
     type Model = Model;
     type ModelParam = ();
@@ -122,14 +121,16 @@ impl Widget for RequestEditor {
             relm,
             request_source,
             connect_key_press_event(_, key_),
-            return (Msg::RequestSourceKeyPress(key_.clone()),
-                    Inhibit(
-                        key_.get_state().intersects(gdk::ModifierType::CONTROL_MASK) &&
-                        match key_.get_keyval() {
+            return (
+                Msg::RequestSourceKeyPress(key_.clone()),
+                Inhibit(
+                    key_.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
+                        && match key_.get_keyval() {
                             key::Return => true,
-                            _ => false
+                            _ => false,
                         }
-                    ))
+                )
+            )
         );
 
         hbox.add(&request_source);

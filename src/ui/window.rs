@@ -8,6 +8,7 @@ use relm::{Component, ContainerWidget, Relm, Update, Widget};
 use super::super::models::{Request, Template, Workspace};
 use super::menu::{Menu, Msg as MenuMsg};
 use super::request_editor::{Msg as EditorMsg, RequestEditor};
+use super::response::{Msg as ResponseMsg, Response};
 
 #[derive(Msg)]
 pub enum Msg {
@@ -47,6 +48,7 @@ pub struct Window {
     editor_box: gtk::Box,
     relm: Relm<Window>,
     request_editor: Component<RequestEditor>,
+    response: Component<Response>,
 }
 
 impl Update for Window {
@@ -98,7 +100,9 @@ impl Update for Window {
                     .set_request_template(id, template.as_str());
             }
             Msg::ExecuteRequestTemplate(template) => {
-                self.relm.stream().emit(Msg::RequestTemplateChanged(self.model.current, template));
+                self.relm
+                    .stream()
+                    .emit(Msg::RequestTemplateChanged(self.model.current, template));
             }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
@@ -204,8 +208,10 @@ impl Widget for Window {
             relm,
             Msg::ExecuteRequestTemplate(template.to_owned())
         );
-        hbox.add(&editor_box);
 
+        let response = editor_box.add_widget::<Response, _>(relm, ());
+
+        hbox.add(&editor_box);
         window.add(&hbox);
         window.show();
         Window {
@@ -214,6 +220,7 @@ impl Widget for Window {
             window: window,
             editor_box: editor_box,
             request_editor: editor,
+            response: response,
             relm: relm.clone(),
         }
     }
