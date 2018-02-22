@@ -5,11 +5,12 @@ use relm::{Relm, Update, Widget};
 
 #[derive(Msg)]
 pub enum Msg {
+    RequestExecuted(String),
 }
 
 pub struct Response {
     hbox: gtk::Box,
-    //response_view: SourceView,
+    response_view: SourceView,
     //relm: Relm<Response>,
 }
 
@@ -22,7 +23,14 @@ impl Update for Response {
         ()
     }
 
-    fn update(&mut self, _event: Msg) {}
+    fn update(&mut self, event: Msg) {
+        match event {
+            Msg::RequestExecuted(response) => {
+                let buffer = self.response_view.get_buffer().unwrap();
+                buffer.set_text(response.as_str());
+            }
+        }
+    }
 }
 
 impl Widget for Response {
@@ -48,7 +56,7 @@ impl Widget for Response {
         hbox.show_all();
         Response {
             hbox: hbox,
-            //response_view: response_view,
+            response_view: response_view,
             //relm: relm.clone(),
         }
     }

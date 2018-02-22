@@ -5,7 +5,7 @@ use gtk::prelude::*;
 use glib::translate::ToGlib;
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
-use super::super::models::{Request, Template, Workspace};
+use super::super::models::{Request, RequestRunner, Template, Workspace};
 use super::menu::{Menu, Msg as MenuMsg};
 use super::request_editor::{Msg as EditorMsg, RequestEditor};
 use super::response::{Msg as ResponseMsg, Response};
@@ -49,6 +49,7 @@ pub struct Window {
     relm: Relm<Window>,
     request_editor: Component<RequestEditor>,
     response: Component<Response>,
+    runner: RequestRunner,
 }
 
 impl Update for Window {
@@ -100,9 +101,15 @@ impl Update for Window {
                     .set_request_template(id, template.as_str());
             }
             Msg::ExecuteRequestTemplate(template) => {
-                self.relm
+                self.relm.stream().emit(Msg::RequestTemplateChanged(
+                    self.model.current,
+                    template.clone(),
+                ));
+
+                let resp = self.runner.run_request(template.as_str());
+                self.response
                     .stream()
-                    .emit(Msg::RequestTemplateChanged(self.model.current, template));
+                    .emit(ResponseMsg::RequestExecuted(resp));
             }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
@@ -222,6 +229,7 @@ impl Widget for Window {
             request_editor: editor,
             response: response,
             relm: relm.clone(),
+            runner: RequestRunner::new(),
         }
     }
 }

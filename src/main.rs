@@ -20,6 +20,9 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
+extern crate cabot;
+extern crate regex;
+
 mod ui;
 mod models;
 mod helpers;

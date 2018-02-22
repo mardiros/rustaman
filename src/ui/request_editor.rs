@@ -1,11 +1,15 @@
+use std::vec::Vec;
+
 use gdk;
 use gdk::enums::key;
 use gtk::{self, Orientation};
 use gtk::prelude::*;
-use sourceview::View as SourceView;
+use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
+use sourceview::prelude::*;
 use relm::{Relm, Update, Widget};
 
 use super::super::models::Template;
+use super::super::helpers::path;
 
 pub struct Model {
     template: Template,
@@ -112,10 +116,31 @@ impl Widget for RequestEditor {
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
         hbox.set_hexpand(true);
         hbox.set_vexpand(true);
-        let request_source = SourceView::new();
+
+        let langmngr = LanguageManager::get_default().unwrap();
+        let mut search_path = langmngr.get_search_path();
+        search_path.push(path::config_dir().unwrap().to_str().unwrap().to_owned());
+        let path2: Vec<&str> = search_path.iter().map(|path| path.as_str()).collect();
+        langmngr.set_search_path(path2.as_slice());
+        let lang = langmngr.get_language("rustaman-json").unwrap();
+
+        let stylemngr = StyleSchemeManager::get_default().unwrap();
+        println!("{:?}", stylemngr.get_search_path());
+        println!("{:?}", stylemngr.get_scheme_ids());
+        let style = stylemngr.get_scheme("solarized-dark").unwrap();
+
+        let buffer = sourceview::Buffer::new_with_language(&lang);
+        buffer.set_style_scheme(&style);
+
+        let request_source = SourceView::new_with_buffer(&buffer);
         request_source.set_margin_left(10);
         request_source.set_hexpand(true);
         request_source.set_vexpand(true);
+        request_source.set_insert_spaces_instead_of_tabs(true);
+        request_source.set_tab_width(2);
+        request_source.set_show_line_numbers(true);
+        request_source.set_highlight_current_line(true);
+        request_source.set_monospace(true);
 
         connect!(
             relm,
