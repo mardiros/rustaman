@@ -9,6 +9,8 @@ use super::super::models::{Request, RequestRunner, Template, Workspace};
 use super::menu::{Menu, Msg as MenuMsg};
 use super::request_editor::{Msg as EditorMsg, RequestEditor};
 use super::response::{Msg as ResponseMsg, Response};
+use super::environ_editor::{EnvironEditor, Msg as EnvironMsg};
+use super::helpbox::{HelpBox, Msg as HelpBoxMsg};
 
 #[derive(Msg)]
 pub enum Msg {
@@ -45,9 +47,9 @@ pub struct Window {
     model: Model,
     menu: Component<Menu>,
     window: gtk::Window,
-    editor_box: gtk::Box,
     relm: Relm<Window>,
     request_editor: Component<RequestEditor>,
+    help_box: Component<HelpBox>,
     response: Component<Response>,
     runner: RequestRunner,
 }
@@ -79,15 +81,21 @@ impl Update for Window {
                         .emit(EditorMsg::SaveRequest(self.model.current));
                 }
                 if active {
-                    self.editor_box.show();
                     self.model.current = id;
                     let req = self.model.current_request().unwrap(); // XXX
-                    self.editor_box.show();
+                    self.help_box
+                        .stream()
+                        .emit(HelpBoxMsg::Hide);
                     self.request_editor
                         .stream()
                         .emit(EditorMsg::TemplateChanged(req.template().to_owned()));
                 } else if self.model.current == id {
-                    self.editor_box.hide();
+                    self.request_editor
+                        .stream()
+                        .emit(EditorMsg::Hide);
+                    self.help_box
+                        .stream()
+                        .emit(HelpBoxMsg::Show);
                     self.model.current = 0;
                 }
             }
@@ -203,8 +211,10 @@ impl Widget for Window {
         );
         hbox.show_all();
 
-        let editor_box = gtk::Box::new(Orientation::Horizontal, 0);
+        let main_box = gtk::Box::new(Orientation::Horizontal, 0);
+        let editor_box = gtk::Box::new(Orientation::Vertical, 0);
         let editor = editor_box.add_widget::<RequestEditor, _>(relm, ());
+        let help_box = editor_box.add_widget::<HelpBox, _>(relm, ());
         connect!(
             editor@EditorMsg::Save(id, ref template),
             relm,
@@ -215,18 +225,21 @@ impl Widget for Window {
             relm,
             Msg::ExecuteRequestTemplate(template.to_owned())
         );
+        let env_editor = editor_box.add_widget::<EnvironEditor, _>(relm, ());
+        main_box.add(&editor_box);
 
-        let response = editor_box.add_widget::<Response, _>(relm, ());
-
-        hbox.add(&editor_box);
+        let response = main_box.add_widget::<Response, _>(relm, ());
+        editor_box.show();
+        main_box.show();
+        hbox.add(&main_box);
         window.add(&hbox);
         window.show();
         Window {
             model: model,
             menu: menu,
             window: window,
-            editor_box: editor_box,
             request_editor: editor,
+            help_box: help_box,
             response: response,
             relm: relm.clone(),
             runner: RequestRunner::new(),

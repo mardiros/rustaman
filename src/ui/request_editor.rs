@@ -28,6 +28,7 @@ pub enum Msg {
     TemplateChanged(Template),
     RequestSourceKeyPress(gdk::EventKey),
     Execute(Template),
+    Hide,
 }
 
 pub struct RequestEditor {
@@ -64,6 +65,7 @@ impl Update for RequestEditor {
                 self.model.set_template(template.as_str());
                 let buffer = self.request_source.get_buffer().unwrap();
                 buffer.set_text(template.as_str());
+                self.hbox.show_all();
             }
             Msg::SaveRequest(id) => {
                 info!("Save Template request");
@@ -98,6 +100,9 @@ impl Update for RequestEditor {
                         _ => {}
                     }
                 }
+            }
+            Msg::Hide => {
+                self.hbox.hide();
             }
             _ => {}
         }
@@ -159,8 +164,6 @@ impl Widget for RequestEditor {
         );
 
         hbox.add(&request_source);
-
-        hbox.show_all();
         RequestEditor {
             hbox: hbox,
             request_source: request_source,

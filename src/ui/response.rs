@@ -53,6 +53,9 @@ impl Widget for Response {
 
         hbox.add(&response_view);
 
+        hbox.set_vexpand(true);
+        hbox.set_hexpand(false);
+        hbox.set_size_request(800, 0);
         hbox.show_all();
         Response {
             hbox: hbox,
