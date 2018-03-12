@@ -106,20 +106,27 @@ impl RequestRunner {
         match request {
             Ok(ref req) => {
                 info!("Running the request");
-                let resp = self.client.execute(req).unwrap();
-                result.push_str("< ");
-                result.push_str(resp.status_line());
-                result.push('\n');
-                for line in resp.headers().iter() {
-                    result.push_str("< ");
-                    result.push_str(line);
-                    result.push('\n');
-                }
-                let body = resp.body_as_string()
-                    .unwrap_or_else(|err| format!("{:?}", err));
-                if body.len() > 0 {
-                    result.push_str("<\n");
-                    result.push_str(body.as_str());
+                let resp = self.client.execute(req);
+                match resp {
+                    Err(err) => {
+                        result.push_str(format!("ERROR: {:?}", err).as_str());
+                    }
+                    Ok(resp) => {
+                        result.push_str("< ");
+                        result.push_str(resp.status_line());
+                        result.push('\n');
+                        for line in resp.headers().iter() {
+                            result.push_str("< ");
+                            result.push_str(line);
+                            result.push('\n');
+                        }
+                        let body = resp.body_as_string()
+                            .unwrap_or_else(|err| format!("{:?}", err));
+                        if body.len() > 0 {
+                            result.push_str("<\n");
+                            result.push_str(body.as_str());
+                        }
+                    }
                 }
                 result
             }
