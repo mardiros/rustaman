@@ -98,6 +98,7 @@ impl RequestRunner {
         for line in request.lines() {
             result.push_str("> ");
             result.push_str(line);
+            result.push('\n');
         }
         result.push('\n');
         result.push('\n');
