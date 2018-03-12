@@ -1,4 +1,4 @@
-use gtk::{self, Orientation, IconSize, ReliefStyle};
+use gtk::{self, IconSize, Orientation, ReliefStyle};
 use gtk::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
 use sourceview::prelude::*;
@@ -38,10 +38,9 @@ impl Widget for EnvironEditor {
     }
 
     fn view(_relm: &Relm<Self>, _model: ()) -> Self {
-
         fn create_tab(title: &str) -> gtk::Box {
-            let close_image = gtk::Image::new_from_icon_name(
-                "window-close", IconSize::Button.into());
+            let close_image =
+                gtk::Image::new_from_icon_name("window-close", IconSize::Button.into());
             let button = gtk::Button::new();
             let label = gtk::Label::new(title);
             let tab = gtk::Box::new(Orientation::Horizontal, 0);
@@ -97,8 +96,7 @@ impl Widget for EnvironEditor {
         empty.show();
         let _index = notebook.append_page(&empty, Some(&tab));
 
-
-/*
+        /*
         button.connect_clicked(move |_| {
             let index = notebook_clone.page_num(&widget)
                                       .expect("Couldn't get page_num from notebook_clone");
@@ -118,4 +116,3 @@ impl Widget for EnvironEditor {
         }
     }
 }
-

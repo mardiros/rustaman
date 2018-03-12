@@ -83,19 +83,13 @@ impl Update for Window {
                 if active {
                     self.model.current = id;
                     let req = self.model.current_request().unwrap(); // XXX
-                    self.help_box
-                        .stream()
-                        .emit(HelpBoxMsg::Hide);
+                    self.help_box.stream().emit(HelpBoxMsg::Hide);
                     self.request_editor
                         .stream()
                         .emit(EditorMsg::TemplateChanged(req.template().to_owned()));
                 } else if self.model.current == id {
-                    self.request_editor
-                        .stream()
-                        .emit(EditorMsg::Hide);
-                    self.help_box
-                        .stream()
-                        .emit(HelpBoxMsg::Show);
+                    self.request_editor.stream().emit(EditorMsg::Hide);
+                    self.help_box.stream().emit(HelpBoxMsg::Show);
                     self.model.current = 0;
                 }
             }

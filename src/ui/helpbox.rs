@@ -1,4 +1,4 @@
-use gtk::{self, Orientation, Justification};
+use gtk::{self, Justification, Orientation};
 use gtk::prelude::*;
 use relm::{Relm, Update, Widget};
 
@@ -50,8 +50,6 @@ impl Widget for HelpBox {
         label.set_justify(Justification::Center);
         hbox.add(&label);
         hbox.show_all();
-        HelpBox {
-            hbox: hbox,
-        }
+        HelpBox { hbox: hbox }
     }
 }
