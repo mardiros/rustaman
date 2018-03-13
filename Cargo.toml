@@ -18,12 +18,14 @@ sourceview = "^0.3.1"
 serde = "^1.0.27"
 serde_derive = "^1.0.27"
 serde_json = "^1.0.9"
+serde_yaml = "^0.7.3"
 
 log = "^0.4"
 pretty_env_logger = "^0.2"
 
 cabot = "^0.1.4"
 regex = "^0.2.6"
+handlebars = "^0.32.0"
 
 [features]
 default = ["gtk_3_22"]

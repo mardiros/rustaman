@@ -1,4 +1,4 @@
-use gtk::{self, Justification, Orientation};
+use gtk::{self, Align, Justification, Orientation};
 use gtk::prelude::*;
 use relm::{Relm, Update, Widget};
 
@@ -45,6 +45,7 @@ impl Widget for HelpBox {
         let hbox = gtk::Box::new(Orientation::Vertical, 0);
         hbox.set_hexpand(true);
         hbox.set_vexpand(true);
+        hbox.set_valign(Align::Center);
 
         let label = gtk::Label::new("CTRL+n new request");
         label.set_justify(Justification::Center);

@@ -19,6 +19,8 @@ pub enum Msg {
     RequestNameChanged(usize, String),
     RequestTemplateChanged(usize, Template),
     ExecuteRequestTemplate(Template),
+    TemplateCompiled(String),
+    TemplateCompilationFailed(String),
     Quit,
     KeyPress(gdk::EventKey),
 }
@@ -49,6 +51,7 @@ pub struct Window {
     window: gtk::Window,
     relm: Relm<Window>,
     request_editor: Component<RequestEditor>,
+    env_editor: Component<EnvironEditor>,
     help_box: Component<HelpBox>,
     response: Component<Response>,
     runner: RequestRunner,
@@ -108,10 +111,20 @@ impl Update for Window {
                     template.clone(),
                 ));
 
+                self.env_editor
+                    .stream()
+                    .emit(EnvironMsg::CompileTemplate(template));
+            }
+            Msg::TemplateCompiled(template) => {
                 let resp = self.runner.run_request(template.as_str());
                 self.response
                     .stream()
                     .emit(ResponseMsg::RequestExecuted(resp));
+            }
+            Msg::TemplateCompilationFailed(msg) => {
+                self.response
+                    .stream()
+                    .emit(ResponseMsg::RequestExecuted(msg));
             }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
@@ -220,6 +233,18 @@ impl Widget for Window {
             Msg::ExecuteRequestTemplate(template.to_owned())
         );
         let env_editor = editor_box.add_widget::<EnvironEditor, _>(relm, ());
+
+        connect!(
+            env_editor@EnvironMsg::TemplateCompiled(ref result),
+            relm,
+            Msg::TemplateCompiled(result.to_owned())
+        );
+
+        connect!(
+            env_editor@EnvironMsg::TemplateCompilationFailed(ref err),
+            relm,
+            Msg::TemplateCompilationFailed(err.to_owned())
+        );
         main_box.add(&editor_box);
 
         let response = main_box.add_widget::<Response, _>(relm, ());
@@ -233,6 +258,7 @@ impl Widget for Window {
             menu: menu,
             window: window,
             request_editor: editor,
+            env_editor: env_editor,
             help_box: help_box,
             response: response,
             relm: relm.clone(),

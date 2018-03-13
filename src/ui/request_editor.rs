@@ -130,8 +130,6 @@ impl Widget for RequestEditor {
         let lang = langmngr.get_language("rustaman-json").unwrap();
 
         let stylemngr = StyleSchemeManager::get_default().unwrap();
-        println!("{:?}", stylemngr.get_search_path());
-        println!("{:?}", stylemngr.get_scheme_ids());
         let style = stylemngr.get_scheme("solarized-dark").unwrap();
 
         let buffer = sourceview::Buffer::new_with_language(&lang);

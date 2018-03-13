@@ -3,17 +3,31 @@ use gtk::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
 use sourceview::prelude::*;
 use relm::{Relm, Update, Widget};
+use handlebars::Handlebars;
+use serde_yaml;
 
 use super::super::helpers::path;
 
 #[derive(Msg)]
 pub enum Msg {
+    CompileTemplate(String),
+    TemplateCompiled(String),
+    TemplateCompilationFailed(String),
 }
 
 pub struct EnvironEditor {
     notebook: gtk::Notebook,
-    environ_view: SourceView,
-    //relm: Relm<EnvironEditor>,
+    environ_source: SourceView,
+    relm: Relm<EnvironEditor>,
+}
+
+impl EnvironEditor {
+    fn get_text(&self) -> Option<String> {
+        let buffer = self.environ_source.get_buffer().unwrap();
+        let start_iter = buffer.get_start_iter();
+        let end_iter = buffer.get_end_iter();
+        buffer.get_text(&start_iter, &end_iter, true)
+    }
 }
 
 impl Update for EnvironEditor {
@@ -26,7 +40,30 @@ impl Update for EnvironEditor {
     }
 
     fn update(&mut self, event: Msg) {
-        match event {}
+        match event {
+            Msg::CompileTemplate(template) => {
+                let params = self.get_text().unwrap();
+
+                let mut reg = Handlebars::new();
+                debug!("Template: {}", template.as_str());
+                debug!("Params: {}", params.as_str());
+                let params: serde_yaml::Value = serde_yaml::from_str(&params).unwrap();
+                let res = reg.render_template(template.as_str(), &params);
+                match res {
+                    Ok(rendered) => {
+                        debug!("Rendered: {}", rendered);
+                        self.relm.stream().emit(Msg::TemplateCompiled(rendered));
+                    }
+                    Err(err) => {
+                        let err = format!("{:?}", err);
+                        self.relm
+                            .stream()
+                            .emit(Msg::TemplateCompilationFailed(err.to_owned()));
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -37,7 +74,7 @@ impl Widget for EnvironEditor {
         self.notebook.clone()
     }
 
-    fn view(_relm: &Relm<Self>, _model: ()) -> Self {
+    fn view(relm: &Relm<Self>, _model: ()) -> Self {
         fn create_tab(title: &str) -> gtk::Box {
             let close_image =
                 gtk::Image::new_from_icon_name("window-close", IconSize::Button.into());
@@ -76,15 +113,15 @@ impl Widget for EnvironEditor {
         let buffer = sourceview::Buffer::new_with_language(&lang);
         buffer.set_style_scheme(&style);
 
-        let environ_view = SourceView::new_with_buffer(&buffer);
-        environ_view.set_show_line_numbers(true);
+        let environ_source = SourceView::new_with_buffer(&buffer);
+        environ_source.set_show_line_numbers(true);
 
-        environ_view.set_hexpand(true);
-        environ_view.set_vexpand(true);
-        environ_view.show();
+        environ_source.set_hexpand(true);
+        environ_source.set_vexpand(true);
+        environ_source.show();
 
         let tab = create_tab("Dev");
-        let _index = notebook.append_page(&environ_view, Some(&tab));
+        let _index = notebook.append_page(&environ_source, Some(&tab));
 
         let tab = gtk::Box::new(Orientation::Horizontal, 0);
         let btn = gtk::Button::new();
@@ -111,8 +148,8 @@ impl Widget for EnvironEditor {
         notebook.show();
         EnvironEditor {
             notebook: notebook,
-            environ_view: environ_view,
-            //relm: relm.clone(),
+            environ_source: environ_source,
+            relm: relm.clone(),
         }
     }
 }
