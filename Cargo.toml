@@ -23,7 +23,7 @@ serde_yaml = "^0.7.3"
 log = "^0.4"
 pretty_env_logger = "^0.2"
 
-cabot = "^0.1.4"
+cabot = "^0.2.0"
 regex = "^0.2.6"
 handlebars = "^0.32.0"
 
