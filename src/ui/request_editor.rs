@@ -27,6 +27,7 @@ pub enum Msg {
     Save(usize, Template),
     TemplateChanged(Template),
     RequestSourceKeyPress(gdk::EventKey),
+    AskExecute,
     Execute(Template),
     Hide,
 }
@@ -85,19 +86,22 @@ impl Update for RequestEditor {
                     let keyval = key.get_keyval();
                     match keyval {
                         key::Return => {
-                            let text = self.get_text();
-                            match text {
-                                Some(ref data) => {
-                                    error!("Running query");
-                                    self.relm.stream().emit(Msg::Execute(data.to_owned()));
-                                }
-                                None => {
-                                    error!("No requests to execute");
-                                    // Alert something here
-                                }
-                            }
+                            self.relm.stream().emit(Msg::AskExecute);
                         }
                         _ => {}
+                    }
+                }
+            }
+            Msg::AskExecute => {
+                let text = self.get_text();
+                match text {
+                    Some(ref data) => {
+                        error!("Running query");
+                        self.relm.stream().emit(Msg::Execute(data.to_owned()));
+                    }
+                    None => {
+                        error!("No requests to execute");
+                        // Alert something here
                     }
                 }
             }

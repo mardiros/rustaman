@@ -4,9 +4,12 @@ use serde_json;
 
 use super::super::helpers::path;
 use super::template::Template;
+use super::environment::Environment;
 
 const DEFAULT_TEMPLATE: &'static str =
     "# List resources\n\nGET http://localhost/\nUser-Agent: Rustaman\n";
+
+const DEFAULT_ENVIRONMENT: &'static str = "%YAML 1.2\n---\n";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Status {
@@ -57,6 +60,7 @@ pub type Requests = Vec<Request>;
 pub struct Payload {
     name: String,
     requests: Requests,
+    environments: Vec<Environment>,
 }
 
 #[derive(Debug, Clone)]
@@ -72,6 +76,7 @@ impl Workspace {
             payload: Payload {
                 name: "Rustaman".to_owned(),
                 requests: vec![],
+                environments: vec![Environment::new("Dev", DEFAULT_ENVIRONMENT)],
             },
         }
     }
@@ -175,6 +180,27 @@ impl Workspace {
             if request.id() == id {
                 request.activate();
                 request.set_template(template);
+                break;
+            }
+        }
+        self.safe_sync();
+    }
+
+    pub fn environments(&self) -> &[Environment] {
+        self.payload.environments.as_slice()
+    }
+
+    pub fn create_environment(&mut self, name: &str) -> &Environment {
+        let env = Environment::new(name, DEFAULT_ENVIRONMENT);
+        self.payload.environments.push(env);
+        self.payload.environments.last().unwrap()
+    }
+
+    pub fn set_environ(&mut self, id: usize, environment: &Environment) {
+        for (idx, env) in self.payload.environments.iter_mut().enumerate() {
+            if idx == id {
+                // env.set_name(environment.name());
+                env.set_payload(environment.payload());
                 break;
             }
         }

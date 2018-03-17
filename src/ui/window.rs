@@ -5,7 +5,7 @@ use gtk::prelude::*;
 use glib::translate::ToGlib;
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
-use super::super::models::{Request, RequestRunner, Template, Workspace};
+use super::super::models::{Environment, Request, RequestRunner, Template, Workspace};
 use super::menu::{Menu, Msg as MenuMsg};
 use super::request_editor::{Msg as EditorMsg, RequestEditor};
 use super::response::{Msg as ResponseMsg, Response};
@@ -19,8 +19,11 @@ pub enum Msg {
     RequestNameChanged(usize, String),
     RequestTemplateChanged(usize, Template),
     ExecuteRequestTemplate(Template),
+    ExecuteFromEnviron,
     TemplateCompiled(String),
     TemplateCompilationFailed(String),
+    SaveEnvironment(usize, Environment),
+    CreateEnvironment(String),
     Quit,
     KeyPress(gdk::EventKey),
 }
@@ -42,6 +45,12 @@ impl Model {
     }
     pub fn create_request(&mut self) -> &Request {
         self.workspace.create_request()
+    }
+    pub fn environments(&self) -> &[Environment] {
+        self.workspace.environments()
+    }
+    pub fn create_environment(&mut self, name: &str) -> &Environment {
+        self.workspace.create_environment(name)
     }
 }
 
@@ -115,6 +124,9 @@ impl Update for Window {
                     .stream()
                     .emit(EnvironMsg::CompileTemplate(template));
             }
+            Msg::ExecuteFromEnviron => {
+                self.request_editor.stream().emit(EditorMsg::AskExecute);
+            }
             Msg::TemplateCompiled(template) => {
                 let resp = self.runner.run_request(template.as_str());
                 self.response
@@ -125,6 +137,17 @@ impl Update for Window {
                 self.response
                     .stream()
                     .emit(ResponseMsg::RequestExecuted(msg));
+            }
+            Msg::CreateEnvironment(name) => {
+                info!("Creating environment {}", name);
+                let env = self.model.create_environment(name.as_str());
+                self.env_editor
+                    .stream()
+                    .emit(EnvironMsg::EnvironmentCreated(env.clone()))
+            }
+            Msg::SaveEnvironment(id, env) => {
+                info!("Save environment {} {:?}", id, env);
+                self.model.workspace.set_environ(id, &env);
             }
             Msg::Quit => gtk::main_quit(),
             Msg::KeyPress(key) => {
@@ -232,7 +255,13 @@ impl Widget for Window {
             relm,
             Msg::ExecuteRequestTemplate(template.to_owned())
         );
-        let env_editor = editor_box.add_widget::<EnvironEditor, _>(relm, ());
+        let envs = model.environments().to_vec();
+        let env_editor = editor_box.add_widget::<EnvironEditor, _>(relm, envs);
+        connect!(
+            env_editor@EnvironMsg::Execute,
+            relm,
+            Msg::ExecuteFromEnviron
+        );
 
         connect!(
             env_editor@EnvironMsg::TemplateCompiled(ref result),
@@ -245,6 +274,23 @@ impl Widget for Window {
             relm,
             Msg::TemplateCompilationFailed(err.to_owned())
         );
+
+        connect!(
+            env_editor@EnvironMsg::CreateEnvironment(ref name),
+            relm,
+            Msg::CreateEnvironment(name.to_owned())
+        );
+
+        connect!(
+            env_editor@EnvironMsg::Save(id, ref env),
+            relm,
+            Msg::SaveEnvironment(id, env.clone())
+        );
+
+        if model.environments().len() == 0 {
+            relm.stream().emit(Msg::CreateEnvironment("Dev".to_owned()));
+        }
+
         main_box.add(&editor_box);
 
         let response = main_box.add_widget::<Response, _>(relm, ());
