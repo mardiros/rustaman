@@ -19,11 +19,14 @@ impl RequestRunner {
     }
 
     pub fn parse_request(&self, request: &str) -> Result<Request, String> {
-        info!("Parsing request");
+        info!("Parsing request {}", request.len());
         let mut lines = request.lines();
         let mut line = lines.next();
         loop {
-            let unwrapped = line.unwrap_or("");
+            if line.is_none() {
+                break;
+            }
+            let unwrapped = line.unwrap();
             if unwrapped.len() > 0 && !unwrapped.starts_with("#") {
                 break;
             }
