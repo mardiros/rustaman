@@ -19,7 +19,7 @@ pub enum Msg {
     RequestNameChanged(usize, String),
     RequestTemplateChanged(usize, Template),
     ExecuteRequestTemplate(Template),
-    ExecuteFromEnviron,
+    ExecuteCurrentRequestTemplate,
     TemplateCompiled(String),
     TemplateCompilationFailed(String),
     SaveEnvironment(usize, Environment),
@@ -124,7 +124,7 @@ impl Update for Window {
                     .stream()
                     .emit(EnvironMsg::CompileTemplate(template));
             }
-            Msg::ExecuteFromEnviron => {
+            Msg::ExecuteCurrentRequestTemplate => {
                 self.request_editor.stream().emit(EditorMsg::AskExecute);
             }
             Msg::TemplateCompiled(template) => {
@@ -158,6 +158,7 @@ impl Update for Window {
                     match keyval {
                         key::w => self.relm.stream().emit(Msg::Quit),
                         key::n => self.relm.stream().emit(Msg::CreateRequest),
+                        key::Return => self.relm.stream().emit(Msg::ExecuteCurrentRequestTemplate),
                         _ => {}
                     }
                 } else {
@@ -257,11 +258,6 @@ impl Widget for Window {
         );
         let envs = model.environments().to_vec();
         let env_editor = editor_box.add_widget::<EnvironEditor, _>(relm, envs);
-        connect!(
-            env_editor@EnvironMsg::Execute,
-            relm,
-            Msg::ExecuteFromEnviron
-        );
 
         connect!(
             env_editor@EnvironMsg::TemplateCompiled(ref result),

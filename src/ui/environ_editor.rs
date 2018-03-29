@@ -47,9 +47,7 @@ pub enum Msg {
     TemplateCompiled(String),
     TemplateCompilationFailed(String),
     Save(usize, Environment),
-    EnvironSourceKeyPress(gdk::EventKey),
     NewEntryKeyPress(gdk::EventKey),
-    Execute,
     NewEnvironment,
     CreateNewTabPage,
     CreateEnvironment(String),
@@ -95,18 +93,6 @@ impl Update for EnvironEditor {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::EnvironSourceKeyPress(key) => {
-                let keystate = key.get_state();
-                if keystate.intersects(gdk::ModifierType::CONTROL_MASK) {
-                    let keyval = key.get_keyval();
-                    match keyval {
-                        key::Return => {
-                            self.relm.stream().emit(Msg::Execute);
-                        }
-                        _ => {}
-                    }
-                }
-            }
             Msg::CompileTemplate(template) => {
                 let payload = match self.get_text() {
                     Some(data) => data,
@@ -206,15 +192,12 @@ impl Update for EnvironEditor {
                     self.relm,
                     tab_page,
                     connect_key_press_event(_, key),
-                    return (
-                        Msg::EnvironSourceKeyPress(key.clone()),
-                        Inhibit(
-                            key.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
-                                && match key.get_keyval() {
-                                    key::Return => true,
-                                    _ => false,
-                                }
-                        )
+                    return Inhibit(
+                        key.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
+                            && match key.get_keyval() {
+                                key::Return => true,
+                                _ => false,
+                            }
                     )
                 );
 

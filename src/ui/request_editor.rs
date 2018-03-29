@@ -26,7 +26,6 @@ pub enum Msg {
     SaveRequest(usize),
     Save(usize, Template),
     TemplateChanged(Template),
-    RequestSourceKeyPress(gdk::EventKey),
     AskExecute,
     Execute(Template),
     Hide,
@@ -77,18 +76,6 @@ impl Update for RequestEditor {
                     }
                     None => {
                         error!("No data to save");
-                    }
-                }
-            }
-            Msg::RequestSourceKeyPress(key) => {
-                let keystate = key.get_state();
-                if keystate.intersects(gdk::ModifierType::CONTROL_MASK) {
-                    let keyval = key.get_keyval();
-                    match keyval {
-                        key::Return => {
-                            self.relm.stream().emit(Msg::AskExecute);
-                        }
-                        _ => {}
                     }
                 }
             }
@@ -153,15 +140,12 @@ impl Widget for RequestEditor {
             relm,
             request_source,
             connect_key_press_event(_, key_),
-            return (
-                Msg::RequestSourceKeyPress(key_.clone()),
-                Inhibit(
-                    key_.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
-                        && match key_.get_keyval() {
-                            key::Return => true,
-                            _ => false,
-                        }
-                )
+            return Inhibit(
+                key_.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
+                    && match key_.get_keyval() {
+                        key::Return => true,
+                        _ => false,
+                    }
             )
         );
 
