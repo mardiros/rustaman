@@ -125,7 +125,9 @@ impl Update for Window {
                     .emit(EnvironMsg::CompilingTemplate(template));
             }
             Msg::ExecutingCurrentRequestTemplate => {
-                self.request_editor.stream().emit(EditorMsg::ExecutingCurrent);
+                self.request_editor
+                    .stream()
+                    .emit(EditorMsg::ExecutingCurrent);
             }
             Msg::TemplateCompiled(template) => {
                 let resp = self.runner.run_request(template.as_str());
@@ -158,7 +160,10 @@ impl Update for Window {
                     match keyval {
                         key::w => self.relm.stream().emit(Msg::Quitting),
                         key::n => self.relm.stream().emit(Msg::CreatingRequest),
-                        key::Return => self.relm.stream().emit(Msg::ExecutingCurrentRequestTemplate),
+                        key::p => self.menu.stream().emit(MenuMsg::RequestingFilteringMenu),
+                        key::Return => self.relm
+                            .stream()
+                            .emit(Msg::ExecutingCurrentRequestTemplate),
                         _ => {}
                     }
                 } else {
@@ -284,7 +289,8 @@ impl Widget for Window {
         );
 
         if model.environments().len() == 0 {
-            relm.stream().emit(Msg::CreatingEnvironment("Dev".to_owned()));
+            relm.stream()
+                .emit(Msg::CreatingEnvironment("Dev".to_owned()));
         }
 
         main_box.add(&editor_box);

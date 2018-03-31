@@ -26,6 +26,7 @@ pub enum Msg {
     RenamingRequest(usize),
     TogglingRequest(usize, bool),
     RequestNameChanged(usize, String),
+    RequestingFilteringMenu,
 }
 
 pub struct Menu {
@@ -92,6 +93,10 @@ impl Update for Menu {
                 } else {
                     error!("Cannot rename unexisting request #{}", id);
                 }
+            }
+            Msg::RequestingFilteringMenu => {
+                info!("Requesting filter in menu");
+                self.search.grab_focus();
             }
             _ => {}
         }
