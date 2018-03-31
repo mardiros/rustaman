@@ -43,17 +43,17 @@ impl Model {
 
 #[derive(Msg)]
 pub enum Msg {
-    CompileTemplate(String),
+    CompilingTemplate(String),
     TemplateCompiled(String),
     TemplateCompilationFailed(String),
-    Save(usize, Environment),
-    NewEntryKeyPress(gdk::EventKey),
-    NewEnvironment,
-    CreateNewTabPage,
-    CreateEnvironment(String),
-    AppendEnvironment(Environment),
+    Saving(usize, Environment),
+    NewEntryPressingKey(gdk::EventKey),
+    RequestingNewEnvironment,
+    CreatingNewTabPageButton,
+    CreatingEnvironment(String),
+    AppendingEnvironment(Environment),
     EnvironmentCreated(Environment),
-    ToggleEnvironment(u32),
+    TogglingEnvironment(u32),
 }
 
 pub struct EnvironEditor {
@@ -93,7 +93,7 @@ impl Update for EnvironEditor {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::CompileTemplate(template) => {
+            Msg::CompilingTemplate(template) => {
                 let payload = match self.get_text() {
                     Some(data) => data,
                     None => "".to_owned(),
@@ -112,7 +112,7 @@ impl Update for EnvironEditor {
                         self.relm.stream().emit(Msg::TemplateCompiled(rendered));
                         self.relm
                             .stream()
-                            .emit(Msg::Save(id, self.model.environments()[id].to_owned()));
+                            .emit(Msg::Saving(id, self.model.environments()[id].to_owned()));
                     }
                     Err(err) => {
                         let err = format!("{:?}", err);
@@ -122,7 +122,7 @@ impl Update for EnvironEditor {
                     }
                 }
             }
-            Msg::NewEnvironment => {
+            Msg::RequestingNewEnvironment => {
                 info!("Detach mentPlus");
                 self.notebook.detach_tab(&self.plus_tab.1);
                 info!("Attach Entry");
@@ -130,13 +130,13 @@ impl Update for EnvironEditor {
                     .append_page(&self.entry_tab.1, Some(&self.entry_tab.0));
                 self.entry.grab_focus();
             }
-            Msg::NewEntryKeyPress(key) => {
+            Msg::NewEntryPressingKey(key) => {
                 let keyval = key.get_keyval();
                 match keyval {
                     key::Return => {
                         let name = self.entry.get_text().unwrap().to_owned();
                         self.entry.set_text("");
-                        self.relm.stream().emit(Msg::CreateEnvironment(name));
+                        self.relm.stream().emit(Msg::CreatingEnvironment(name));
                     }
                     key::Escape => {
                         info!("Detach Entry");
@@ -148,7 +148,7 @@ impl Update for EnvironEditor {
                     _ => {}
                 }
             }
-            Msg::AppendEnvironment(env) => {
+            Msg::AppendingEnvironment(env) => {
                 let name = env.name();
                 let payload = env.payload();
                 let tab = {
@@ -212,25 +212,25 @@ impl Update for EnvironEditor {
             Msg::EnvironmentCreated(env) => {
                 info!("Detach Add new tab");
                 self.notebook.detach_tab(&self.entry_tab.0);
-                self.update(Msg::AppendEnvironment(env));
+                self.update(Msg::AppendingEnvironment(env));
                 info!("Attach Add new tab");
                 let _index = self.notebook
                     .append_page(&self.plus_tab.1, Some(&self.plus_tab.0));
             }
 
-            Msg::ToggleEnvironment(id) => {
+            Msg::TogglingEnvironment(id) => {
                 info!("Switch to page {}", id);
                 {
                     let env = self.model.environments();
                     if self.model.current < env.len() {
-                        self.relm.stream().emit(Msg::Save(self.model.current, {
+                        self.relm.stream().emit(Msg::Saving(self.model.current, {
                             env[self.model.current].to_owned()
                         }));
                     }
                 }
                 self.model.current = id as usize;
             }
-            Msg::CreateNewTabPage => {
+            Msg::CreatingNewTabPageButton => {
                 let _index = self.notebook
                     .append_page(&self.plus_tab.1, Some(&self.plus_tab.0));
             }
@@ -259,7 +259,7 @@ impl Widget for EnvironEditor {
 
         if model.environments().len() > 0 {
             for env in model.environments() {
-                relm.stream().emit(Msg::AppendEnvironment(env.clone()));
+                relm.stream().emit(Msg::AppendingEnvironment(env.clone()));
             }
         }
         let environ_sources: HashMap<u32, (String, SourceView)> = HashMap::new();
@@ -270,7 +270,7 @@ impl Widget for EnvironEditor {
         plus_tab.pack_start(&btn, false, false, 0);
         plus_tab.show_all();
 
-        connect!(relm, btn, connect_clicked(_), Msg::NewEnvironment);
+        connect!(relm, btn, connect_clicked(_), Msg::RequestingNewEnvironment);
 
         let plus_box = gtk::Box::new(Orientation::Horizontal, 0);
         plus_box.show();
@@ -286,7 +286,7 @@ impl Widget for EnvironEditor {
             relm,
             entry,
             connect_key_press_event(_, key),
-            return (Msg::NewEntryKeyPress(key.clone()), Inhibit(false),)
+            return (Msg::NewEntryPressingKey(key.clone()), Inhibit(false),)
         );
 
         notebook.set_hexpand(true);
@@ -298,10 +298,10 @@ impl Widget for EnvironEditor {
             relm,
             notebook,
             connect_switch_page(_, _, id),
-            Msg::ToggleEnvironment(id)
+            Msg::TogglingEnvironment(id)
         );
 
-        relm.stream().emit(Msg::CreateNewTabPage);
+        relm.stream().emit(Msg::CreatingNewTabPageButton);
         EnvironEditor {
             relm: relm.clone(),
             notebook: notebook,

@@ -22,15 +22,16 @@ impl Model {
 #[derive(Msg)]
 pub enum Msg {
     NewRequest,
-    CreateRequest(Request),
-    RenameRequest(usize),
-    ToggleRequest(usize, bool),
+    CreatingRequest(Request),
+    RenamingRequest(usize),
+    TogglingRequest(usize, bool),
     RequestNameChanged(usize, String),
 }
 
 pub struct Menu {
     relm: Relm<Menu>,
     vbox: gtk::Box,
+    search: gtk::SearchEntry,
     items: HashMap<usize, Component<MenuItem>>,
     model: Model,
 }
@@ -49,16 +50,16 @@ impl Update for Menu {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::CreateRequest(request) => {
+            Msg::CreatingRequest(request) => {
                 info!("Create request in menu {:?}", request);
                 let id = request.id();
                 let req_active = request.active();
                 let item = self.vbox.add_widget::<MenuItem, _>(&self.relm, request);
 
                 connect!(
-                    item@MenuItemMsg::ToggleRequest(id, active),
+                    item@MenuItemMsg::TogglingRequest(id, active),
                     self.relm,
-                    Msg::ToggleRequest(id, active)
+                    Msg::TogglingRequest(id, active)
                 );
                 connect!(
                     item@MenuItemMsg::RequestNameChanged(id, ref name),
@@ -70,7 +71,7 @@ impl Update for Menu {
                 }
                 self.items.insert(id, item);
             }
-            Msg::ToggleRequest(id, active) => {
+            Msg::TogglingRequest(id, active) => {
                 info!("Toggle request in menu {} {}", id, active);
                 if active {
                     let current = self.model.current;
@@ -83,11 +84,11 @@ impl Update for Menu {
                     self.model.current = 0;
                 }
             }
-            Msg::RenameRequest(id) => {
+            Msg::RenamingRequest(id) => {
                 info!("Rename request in menu {}", id);
                 let item = self.items.get_mut(&self.model.current);
                 if item.is_some() {
-                    item.unwrap().stream().emit(MenuItemMsg::RenameRequest);
+                    item.unwrap().stream().emit(MenuItemMsg::RenamingRequest);
                 } else {
                     error!("Cannot rename unexisting request #{}", id);
                 }
@@ -128,12 +129,13 @@ impl Widget for Menu {
 
         let items = HashMap::new();
         for request in model.requests_iter() {
-            relm.stream().emit(Msg::CreateRequest(request.clone()));
+            relm.stream().emit(Msg::CreatingRequest(request.clone()));
         }
         vbox.show_all();
         Menu {
             vbox: vbox,
             relm: relm.clone(),
+            search: search,
             items: items,
             model: model,
         }

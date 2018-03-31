@@ -26,11 +26,11 @@ impl Model {
 
 #[derive(Msg)]
 pub enum Msg {
-    ToggleRequest(usize, bool),
+    TogglingRequest(usize, bool),
     RequestNameChanged(usize, String),
     SetActive(bool),
     EntryKeyPress(gdk::EventKey),
-    RenameRequest,
+    RenamingRequest,
 }
 
 pub struct MenuItem {
@@ -55,7 +55,7 @@ impl Update for MenuItem {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::RenameRequest => {
+            Msg::RenamingRequest => {
                 self.displaybox.hide();
                 self.entry.show();
                 self.entry.grab_focus();
@@ -151,14 +151,14 @@ impl Widget for MenuItem {
         displaybox.add(&combo_btn);
         hbox.add(&displaybox);
 
-        connect!(relm, rename, connect_activate(_), Msg::RenameRequest);
+        connect!(relm, rename, connect_activate(_), Msg::RenamingRequest);
 
         let model_id = model.id();
         connect!(
             relm,
             toggle_btn,
             connect_clicked(btn),
-            Msg::ToggleRequest(model_id, btn.get_active())
+            Msg::TogglingRequest(model_id, btn.get_active())
         );
         if model.active() {
             displaybox.show();

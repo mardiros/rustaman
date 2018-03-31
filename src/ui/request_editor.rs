@@ -23,12 +23,12 @@ impl Model {
 
 #[derive(Msg)]
 pub enum Msg {
-    SaveRequest(usize),
-    Save(usize, Template),
+    RequestingSave(usize),
+    Saving(usize, Template),
     TemplateChanged(Template),
-    AskExecute,
-    Execute(Template),
-    Hide,
+    ExecutingCurrent,
+    Executing(Template),
+    Hiding,
 }
 
 pub struct RequestEditor {
@@ -67,24 +67,24 @@ impl Update for RequestEditor {
                 buffer.set_text(template.as_str());
                 self.hbox.show_all();
             }
-            Msg::SaveRequest(id) => {
+            Msg::RequestingSave(id) => {
                 info!("Save Template request");
                 let text = self.get_text();
                 match text {
                     Some(ref data) => {
-                        self.relm.stream().emit(Msg::Save(id, data.to_owned()));
+                        self.relm.stream().emit(Msg::Saving(id, data.to_owned()));
                     }
                     None => {
                         error!("No data to save");
                     }
                 }
             }
-            Msg::AskExecute => {
+            Msg::ExecutingCurrent => {
                 let text = self.get_text();
                 match text {
                     Some(ref data) => {
                         error!("Running query");
-                        self.relm.stream().emit(Msg::Execute(data.to_owned()));
+                        self.relm.stream().emit(Msg::Executing(data.to_owned()));
                     }
                     None => {
                         error!("No requests to execute");
@@ -92,7 +92,7 @@ impl Update for RequestEditor {
                     }
                 }
             }
-            Msg::Hide => {
+            Msg::Hiding => {
                 self.hbox.hide();
             }
             _ => {}

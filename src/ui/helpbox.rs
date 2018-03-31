@@ -4,8 +4,8 @@ use relm::{Relm, Update, Widget};
 
 #[derive(Msg)]
 pub enum Msg {
-    Show,
-    Hide,
+    Showing,
+    Hiding,
 }
 
 pub struct HelpBox {
@@ -23,10 +23,10 @@ impl Update for HelpBox {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::Show => {
+            Msg::Showing => {
                 self.hbox.show();
             }
-            Msg::Hide => {
+            Msg::Hiding => {
                 self.hbox.hide();
             }
         }

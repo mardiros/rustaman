@@ -14,18 +14,18 @@ use super::helpbox::{HelpBox, Msg as HelpBoxMsg};
 
 #[derive(Msg)]
 pub enum Msg {
-    CreateRequest,
-    ToggleRequest(usize, bool),
+    CreatingRequest,
+    TogglingRequest(usize, bool),
     RequestNameChanged(usize, String),
     RequestTemplateChanged(usize, Template),
-    ExecuteRequestTemplate(Template),
-    ExecuteCurrentRequestTemplate,
+    ExecutingRequestTemplate(Template),
+    ExecutingCurrentRequestTemplate,
     TemplateCompiled(String),
     TemplateCompilationFailed(String),
-    SaveEnvironment(usize, Environment),
-    CreateEnvironment(String),
-    Quit,
-    KeyPress(gdk::EventKey),
+    SavingEnvironment(usize, Environment),
+    CreatingEnvironment(String),
+    Quitting,
+    PressingKey(gdk::EventKey),
 }
 
 pub struct Model {
@@ -80,28 +80,28 @@ impl Update for Window {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::CreateRequest => {
+            Msg::CreatingRequest => {
                 let request = self.model.create_request();
                 self.menu
                     .stream()
-                    .emit(MenuMsg::CreateRequest(request.clone()))
+                    .emit(MenuMsg::CreatingRequest(request.clone()))
             }
-            Msg::ToggleRequest(id, active) => {
+            Msg::TogglingRequest(id, active) => {
                 if self.model.current > 0 {
                     self.request_editor
                         .stream()
-                        .emit(EditorMsg::SaveRequest(self.model.current));
+                        .emit(EditorMsg::RequestingSave(self.model.current));
                 }
                 if active {
                     self.model.current = id;
                     let req = self.model.current_request().unwrap(); // XXX
-                    self.help_box.stream().emit(HelpBoxMsg::Hide);
+                    self.help_box.stream().emit(HelpBoxMsg::Hiding);
                     self.request_editor
                         .stream()
                         .emit(EditorMsg::TemplateChanged(req.template().to_owned()));
                 } else if self.model.current == id {
-                    self.request_editor.stream().emit(EditorMsg::Hide);
-                    self.help_box.stream().emit(HelpBoxMsg::Show);
+                    self.request_editor.stream().emit(EditorMsg::Hiding);
+                    self.help_box.stream().emit(HelpBoxMsg::Showing);
                     self.model.current = 0;
                 }
             }
@@ -114,7 +114,7 @@ impl Update for Window {
                     .workspace
                     .set_request_template(id, template.as_str());
             }
-            Msg::ExecuteRequestTemplate(template) => {
+            Msg::ExecutingRequestTemplate(template) => {
                 self.relm.stream().emit(Msg::RequestTemplateChanged(
                     self.model.current,
                     template.clone(),
@@ -122,10 +122,10 @@ impl Update for Window {
 
                 self.env_editor
                     .stream()
-                    .emit(EnvironMsg::CompileTemplate(template));
+                    .emit(EnvironMsg::CompilingTemplate(template));
             }
-            Msg::ExecuteCurrentRequestTemplate => {
-                self.request_editor.stream().emit(EditorMsg::AskExecute);
+            Msg::ExecutingCurrentRequestTemplate => {
+                self.request_editor.stream().emit(EditorMsg::ExecutingCurrent);
             }
             Msg::TemplateCompiled(template) => {
                 let resp = self.runner.run_request(template.as_str());
@@ -138,27 +138,27 @@ impl Update for Window {
                     .stream()
                     .emit(ResponseMsg::RequestExecuted(msg));
             }
-            Msg::CreateEnvironment(name) => {
+            Msg::CreatingEnvironment(name) => {
                 info!("Creating environment {}", name);
                 let env = self.model.create_environment(name.as_str());
                 self.env_editor
                     .stream()
                     .emit(EnvironMsg::EnvironmentCreated(env.clone()))
             }
-            Msg::SaveEnvironment(id, env) => {
+            Msg::SavingEnvironment(id, env) => {
                 info!("Save environment {} {:?}", id, env);
                 self.model.workspace.set_environ(id, &env);
             }
-            Msg::Quit => gtk::main_quit(),
-            Msg::KeyPress(key) => {
+            Msg::Quitting => gtk::main_quit(),
+            Msg::PressingKey(key) => {
                 let keyval = key.get_keyval();
                 let keystate = key.get_state();
 
                 if keystate.intersects(gdk::ModifierType::CONTROL_MASK) {
                     match keyval {
-                        key::w => self.relm.stream().emit(Msg::Quit),
-                        key::n => self.relm.stream().emit(Msg::CreateRequest),
-                        key::Return => self.relm.stream().emit(Msg::ExecuteCurrentRequestTemplate),
+                        key::w => self.relm.stream().emit(Msg::Quitting),
+                        key::n => self.relm.stream().emit(Msg::CreatingRequest),
+                        key::Return => self.relm.stream().emit(Msg::ExecutingCurrentRequestTemplate),
                         _ => {}
                     }
                 } else {
@@ -167,7 +167,7 @@ impl Update for Window {
                             if self.model.current > 0 {
                                 self.menu
                                     .stream()
-                                    .emit(MenuMsg::RenameRequest(self.model.current))
+                                    .emit(MenuMsg::RenamingRequest(self.model.current))
                             }
                         }
                         _ => {}
@@ -197,14 +197,14 @@ impl Widget for Window {
             relm,
             window,
             connect_delete_event(_, _),
-            return (Some(Msg::Quit), Inhibit(false))
+            return (Some(Msg::Quitting), Inhibit(false))
         );
 
         connect!(
             relm,
             window,
             connect_key_press_event(_, key),
-            return (Msg::KeyPress(key.clone()), Inhibit(false))
+            return (Msg::PressingKey(key.clone()), Inhibit(false))
         );
 
         let settings = gtk::Settings::get_default().unwrap();
@@ -226,13 +226,13 @@ impl Widget for Window {
         connect!(
             menu@MenuMsg::NewRequest,
             relm,
-            Msg::CreateRequest
+            Msg::CreatingRequest
         );
 
         connect!(
-            menu@MenuMsg::ToggleRequest(id, active),
+            menu@MenuMsg::TogglingRequest(id, active),
             relm,
-            Msg::ToggleRequest(id, active)
+            Msg::TogglingRequest(id, active)
         );
 
         connect!(
@@ -247,14 +247,14 @@ impl Widget for Window {
         let editor = editor_box.add_widget::<RequestEditor, _>(relm, ());
         let help_box = editor_box.add_widget::<HelpBox, _>(relm, ());
         connect!(
-            editor@EditorMsg::Save(id, ref template),
+            editor@EditorMsg::Saving(id, ref template),
             relm,
             Msg::RequestTemplateChanged(id, template.to_owned())
         );
         connect!(
-            editor@EditorMsg::Execute(ref template),
+            editor@EditorMsg::Executing(ref template),
             relm,
-            Msg::ExecuteRequestTemplate(template.to_owned())
+            Msg::ExecutingRequestTemplate(template.to_owned())
         );
         let envs = model.environments().to_vec();
         let env_editor = editor_box.add_widget::<EnvironEditor, _>(relm, envs);
@@ -272,19 +272,19 @@ impl Widget for Window {
         );
 
         connect!(
-            env_editor@EnvironMsg::CreateEnvironment(ref name),
+            env_editor@EnvironMsg::CreatingEnvironment(ref name),
             relm,
-            Msg::CreateEnvironment(name.to_owned())
+            Msg::CreatingEnvironment(name.to_owned())
         );
 
         connect!(
-            env_editor@EnvironMsg::Save(id, ref env),
+            env_editor@EnvironMsg::Saving(id, ref env),
             relm,
-            Msg::SaveEnvironment(id, env.clone())
+            Msg::SavingEnvironment(id, env.clone())
         );
 
         if model.environments().len() == 0 {
-            relm.stream().emit(Msg::CreateEnvironment("Dev".to_owned()));
+            relm.stream().emit(Msg::CreatingEnvironment("Dev".to_owned()));
         }
 
         main_box.add(&editor_box);
