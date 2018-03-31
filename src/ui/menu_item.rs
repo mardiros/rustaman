@@ -31,6 +31,7 @@ pub enum Msg {
     SetActive(bool),
     EntryKeyPress(gdk::EventKey),
     RenamingRequest,
+    FilteringName(String),
 }
 
 pub struct MenuItem {
@@ -97,6 +98,17 @@ impl Update for MenuItem {
                 }
             }
 
+            Msg::FilteringName(filter) => {
+                // don't filter new entry
+                if self.entry.is_visible() {
+                    return;
+                }
+                if self.model.name().contains(filter.as_str()) {
+                    self.displaybox.show()
+                } else {
+                    self.displaybox.hide()
+                }
+            }
             _ => {}
         }
     }

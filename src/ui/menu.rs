@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::slice::Iter;
 
+use gdk;
+use gdk::enums::key;
 use gtk::{self, IconSize, Orientation};
 use gtk::prelude::*;
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
@@ -27,6 +29,7 @@ pub enum Msg {
     TogglingRequest(usize, bool),
     RequestNameChanged(usize, String),
     RequestingFilteringMenu,
+    SearchEntryPressingKey(gdk::EventKey),
 }
 
 pub struct Menu {
@@ -98,6 +101,22 @@ impl Update for Menu {
                 info!("Requesting filter in menu");
                 self.search.grab_focus();
             }
+            Msg::SearchEntryPressingKey(key) => {
+                let keyval = key.get_keyval();
+                let name = match keyval {
+                    key::Escape => {
+                        self.search.set_text("");
+                        "".to_owned()
+                    }
+                    _ => self.search.get_text().unwrap().to_owned(),
+                };
+
+                for menuitem in self.items.values_mut() {
+                    menuitem
+                        .stream()
+                        .emit(MenuItemMsg::FilteringName(name.to_owned()))
+                }
+            }
             _ => {}
         }
     }
@@ -130,6 +149,14 @@ impl Widget for Menu {
 
         let search = gtk::SearchEntry::new();
         hbox.add(&search);
+
+        connect!(
+            relm,
+            search,
+            connect_key_press_event(_, key),
+            return (Msg::SearchEntryPressingKey(key.clone()), Inhibit(false))
+        );
+
         vbox.add(&hbox);
 
         let items = HashMap::new();
