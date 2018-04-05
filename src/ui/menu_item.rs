@@ -27,10 +27,11 @@ impl Model {
 #[derive(Msg)]
 pub enum Msg {
     TogglingRequest(usize, bool),
-    RequestNameChanged(usize, String),
     SetActive(bool),
     EntryKeyPress(gdk::EventKey),
     RenamingRequest,
+    Renaming(usize, String),
+    Deleting(usize),
     FilteringName(String),
 }
 
@@ -82,7 +83,7 @@ impl Update for MenuItem {
                             self.displaybox.show();
                             self.relm
                                 .stream()
-                                .emit(Msg::RequestNameChanged(self.model.id(), name.to_owned()))
+                                .emit(Msg::Renaming(self.model.id(), name.to_owned()))
                         }
                     }
                     key::Escape => {
@@ -92,7 +93,7 @@ impl Update for MenuItem {
                         self.displaybox.show();
                         self.relm
                             .stream()
-                            .emit(Msg::RequestNameChanged(self.model.id(), name.to_owned()))
+                            .emit(Msg::Renaming(self.model.id(), name.to_owned()))
                     }
                     _ => {}
                 }
@@ -163,7 +164,9 @@ impl Widget for MenuItem {
         displaybox.add(&combo_btn);
         hbox.add(&displaybox);
 
+        let model_id = model.id();
         connect!(relm, rename, connect_activate(_), Msg::RenamingRequest);
+        connect!(relm, delete, connect_activate(_), Msg::Deleting(model_id));
 
         let model_id = model.id();
         connect!(

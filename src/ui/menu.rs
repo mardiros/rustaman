@@ -27,7 +27,9 @@ pub enum Msg {
     CreatingRequest(Request),
     RenamingRequest(usize),
     TogglingRequest(usize, bool),
-    RequestNameChanged(usize, String),
+    Renaming(usize, String),
+    Deleting(usize),
+    Deleted(usize),
     RequestingFilteringMenu,
     SearchEntryPressingKey(gdk::EventKey),
 }
@@ -66,14 +68,27 @@ impl Update for Menu {
                     Msg::TogglingRequest(id, active)
                 );
                 connect!(
-                    item@MenuItemMsg::RequestNameChanged(id, ref name),
+                    item@MenuItemMsg::Renaming(id, ref name),
                     self.relm,
-                    Msg::RequestNameChanged(id, name.to_owned())
+                    Msg::Renaming(id, name.to_owned())
                 );
+                connect!(
+                    item@MenuItemMsg::Deleting(id),
+                    self.relm,
+                    Msg::Deleting(id)
+                );
+
                 if !req_active {
                     item.stream().emit(MenuItemMsg::SetActive(true));
                 }
                 self.items.insert(id, item);
+            }
+
+            Msg::Deleted(id) => {
+                let item = self.items.remove(&id);
+                if item.is_some() {
+                    self.vbox.remove_widget::<MenuItem>(item.unwrap());
+                }
             }
             Msg::TogglingRequest(id, active) => {
                 info!("Toggle request in menu {} {}", id, active);
@@ -161,7 +176,9 @@ impl Widget for Menu {
 
         let items = HashMap::new();
         for request in model.requests_iter() {
-            relm.stream().emit(Msg::CreatingRequest(request.clone()));
+            if request.active() {
+                relm.stream().emit(Msg::CreatingRequest(request.clone()));
+            }
         }
         vbox.show_all();
         Menu {

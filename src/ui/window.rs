@@ -16,7 +16,8 @@ use super::helpbox::{HelpBox, Msg as HelpBoxMsg};
 pub enum Msg {
     CreatingRequest,
     TogglingRequest(usize, bool),
-    RequestNameChanged(usize, String),
+    Deleting(usize),
+    Renaming(usize, String),
     RequestTemplateChanged(usize, Template),
     ExecutingRequestTemplate(Template),
     ExecutingCurrentRequestTemplate,
@@ -105,8 +106,20 @@ impl Update for Window {
                     self.model.current = 0;
                 }
             }
-            Msg::RequestNameChanged(id, name) => {
+            Msg::Renaming(id, name) => {
                 self.model.workspace.set_request_name(id, name.as_str());
+            }
+            Msg::Deleting(id) => {
+                info!("Deleting template {}", id);
+                self.model.workspace.delete_request(id);
+
+                if self.model.current == id {
+                    self.request_editor.stream().emit(EditorMsg::Hiding);
+                    self.help_box.stream().emit(HelpBoxMsg::Showing);
+                    self.model.current = 0;
+                }
+
+                self.menu.stream().emit(MenuMsg::Deleted(id));
             }
             Msg::RequestTemplateChanged(id, template) => {
                 info!("Save Template Changes {} {}", id, template);
@@ -241,10 +254,17 @@ impl Widget for Window {
         );
 
         connect!(
-            menu@MenuMsg::RequestNameChanged(id, ref name),
+            menu@MenuMsg::Renaming(id, ref name),
             relm,
-            Msg::RequestNameChanged(id, name.to_owned())
+            Msg::Renaming(id, name.to_owned())
         );
+
+        connect!(
+            menu@MenuMsg::Deleting(id),
+            relm,
+            Msg::Deleting(id)
+        );
+
         hbox.show_all();
 
         let main_box = gtk::Box::new(Orientation::Horizontal, 0);

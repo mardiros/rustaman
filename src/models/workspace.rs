@@ -46,6 +46,10 @@ impl Request {
         self.status = Status::Active;
     }
 
+    pub fn soft_delete(&mut self) {
+        self.status = Status::Deleted;
+    }
+
     pub fn template(&self) -> &str {
         self.template.as_str()
     }
@@ -169,6 +173,16 @@ impl Workspace {
             if request.id() == id {
                 request.activate();
                 request.set_name(name);
+                break;
+            }
+        }
+        self.safe_sync();
+    }
+
+    pub fn delete_request(&mut self, id: usize) {
+        for request in self.payload.requests.iter_mut() {
+            if request.id() == id {
+                request.soft_delete();
                 break;
             }
         }

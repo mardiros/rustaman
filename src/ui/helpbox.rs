@@ -9,7 +9,7 @@ pub enum Msg {
 }
 
 pub struct HelpBox {
-    hbox: gtk::Box,
+    vbox: gtk::Box,
 }
 
 impl Update for HelpBox {
@@ -24,10 +24,10 @@ impl Update for HelpBox {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::Showing => {
-                self.hbox.show();
+                self.vbox.show();
             }
             Msg::Hiding => {
-                self.hbox.hide();
+                self.vbox.hide();
             }
         }
     }
@@ -37,20 +37,35 @@ impl Widget for HelpBox {
     type Root = gtk::Box;
 
     fn root(&self) -> Self::Root {
-        self.hbox.clone()
+        self.vbox.clone()
     }
 
     fn view(_relm: &Relm<Self>, _model: ()) -> Self {
         info!("Creating Help Box widget");
-        let hbox = gtk::Box::new(Orientation::Vertical, 0);
-        hbox.set_hexpand(true);
-        hbox.set_vexpand(true);
-        hbox.set_valign(Align::Center);
+        let vbox = gtk::Box::new(Orientation::Vertical, 0);
+        vbox.set_hexpand(true);
+        vbox.set_vexpand(true);
+        vbox.set_valign(Align::Center);
 
-        let label = gtk::Label::new("CTRL+n new request");
-        label.set_justify(Justification::Center);
-        hbox.add(&label);
-        hbox.show_all();
-        HelpBox { hbox: hbox }
+        fn create_label(vbox: &gtk::Box, shortcut: &str, title: &str) {
+            let hbox = gtk::Box::new(Orientation::Horizontal, 50);
+            let label = gtk::Label::new(shortcut);
+            label.set_justify(Justification::Right);
+            label.set_hexpand(true);
+            hbox.add(&label);
+            let label = gtk::Label::new(title);
+            label.set_justify(Justification::Left);
+            label.set_hexpand(true);
+            hbox.add(&label);
+            hbox.set_hexpand(true);
+            vbox.add(&hbox);
+        }
+
+        create_label(&vbox, "CTRL+N", "new request");
+        create_label(&vbox, "CTRL+P", "search request");
+        create_label(&vbox, "CTRL+Enter", "Execute request");
+
+        vbox.show_all();
+        HelpBox { vbox: vbox }
     }
 }
