@@ -1,7 +1,9 @@
 mod workspace;
 mod template;
 mod environment;
+mod status;
 
-pub use self::workspace::{Request, Requests, Status, Workspace};
+pub use self::status::Status;
+pub use self::workspace::{Request, Requests, Workspace};
 pub use self::template::{RequestRunner, Template};
-pub use self::environment::Environment;
+pub use self::environment::{Environment, Environments};

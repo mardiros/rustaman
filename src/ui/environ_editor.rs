@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::vec::Vec;
+use std::slice::Iter;
 
 use gdk;
 use gdk::enums::key;
@@ -11,33 +12,16 @@ use relm::{Relm, Update, Widget};
 use handlebars::Handlebars;
 use serde_yaml;
 
-use super::super::models::Environment;
+use super::super::models::{Environment, Environments};
 
 pub struct Model {
-    current: usize,
-    environments: Vec<Environment>,
+    current: u32,
+    environments: Environments,
 }
 
 impl Model {
-    pub fn environments(&self) -> &[Environment] {
-        self.environments.as_slice()
-    }
-
-    pub fn set_environment_payload(&mut self, id: usize, payload: &str) {
-        for (idx, env) in self.environments.iter_mut().enumerate() {
-            if idx == id {
-                env.set_payload(payload);
-                break;
-            }
-        }
-    }
-
-    pub fn push_environment(&mut self, environment: &Environment) {
-        self.environments.push(environment.clone());
-    }
-
-    pub fn delete_environment(&mut self, id: usize) {
-        self.environments.remove(id);
+    pub fn environments_iter(&self) -> Iter<Environment> {
+        return self.environments.iter();
     }
 }
 
@@ -46,7 +30,7 @@ pub enum Msg {
     CompilingTemplate(String),
     TemplateCompiled(String),
     TemplateCompilationFailed(String),
-    Saving(usize, Environment),
+    SavingEnvironment(usize, String),
     NewEntryPressingKey(gdk::EventKey),
     RequestingNewEnvironment,
     CreatingNewTabPageButton,
@@ -54,11 +38,13 @@ pub enum Msg {
     AppendingEnvironment(Environment),
     EnvironmentCreated(Environment),
     TogglingEnvironment(u32),
+    DeletingEnvironment(usize),
+    EnvironmentDeleted(usize),
 }
 
 pub struct EnvironEditor {
     notebook: gtk::Notebook,
-    environ_sources: HashMap<u32, (String, SourceView)>,
+    environ_sources: HashMap<u32, (usize, String, SourceView)>,
     relm: Relm<EnvironEditor>,
     plus_tab: (gtk::Box, gtk::Box),
     entry_tab: (gtk::Box, gtk::Box),
@@ -67,15 +53,21 @@ pub struct EnvironEditor {
 }
 
 impl EnvironEditor {
-    fn get_text(&self) -> Option<String> {
-        let current = self.model.current as u32;
+    fn get_text(&self, index: u32) -> Option<String> {
         info!("{:?}", self.environ_sources);
-        let &(_, ref environ_source) = self.environ_sources.get(&current).unwrap();
+        let &(_, _, ref environ_source) = self.environ_sources
+            .get(&index)
+            .expect("Should be a valid tab page index");
 
         let buffer = environ_source.get_buffer().unwrap();
         let start_iter = buffer.get_start_iter();
         let end_iter = buffer.get_end_iter();
         buffer.get_text(&start_iter, &end_iter, true)
+    }
+
+    fn get_current_text(&self) -> Option<String> {
+        let current = self.model.current;
+        self.get_text(current)
     }
 }
 
@@ -86,7 +78,7 @@ impl Update for EnvironEditor {
 
     fn model(_: &Relm<Self>, environments: Vec<Environment>) -> Model {
         Model {
-            current: 0,
+            current: 0u32,
             environments: environments,
         }
     }
@@ -94,7 +86,7 @@ impl Update for EnvironEditor {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::CompilingTemplate(template) => {
-                let payload = match self.get_text() {
+                let payload = match self.get_current_text() {
                     Some(data) => data,
                     None => "".to_owned(),
                 };
@@ -107,12 +99,12 @@ impl Update for EnvironEditor {
                 match res {
                     Ok(rendered) => {
                         debug!("Rendered: {}", rendered);
-                        let id = self.model.current;
-                        self.model.set_environment_payload(id, payload.as_str());
+                        let index = self.model.current;
+                        let &(id, _, _) = self.environ_sources
+                            .get(&index)
+                            .expect("Should be a valid tab page index");
                         self.relm.stream().emit(Msg::TemplateCompiled(rendered));
-                        self.relm
-                            .stream()
-                            .emit(Msg::Saving(id, self.model.environments()[id].to_owned()));
+                        self.relm.stream().emit(Msg::SavingEnvironment(id, payload));
                     }
                     Err(err) => {
                         let err = format!("{:?}", err);
@@ -123,7 +115,7 @@ impl Update for EnvironEditor {
                 }
             }
             Msg::RequestingNewEnvironment => {
-                info!("Detach mentPlus");
+                info!("Detach Plus");
                 self.notebook.detach_tab(&self.plus_tab.1);
                 info!("Attach Entry");
                 let _index = self.notebook
@@ -149,6 +141,7 @@ impl Update for EnvironEditor {
                 }
             }
             Msg::AppendingEnvironment(env) => {
+                let env_id = env.id();
                 let name = env.name();
                 let payload = env.payload();
                 let tab = {
@@ -161,6 +154,12 @@ impl Update for EnvironEditor {
                     button.set_relief(ReliefStyle::None);
                     button.set_focus_on_click(false);
                     button.add(&close_image);
+                    connect!(
+                        self.relm,
+                        button,
+                        connect_clicked(_),
+                        Msg::DeletingEnvironment(env_id)
+                    );
 
                     tab.pack_start(&label, false, false, 0);
                     tab.pack_start(&button, false, false, 0);
@@ -204,35 +203,57 @@ impl Update for EnvironEditor {
                 let index = self.notebook.append_page(&tab_page, Some(&tab));
                 info!("Insert Environ id {} for {}", index, name);
                 self.environ_sources
-                    .insert(index, (name.to_owned(), tab_page));
-
-                self.model.push_environment(&env);
+                    .insert(index, (env.id(), name.to_owned(), tab_page));
             }
 
             Msg::EnvironmentCreated(env) => {
                 info!("Detach Add new tab");
-                self.notebook.detach_tab(&self.entry_tab.0);
+                self.notebook.detach_tab(&self.entry_tab.1);
+                info!("Append env");
                 self.update(Msg::AppendingEnvironment(env));
                 info!("Attach Add new tab");
-                let _index = self.notebook
+                let index = self.notebook
                     .append_page(&self.plus_tab.1, Some(&self.plus_tab.0));
+                info!("new tab index: {}", index);
             }
 
             Msg::TogglingEnvironment(id) => {
                 info!("Switch to page {}", id);
+                /*
                 {
                     let env = self.model.environments();
                     if self.model.current < env.len() {
-                        self.relm.stream().emit(Msg::Saving(self.model.current, {
-                            env[self.model.current].to_owned()
-                        }));
+                        self.relm.stream().emit(Msg::SavingEnvironment(
+                            self.model.current,
+                            self.model.get_current_text(),
+                            ));
                     }
                 }
-                self.model.current = id as usize;
+                */
+                self.model.current = id;
             }
             Msg::CreatingNewTabPageButton => {
                 let _index = self.notebook
                     .append_page(&self.plus_tab.1, Some(&self.plus_tab.0));
+            }
+            Msg::EnvironmentDeleted(id) => {
+                fn get_index(
+                    id: usize,
+                    envs: &HashMap<u32, (usize, String, SourceView)>,
+                ) -> Option<u32> {
+                    for (index, &(env_id, _, _)) in envs.iter() {
+                        if id == env_id {
+                            return Some(*index);
+                        }
+                    }
+                    None
+                }
+                let index = get_index(id, &self.environ_sources)
+                    .expect("Invalid index while deleting environment");
+                let (_, _, tab) = self.environ_sources
+                    .remove(&index)
+                    .expect("Invalid index while deleting environment");
+                self.notebook.detach_tab(&tab);
             }
             _ => {}
         }
@@ -257,12 +278,12 @@ impl Widget for EnvironEditor {
         notebook.set_margin_top(10);
         notebook.set_margin_left(10);
 
-        if model.environments().len() > 0 {
-            for env in model.environments() {
+        for env in model.environments_iter() {
+            if env.active() {
                 relm.stream().emit(Msg::AppendingEnvironment(env.clone()));
             }
         }
-        let environ_sources: HashMap<u32, (String, SourceView)> = HashMap::new();
+        let environ_sources: HashMap<u32, (usize, String, SourceView)> = HashMap::new();
 
         let plus_tab = gtk::Box::new(Orientation::Horizontal, 0);
         let btn = gtk::Button::new();

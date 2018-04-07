@@ -23,7 +23,8 @@ pub enum Msg {
     ExecutingCurrentRequestTemplate,
     TemplateCompiled(String),
     TemplateCompilationFailed(String),
-    SavingEnvironment(usize, Environment),
+    SavingEnvironment(usize, String),
+    DeletingEnvironment(usize),
     CreatingEnvironment(String),
     Quitting,
     PressingKey(gdk::EventKey),
@@ -160,9 +161,18 @@ impl Update for Window {
                     .stream()
                     .emit(EnvironMsg::EnvironmentCreated(env.clone()))
             }
-            Msg::SavingEnvironment(id, env) => {
-                info!("Save environment {} {:?}", id, env);
-                self.model.workspace.set_environ(id, &env);
+            Msg::SavingEnvironment(id, payload) => {
+                info!("Save environment {} {:?}", id, payload);
+                self.model
+                    .workspace
+                    .set_environ_payload(id, payload.as_str());
+            }
+            Msg::DeletingEnvironment(id) => {
+                info!("Deleting environment {}", id);
+                self.model.workspace.delete_environment(id);
+                self.env_editor
+                    .stream()
+                    .emit(EnvironMsg::EnvironmentDeleted(id))
             }
             Msg::Quitting => gtk::main_quit(),
             Msg::PressingKey(key) => {
@@ -303,9 +313,15 @@ impl Widget for Window {
         );
 
         connect!(
-            env_editor@EnvironMsg::Saving(id, ref env),
+            env_editor@EnvironMsg::SavingEnvironment(id, ref env),
             relm,
             Msg::SavingEnvironment(id, env.clone())
+        );
+
+        connect!(
+            env_editor@EnvironMsg::DeletingEnvironment(id),
+            relm,
+            Msg::DeletingEnvironment(id)
         );
 
         if model.environments().len() == 0 {

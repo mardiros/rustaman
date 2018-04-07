@@ -3,20 +3,14 @@ use std::vec::Vec;
 use serde_json;
 
 use super::super::helpers::path;
+use super::status::Status;
 use super::template::Template;
-use super::environment::Environment;
+use super::environment::{Environment, Environments};
 
 const DEFAULT_TEMPLATE: &'static str =
     "# List resources\n\nGET http://localhost/\nUser-Agent: Rustaman\n";
 
 const DEFAULT_ENVIRONMENT: &'static str = "%YAML 1.2\n---\n";
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Status {
-    BeingCreated,
-    Active,
-    Deleted,
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Request {
@@ -64,7 +58,7 @@ pub type Requests = Vec<Request>;
 pub struct Payload {
     name: String,
     requests: Requests,
-    environments: Vec<Environment>,
+    environments: Environments,
 }
 
 #[derive(Debug, Clone)]
@@ -80,7 +74,7 @@ impl Workspace {
             payload: Payload {
                 name: "Rustaman".to_owned(),
                 requests: vec![],
-                environments: vec![Environment::new("Dev", DEFAULT_ENVIRONMENT)],
+                environments: vec![Environment::new(1, "Dev", DEFAULT_ENVIRONMENT)],
             },
         }
     }
@@ -205,16 +199,31 @@ impl Workspace {
     }
 
     pub fn create_environment(&mut self, name: &str) -> &Environment {
-        let env = Environment::new(name, DEFAULT_ENVIRONMENT);
+        let id = match self.payload.environments.last() {
+            None => 1,
+            Some(env) => env.id() + 1,
+        };
+        let env = Environment::new(id, name, DEFAULT_ENVIRONMENT);
         self.payload.environments.push(env);
-        self.payload.environments.last().unwrap()
+        let env = self.payload.environments.last().unwrap();
+        self.safe_sync();
+        env
     }
 
-    pub fn set_environ(&mut self, id: usize, environment: &Environment) {
+    pub fn set_environ_payload(&mut self, id: usize, payload: &str) {
         for (idx, env) in self.payload.environments.iter_mut().enumerate() {
             if idx == id {
-                // env.set_name(environment.name());
-                env.set_payload(environment.payload());
+                env.set_payload(payload);
+                break;
+            }
+        }
+        self.safe_sync();
+    }
+
+    pub fn delete_environment(&mut self, id: usize) {
+        for environment in self.payload.environments.iter_mut() {
+            if environment.id() == id {
+                environment.soft_delete();
                 break;
             }
         }
