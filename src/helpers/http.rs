@@ -1,9 +1,16 @@
 use std::vec::Vec;
 
 use regex::Regex;
-
+use serde_json;
 use cabot::request::Request;
 use cabot::{Client, RequestBuilder};
+
+
+fn prettify_js(payload: &str) -> String {
+    let obj: serde_json::Value = serde_json::from_str(payload).unwrap();
+    serde_json::to_string_pretty(&obj).unwrap()
+}
+
 
 pub struct RequestRunner {
     client: Client,
@@ -117,8 +124,12 @@ impl RequestRunner {
                         result.push_str(resp.status_line());
                         result.push('\n');
 
+                        let mut is_json = false;
                         for line in resp.headers().iter() {
                             result.push_str("< ");
+                            if line.starts_with("Content-Type: application/json") {
+                                is_json = true;
+                            }
                             result.push_str(line);
                             result.push('\n');
                         }
@@ -127,7 +138,15 @@ impl RequestRunner {
                             Ok(response) => {
                                 if response.len() > 0 {
                                     result.push_str("\n");
-                                    result.push_str(response.as_str());
+                                    if is_json {
+                                        info!("Response format is json, prettifying result");
+                                        let response = prettify_js(response.as_str());
+                                        result.push_str(response.as_str());
+                                    }
+                                    else {
+                                        info!("Unreconize Content-Type, do not prettify");
+                                        result.push_str(response.as_str());
+                                    }
                                 }
                             }
                             Err(err) => {
