@@ -122,11 +122,19 @@ impl RequestRunner {
                             result.push_str(line);
                             result.push('\n');
                         }
-                        let body = resp.body_as_string()
-                            .unwrap_or_else(|err| format!("{:?}", err));
-                        if body.len() > 0 {
-                            result.push_str("<\n");
-                            result.push_str(body.as_str());
+                        let body = resp.body_as_string();
+                        match body {
+                            Ok(response) => {
+                                if response.len() > 0 {
+                                    result.push_str("\n");
+                                    result.push_str(response.as_str());
+                                }
+                            }
+                            Err(err) => {
+                                result.push_str("\n\nError while loading response body:\n");
+                                let err = format!("{:?}", err);
+                                result.push_str(err.as_str());
+                            }
                         }
                     }
                 }
