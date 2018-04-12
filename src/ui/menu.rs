@@ -129,7 +129,7 @@ impl Update for Menu {
                 for menuitem in self.items.values_mut() {
                     menuitem
                         .stream()
-                        .emit(MenuItemMsg::FilteringName(name.to_owned()))
+                        .emit(MenuItemMsg::FilteringName(name.to_lowercase()))
                 }
             }
             _ => {}

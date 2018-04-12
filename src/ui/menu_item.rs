@@ -104,7 +104,7 @@ impl Update for MenuItem {
                 if self.entry.is_visible() {
                     return;
                 }
-                if self.model.name().contains(filter.as_str()) {
+                if self.model.name().to_lowercase().contains(filter.as_str()) {
                     self.displaybox.show()
                 } else {
                     self.displaybox.hide()
