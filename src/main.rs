@@ -26,9 +26,9 @@ extern crate regex;
 
 extern crate handlebars;
 
-mod ui;
-mod models;
 mod helpers;
+mod models;
+mod ui;
 
 use relm::Widget;
 use ui::window::Window;

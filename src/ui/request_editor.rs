@@ -2,14 +2,14 @@ use std::vec::Vec;
 
 use gdk;
 use gdk::enums::key;
-use gtk::{self, Orientation};
 use gtk::prelude::*;
-use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
-use sourceview::prelude::*;
+use gtk::{self, Orientation};
 use relm::{Relm, Update, Widget};
+use sourceview::prelude::*;
+use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
 
-use super::super::models::Template;
 use super::super::helpers::path;
+use super::super::models::Template;
 
 pub struct Model {
     template: Template,

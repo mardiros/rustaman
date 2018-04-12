@@ -3,12 +3,12 @@ use std::slice::Iter;
 
 use gdk;
 use gdk::enums::key;
-use gtk::{self, IconSize, Orientation};
 use gtk::prelude::*;
+use gtk::{self, IconSize, Orientation};
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
-use super::menu_item::{MenuItem, Msg as MenuItemMsg};
 use super::super::models::{Request, Requests};
+use super::menu_item::{MenuItem, Msg as MenuItemMsg};
 
 pub struct Model {
     requests: Requests,

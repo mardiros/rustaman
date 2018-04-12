@@ -3,9 +3,9 @@ use std::vec::Vec;
 use serde_json;
 
 use super::super::helpers::path;
+use super::environment::{Environment, Environments};
 use super::status::Status;
 use super::template::Template;
-use super::environment::{Environment, Environments};
 
 const DEFAULT_TEMPLATE: &'static str =
     "# List resources\n\nGET http://localhost/\nUser-Agent: Rustaman\n";

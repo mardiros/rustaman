@@ -1,16 +1,16 @@
 use std::collections::HashMap;
-use std::vec::Vec;
 use std::slice::Iter;
+use std::vec::Vec;
 
 use gdk;
 use gdk::enums::key;
-use gtk::{self, IconSize, Orientation, ReliefStyle};
 use gtk::prelude::*;
-use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
-use sourceview::prelude::*;
-use relm::{Relm, Update, Widget};
+use gtk::{self, IconSize, Orientation, ReliefStyle};
 use handlebars::Handlebars;
+use relm::{Relm, Update, Widget};
 use serde_yaml;
+use sourceview::prelude::*;
+use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
 
 use super::super::models::{Environment, Environments};
 

@@ -1,5 +1,5 @@
-use gtk::{self, Align, Justification, Orientation};
 use gtk::prelude::*;
+use gtk::{self, Align, Justification, Orientation};
 use relm::{Relm, Update, Widget};
 
 #[derive(Msg)]
