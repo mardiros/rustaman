@@ -211,9 +211,9 @@ impl Workspace {
     }
 
     pub fn set_environ_payload(&mut self, id: usize, payload: &str) {
-        for (idx, env) in self.payload.environments.iter_mut().enumerate() {
-            if idx == id {
-                env.set_payload(payload);
+        for environment in self.payload.environments.iter_mut() {
+            if environment.id() == id {
+                environment.set_payload(payload);
                 break;
             }
         }
