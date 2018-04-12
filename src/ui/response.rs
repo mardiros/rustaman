@@ -1,7 +1,9 @@
-use gtk::{self, Orientation};
 use gtk::prelude::*;
-use sourceview::View as SourceView;
+use gtk::{self, Orientation};
 use relm::{Relm, Update, Widget};
+use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
+
+use super::super::helpers::path;
 
 #[derive(Msg)]
 pub enum Msg {
@@ -45,7 +47,22 @@ impl Widget for Response {
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
         hbox.set_hexpand(true);
         hbox.set_vexpand(true);
-        let response_view = SourceView::new();
+
+        let langmngr = LanguageManager::get_default().unwrap();
+        let mut search_path = langmngr.get_search_path();
+        search_path.push(path::config_dir().unwrap().to_str().unwrap().to_owned());
+        let path2: Vec<&str> = search_path.iter().map(|path| path.as_str()).collect();
+        langmngr.set_search_path(path2.as_slice());
+        let lang = langmngr.get_language("rustaman-response").unwrap();
+
+        let stylemngr = StyleSchemeManager::get_default().unwrap();
+        let style = stylemngr.get_scheme("solarized-dark").unwrap();
+
+        let buffer = sourceview::Buffer::new_with_language(&lang);
+        buffer.set_style_scheme(&style);
+
+        let response_view = SourceView::new_with_buffer(&buffer);
+
         response_view.set_editable(false);
         response_view.set_margin_left(10);
         response_view.set_hexpand(true);
