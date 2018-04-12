@@ -28,12 +28,7 @@
   I'd be able to add support for displaying an error for trailing commas.
 -->
 <language id="rustaman-json" name="RUSTAMAN_JSON" version="2.0" _section="Other">
-  <metadata>
-    <property name="mimetypes">application/json</property>
-    <property name="globs">*.json;*.geojson;*.topojson</property>
-    <property name="line-comment-start">#</property>
-  </metadata>
-
+ 
   <styles>
     <style id="http-method"        _name="HTTP Method"           map-to="def:keyword"/>
     <style id="url"                _name="URL"                   map-to="def:builtin"/>
