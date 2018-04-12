@@ -30,12 +30,23 @@ mod helpers;
 mod models;
 mod ui;
 
+use std::vec::Vec;
+
 use relm::Widget;
 use ui::window::Window;
+use sourceview::prelude::*;
 
 fn main() {
     pretty_env_logger::init();
     info!("Starting Rustaman");
+
+    let langmngr = sourceview::LanguageManager::get_default().unwrap();
+    let mut search_path = langmngr.get_search_path();
+    search_path.push(helpers::path::config_dir().unwrap().to_str().unwrap().to_owned());
+    let path2: Vec<&str> = search_path.iter().map(|path| path.as_str()).collect();
+    info!("Set search path: {:?}", path2);
+    langmngr.set_search_path(path2.as_slice());
+
     let workspace = models::Workspace::default();
     Window::run(workspace).unwrap();
 }

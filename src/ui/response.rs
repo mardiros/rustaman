@@ -3,8 +3,6 @@ use gtk::{self, Orientation};
 use relm::{Relm, Update, Widget};
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 
-use super::super::helpers::path;
-
 #[derive(Msg)]
 pub enum Msg {
     RequestExecuted(String),
@@ -49,10 +47,6 @@ impl Widget for Response {
         hbox.set_vexpand(true);
 
         let langmngr = LanguageManager::get_default().unwrap();
-        let mut search_path = langmngr.get_search_path();
-        search_path.push(path::config_dir().unwrap().to_str().unwrap().to_owned());
-        let path2: Vec<&str> = search_path.iter().map(|path| path.as_str()).collect();
-        langmngr.set_search_path(path2.as_slice());
         let lang = langmngr.get_language("rustaman-response").unwrap();
 
         let stylemngr = StyleSchemeManager::get_default().unwrap();
