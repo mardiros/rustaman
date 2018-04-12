@@ -1,16 +1,16 @@
 use gdk;
 use gdk::enums::key;
-use gtk::{self, Orientation, WindowPosition, WindowType};
-use gtk::prelude::*;
 use glib::translate::ToGlib;
+use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
-use super::super::models::{Environment, Request, RequestRunner, Template, Workspace};
+use super::super::helpers::http::RequestRunner;
+use super::super::models::{Environment, Request, Template, Workspace};
+use super::environ_editor::{EnvironEditor, Msg as EnvironMsg};
+use super::helpbox::{HelpBox, Msg as HelpBoxMsg};
 use super::menu::{Menu, Msg as MenuMsg};
 use super::request_editor::{Msg as EditorMsg, RequestEditor};
 use super::response::{Msg as ResponseMsg, Response};
-use super::environ_editor::{EnvironEditor, Msg as EnvironMsg};
-use super::helpbox::{HelpBox, Msg as HelpBoxMsg};
 
 #[derive(Msg)]
 pub enum Msg {

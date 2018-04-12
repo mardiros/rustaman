@@ -1,8 +1,8 @@
-use std::io::{self, ErrorKind};
-use std::io::prelude::*;
-use std::fs::{self, File};
-use std::os::unix::fs::OpenOptionsExt;
 use std::fs::OpenOptions;
+use std::fs::{self, File};
+use std::io::prelude::*;
+use std::io::{self, ErrorKind};
+use std::os::unix::fs::OpenOptionsExt;
 
 use std::env;
 use std::path::PathBuf;
