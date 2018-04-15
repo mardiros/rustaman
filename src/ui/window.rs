@@ -247,7 +247,7 @@ impl Widget for Window {
         hbox.set_hexpand(true);
         hbox.set_vexpand(true);
         let requests = model.requests().to_vec();
-        let menu = hbox.add_widget::<Menu, _>(relm, requests);
+        let menu = hbox.add_widget::<Menu>(requests);
         window.set_hexpand(true);
         window.set_vexpand(true);
 
@@ -279,8 +279,8 @@ impl Widget for Window {
 
         let main_box = gtk::Box::new(Orientation::Horizontal, 0);
         let editor_box = gtk::Box::new(Orientation::Vertical, 0);
-        let editor = editor_box.add_widget::<RequestEditor, _>(relm, ());
-        let help_box = editor_box.add_widget::<HelpBox, _>(relm, ());
+        let editor = editor_box.add_widget::<RequestEditor>(());
+        let help_box = editor_box.add_widget::<HelpBox>(());
         connect!(
             editor@EditorMsg::Saving(id, ref template),
             relm,
@@ -292,7 +292,7 @@ impl Widget for Window {
             Msg::ExecutingRequestTemplate(template.to_owned())
         );
         let envs = model.environments().to_vec();
-        let env_editor = editor_box.add_widget::<EnvironEditor, _>(relm, envs);
+        let env_editor = editor_box.add_widget::<EnvironEditor>(envs);
 
         connect!(
             env_editor@EnvironMsg::TemplateCompiled(ref result),
@@ -331,7 +331,7 @@ impl Widget for Window {
 
         main_box.add(&editor_box);
 
-        let response = main_box.add_widget::<Response, _>(relm, ());
+        let response = main_box.add_widget::<Response>(());
         editor_box.show();
         main_box.show();
         hbox.add(&main_box);

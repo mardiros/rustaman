@@ -60,7 +60,7 @@ impl Update for Menu {
                 info!("Create request in menu {:?}", request);
                 let id = request.id();
                 let req_active = request.active();
-                let item = self.vbox.add_widget::<MenuItem, _>(&self.relm, request);
+                let item = self.vbox.add_widget::<MenuItem>(request);
 
                 connect!(
                     item@MenuItemMsg::TogglingRequest(id, active),

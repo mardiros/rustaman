@@ -114,7 +114,7 @@ impl Workspace {
         info!("Writing workspace in file {}", self.filepath());
         let filecontent = serde_json::to_string_pretty(&self.payload);
         let filecontent =
-            filecontent.expect("Unable to save workspace, cannot serilizing it to json");
+            filecontent.expect("Unable to save workspace, cannot serializing it to json");
         path::write_file(self.filepath(), filecontent.as_str())?;
         Ok(())
     }
