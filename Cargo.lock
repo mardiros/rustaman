@@ -689,16 +689,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "relm-attributes"
-version = "0.14.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "quote 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "relm-gen-widget 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "relm-core"
 version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -775,7 +765,6 @@ dependencies = [
  "pretty_env_logger 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "relm-attributes 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-derive 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1154,7 +1143,6 @@ dependencies = [
 "checksum regex 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)" = "aec3f58d903a7d2a9dc2bf0e41a746f4530e0cab6b615494e058f67a3ef947fb"
 "checksum regex-syntax 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)" = "bd90079345f4a4c3409214734ae220fd773c6f2e8a543d07370c6c1c369cfbfb"
 "checksum relm 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "1f16b0308eecf2cc88c864e79ac67188327228e7429c4bf288ffa07ec15dc034"
-"checksum relm-attributes 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "c4084ccb1d0e01db1bff82ad95b24b0e04e2176d9cad38111b31211ad73feeeb"
 "checksum relm-core 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "e7f2718d4837b262cb359f6c5d4ab6f83f83fd6c4388350fe45c996e17d472bf"
 "checksum relm-derive 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "70974b03e3ea80b645285dc87077ed55b712ab587535c97c154d971bebd7ddc9"
 "checksum relm-derive-common 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "5d9c81e9e029f5220aea929905936ef80a5f586e2c7ba186ba00b75e7ae96786"

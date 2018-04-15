@@ -10,7 +10,6 @@ gtk = "^0.4.0"
 gdk = "^0.8.0"
 
 relm = "^0.14.4"
-relm-attributes =  "^0.14.4"
 relm-derive =  "^0.14.4"
 
 sourceview = "^0.4.0"
