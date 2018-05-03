@@ -57,7 +57,7 @@ impl Widget for Response {
 
         let response_view = SourceView::new_with_buffer(&buffer);
 
-        // response_view.set_editable(false);
+        response_view.set_editable(false);
         response_view.set_margin_left(10);
         response_view.set_hexpand(true);
         response_view.set_vexpand(true);
