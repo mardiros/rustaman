@@ -1,7 +1,7 @@
 use gdk;
 use gdk::enums::key;
 use glib::translate::ToGlib;
-use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
+use gtk::{self, Orientation, WindowPosition, WindowType, prelude::*};
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
 use super::super::helpers::http::RequestRunner;

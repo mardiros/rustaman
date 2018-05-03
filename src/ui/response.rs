@@ -1,7 +1,7 @@
 use gtk::prelude::*;
 use gtk::{self, Orientation};
 use relm::{Relm, Update, Widget};
-use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
+use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView, prelude::*};
 
 #[derive(Msg)]
 pub enum Msg {
