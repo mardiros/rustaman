@@ -94,7 +94,29 @@ impl Update for EnvironEditor {
                 let mut reg = Handlebars::new();
                 debug!("Template: {}", template.as_str());
                 debug!("Params: {}", payload.as_str());
-                let params: serde_yaml::Value = serde_yaml::from_str(&payload).unwrap();
+                let params: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(&payload);
+                if let Err(err) = params {
+                    let location = err.location();
+                    let err = match location {
+                        Some(loc) => format!(
+                            r#"! Parameters is not yaml valid:
+! Line: {}
+! Column: {}
+
+! {}"#,
+                            loc.line(),
+                            loc.column(),
+                            err
+                        ),
+                        None => format!("! Parameters is not yaml valid:\n\n{:?}", err),
+                    };
+                    self.relm
+                        .stream()
+                        .emit(Msg::TemplateCompilationFailed(err.to_owned()));
+                    return;
+                }
+
+                let params = params.unwrap();
                 let res = reg.render_template(template.as_str(), &params);
                 match res {
                     Ok(rendered) => {
@@ -107,7 +129,7 @@ impl Update for EnvironEditor {
                         self.relm.stream().emit(Msg::SavingEnvironment(id, payload));
                     }
                     Err(err) => {
-                        let err = format!("{:?}", err);
+                        let err = format!("! Error while running query\n\n! {:?}", err);
                         self.relm
                             .stream()
                             .emit(Msg::TemplateCompilationFailed(err.to_owned()));

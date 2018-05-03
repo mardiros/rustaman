@@ -4,6 +4,7 @@
   <styles>
     <style id="http-query"           _name="HTTP Query"            map-to="def:preprocessor"/>
     <style id="http-response-header" _name="HTTP Response Header"  map-to="def:builtin"/>
+    <style id="error"                _name="Error"                 map-to="def:error"/>
   </styles>
 
   <definitions>
@@ -18,10 +19,16 @@
         <end>$</end>
     </context>
 
+    <context id="error" style-ref="error">
+        <start>! </start>
+        <end>$</end>
+    </context>
+
     <context id="rustaman-response" class="no-spell-check">
       <include>
         <context ref="http-query"/>
         <context ref="http-response-header"/>
+        <context ref="error"/>
         <context ref="json:object"/>
         <context ref="json:array"/>
       </include>
