@@ -43,6 +43,7 @@ pub enum Msg {
 }
 
 pub struct EnvironEditor {
+    main_box: gtk::Box,
     notebook: gtk::Notebook,
     environ_sources: HashMap<u32, (usize, String, SourceView)>,
     relm: Relm<EnvironEditor>,
@@ -283,10 +284,10 @@ impl Update for EnvironEditor {
 }
 
 impl Widget for EnvironEditor {
-    type Root = gtk::Notebook;
+    type Root = gtk::Box;
 
     fn root(&self) -> Self::Root {
-        self.notebook.clone()
+        self.main_box.clone()
     }
 
     fn init_view(&mut self) {}
@@ -294,11 +295,8 @@ impl Widget for EnvironEditor {
     fn view(relm: &Relm<Self>, model: Model) -> Self {
         info!("Creating Environ widget");
 
+        let main_box = gtk::Box::new(Orientation::Horizontal, 0);
         let notebook = gtk::Notebook::new();
-        notebook.set_hexpand(false);
-        notebook.set_vexpand(true);
-        notebook.set_margin_top(10);
-        notebook.set_margin_left(10);
 
         for env in model.environments_iter() {
             if env.active() {
@@ -332,10 +330,10 @@ impl Widget for EnvironEditor {
             return (Msg::NewEntryPressingKey(key.clone()), Inhibit(false),)
         );
 
-        notebook.set_hexpand(true);
-        notebook.set_vexpand(false);
-        notebook.set_size_request(800, 480);
-        notebook.show();
+        main_box.pack_start(&notebook, true, true, 5);
+        main_box.set_margin_top(5);
+        main_box.set_margin_bottom(5);
+        main_box.show_all();
 
         connect!(
             relm,
@@ -347,6 +345,7 @@ impl Widget for EnvironEditor {
         relm.stream().emit(Msg::CreatingNewTabPageButton);
         EnvironEditor {
             relm: relm.clone(),
+            main_box: main_box,
             notebook: notebook,
             environ_sources: environ_sources,
             plus_tab: (plus_tab, plus_box),

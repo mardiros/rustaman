@@ -43,8 +43,6 @@ impl Widget for Response {
     fn view(_relm: &Relm<Self>, _model: ()) -> Self {
         info!("Creating Response widget");
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
-        hbox.set_hexpand(true);
-        hbox.set_vexpand(true);
 
         let langmngr = LanguageManager::get_default().unwrap();
         let lang = langmngr.get_language("rustaman-response").unwrap();
@@ -58,15 +56,12 @@ impl Widget for Response {
         let response_view = SourceView::new_with_buffer(&buffer);
 
         response_view.set_editable(false);
-        response_view.set_margin_left(10);
         response_view.set_hexpand(true);
         response_view.set_vexpand(true);
+        hbox.set_margin_top(5);
+        hbox.set_margin_bottom(5);
+        hbox.pack_start(&response_view, true, true, 5);
 
-        hbox.add(&response_view);
-
-        hbox.set_vexpand(true);
-        hbox.set_hexpand(false);
-        hbox.set_size_request(800, 0);
         hbox.show_all();
         Response {
             hbox: hbox,

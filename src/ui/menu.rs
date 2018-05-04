@@ -147,10 +147,12 @@ impl Widget for Menu {
     fn view(relm: &Relm<Self>, model: Model) -> Self {
         info!("Creating menu widget");
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
-        vbox.set_hexpand(false);
+        vbox.set_hexpand(true);
 
-        let hbox = gtk::Box::new(Orientation::Horizontal, 0);
-        hbox.set_hexpand(true);
+        let searchbox = gtk::Box::new(Orientation::Horizontal, 0);
+        searchbox.set_hexpand(true);
+        searchbox.set_margin_top(5);
+        searchbox.set_margin_bottom(10);
 
         //let add_request = gtk::Button::new_with_label("+");
         let add_request = gtk::Button::new();
@@ -158,12 +160,12 @@ impl Widget for Menu {
         add_request.set_relief(gtk::ReliefStyle::Half);
         add_request.set_focus_on_click(false);
         add_request.add(&add_image);
-        hbox.add(&add_request);
+        searchbox.add(&add_request);
 
         connect!(relm, add_request, connect_clicked(_), Msg::NewRequest);
 
         let search = gtk::SearchEntry::new();
-        hbox.add(&search);
+        searchbox.pack_start(&search, true, true, 0);
 
         connect!(
             relm,
@@ -172,7 +174,7 @@ impl Widget for Menu {
             return (Msg::SearchEntryPressingKey(key.clone()), Inhibit(false))
         );
 
-        vbox.add(&hbox);
+        vbox.add(&searchbox);
 
         let items = HashMap::new();
         for request in model.requests_iter() {

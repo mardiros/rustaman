@@ -217,7 +217,6 @@ impl Widget for Window {
         let window = gtk::Window::new(WindowType::Toplevel);
 
         window.set_title(model.name());
-        window.set_border_width(10);
         window.set_position(WindowPosition::Center);
         window.set_default_size(1280, 1024);
 
@@ -243,13 +242,17 @@ impl Widget for Window {
             "",
         );
 
+        let paned = gtk::Paned::new(Orientation::Horizontal);
+
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
+        let menubox = gtk::Box::new(Orientation::Horizontal, 0);
         hbox.set_hexpand(true);
         hbox.set_vexpand(true);
         let requests = model.requests().to_vec();
-        let menu = hbox.add_widget::<Menu>(requests);
+        let menu = menubox.add_widget::<Menu>(requests);
         window.set_hexpand(true);
         window.set_vexpand(true);
+        hbox.pack_start(&menubox, true, true, 5);
 
         connect!(
             menu@MenuMsg::NewRequest,
@@ -276,11 +279,16 @@ impl Widget for Window {
         );
 
         hbox.show_all();
+        paned.pack1(&hbox, false, false);
 
-        let main_box = gtk::Box::new(Orientation::Horizontal, 0);
-        let editor_box = gtk::Box::new(Orientation::Vertical, 0);
-        let editor = editor_box.add_widget::<RequestEditor>(());
-        let help_box = editor_box.add_widget::<HelpBox>(());
+        let main_box = gtk::Paned::new(Orientation::Horizontal);
+        let editor_box = gtk::Paned::new(Orientation::Vertical);
+        let req_editor_box = gtk::Box::new(Orientation::Vertical, 0);
+        req_editor_box.set_hexpand(true);
+        req_editor_box.set_vexpand(true);
+        let editor = req_editor_box.add_widget::<RequestEditor>(());
+        let help_box = req_editor_box.add_widget::<HelpBox>(());
+        req_editor_box.show();
         connect!(
             editor@EditorMsg::Saving(id, ref template),
             relm,
@@ -292,7 +300,12 @@ impl Widget for Window {
             Msg::ExecutingRequestTemplate(template.to_owned())
         );
         let envs = model.environments().to_vec();
-        let env_editor = editor_box.add_widget::<EnvironEditor>(envs);
+        let env_editor_box = gtk::Box::new(Orientation::Vertical, 0);
+        let env_editor = env_editor_box.add_widget::<EnvironEditor>(envs);
+        env_editor_box.show_all();
+        editor_box.pack1(&req_editor_box, false, false);
+        editor_box.pack2(&env_editor_box, false, false);
+        editor_box.show();
 
         connect!(
             env_editor@EnvironMsg::TemplateCompiled(ref result),
@@ -329,13 +342,20 @@ impl Widget for Window {
                 .emit(Msg::CreatingEnvironment("Dev".to_owned()));
         }
 
-        main_box.add(&editor_box);
+        main_box.pack1(&editor_box, false, false);
 
-        let response = main_box.add_widget::<Response>(());
+        let response_box = gtk::Box::new(Orientation::Horizontal, 0);
+        response_box.set_hexpand(true);
+        response_box.set_vexpand(true);
+        let response = response_box.add_widget::<Response>(());
+        response_box.show();
+        main_box.add2(&response_box);
+
         editor_box.show();
         main_box.show();
-        hbox.add(&main_box);
-        window.add(&hbox);
+        paned.pack2(&main_box, true, true);
+        paned.show();
+        window.add(&paned);
         window.show();
         Window {
             model: model,
