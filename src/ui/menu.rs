@@ -36,6 +36,7 @@ pub enum Msg {
 
 pub struct Menu {
     relm: Relm<Menu>,
+    main_box: gtk::Box,
     vbox: gtk::Box,
     search: gtk::SearchEntry,
     items: HashMap<usize, Component<MenuItem>>,
@@ -141,11 +142,12 @@ impl Widget for Menu {
     type Root = gtk::Box;
 
     fn root(&self) -> Self::Root {
-        self.vbox.clone()
+        self.main_box.clone()
     }
 
     fn view(relm: &Relm<Self>, model: Model) -> Self {
         info!("Creating menu widget");
+        let main_box = gtk::Box::new(Orientation::Vertical, 0);
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
         vbox.set_hexpand(true);
 
@@ -174,7 +176,7 @@ impl Widget for Menu {
             return (Msg::SearchEntryPressingKey(key.clone()), Inhibit(false))
         );
 
-        vbox.add(&searchbox);
+        main_box.add(&searchbox);
 
         let items = HashMap::new();
         for request in model.requests_iter() {
@@ -182,8 +184,16 @@ impl Widget for Menu {
                 relm.stream().emit(Msg::CreatingRequest(request.clone()));
             }
         }
-        vbox.show_all();
+
+        let scrollbox = gtk::ScrolledWindow::new(None, None);
+        scrollbox.add(&vbox);
+        scrollbox.show();
+
+        main_box.pack_start(&scrollbox, true, true, 0);
+        main_box.show_all();
+
         Menu {
+            main_box: main_box,
             vbox: vbox,
             relm: relm.clone(),
             search: search,

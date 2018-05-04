@@ -279,7 +279,7 @@ impl Widget for Window {
         );
 
         hbox.show_all();
-        paned.pack1(&hbox, false, false);
+        paned.pack1(&hbox, true, true);
 
         let main_box = gtk::Paned::new(Orientation::Horizontal);
         let editor_box = gtk::Paned::new(Orientation::Vertical);
