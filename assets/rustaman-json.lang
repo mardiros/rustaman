@@ -30,21 +30,23 @@
 <language id="rustaman-json" name="RUSTAMAN_JSON" version="2.0" _section="Other">
  
   <styles>
-    <style id="http-method"        _name="HTTP Method"           map-to="def:keyword"/>
-    <style id="url"                _name="URL"                   map-to="def:builtin"/>
-    <style id="http-version"       _name="HTTP Version"          map-to="def:comment"/>
-    <style id="http-header-name"   _name="HTTP Header Name"      map-to="def:special-char"/>
-    <style id="http-header-sep"    _name="HTTP Header separator" map-to="def:comment"/>
-    <style id="http-header-value"  _name="HTTP Header Value"     map-to="def:preprocessor"/>
-    <style id="template-var"       _name="Template var"          map-to="def:preprocessor"/>
-    <style id="keyname"            _name="Key"                   map-to="def:constant"/>
-    <style id="special-char"       _name="Escaped Character"     map-to="js:escape"/>
-    <style id="string"             _name="String"                map-to="js:string"/>
-    <style id="null-value"         _name="Null Value"            map-to="js:null-value"/>
-    <style id="boolean"            _name="Boolean Value"         map-to="js:boolean"/>
-    <style id="error"              _name="Error"                 map-to="def:error"/>
-    <style id="decimal"            _name="Decimal"               map-to="def:decimal"/>
-    <style id="float"              _name="Floating point number" map-to="def:floating-point"/>
+    <style id="http-method"        _name="HTTP Method"               map-to="def:special-char"/>
+    <style id="url"                _name="URL"                       map-to="def:builtin"/>
+    <style id="http-get-key"       _name="HTTP GET Parameter Name"   map-to="def:comment"/>
+    <style id="http-get-val"       _name="HTTP GET Parameter Value"  map-to="js:string"/>
+    <style id="http-version"       _name="HTTP Version"              map-to="def:comment"/>
+    <style id="http-header-name"   _name="HTTP Header Name"          map-to="def:special-char"/>
+    <style id="http-header-sep"    _name="HTTP Header separator"     map-to="def:comment"/>
+    <style id="http-header-value"  _name="HTTP Header Value"         map-to="js:string"/>
+    <style id="template-var"       _name="Template var"              map-to="def:preprocessor"/>
+    <style id="keyname"            _name="Key"                       map-to="def:special-char"/>
+    <style id="special-char"       _name="Escaped Character"         map-to="js:escape"/>
+    <style id="string"             _name="String"                    map-to="js:string"/>
+    <style id="null-value"         _name="Null Value"                map-to="js:null-value"/>
+    <style id="boolean"            _name="Boolean Value"             map-to="js:boolean"/>
+    <style id="error"              _name="Error"                     map-to="def:error"/>
+    <style id="decimal"            _name="Decimal"                   map-to="def:decimal"/>
+    <style id="float"              _name="Floating point number"     map-to="def:floating-point"/>
   </styles>
 
   <definitions>
@@ -55,18 +57,36 @@
     <define-regex id="http-header-value-re">\S*</define-regex>
     <define-regex id="template-var-re">\{\{[^\}]+\}\}</define-regex>
 
-    <context id="http-query">
-      <match extended="true">
-        (\%{http-method-re})
-        \s+
-        (\%{url}|\%{template-var-re}[\S]*)
-        \s*
-        (HTTP/[0-9.]+)*
-      </match>
+    <context id="http-query" end-at-line-end="true" style-ref="http-method">
+      <start>\%{http-method-re}</start>
+      <end>$</end>
       <include>
-        <context sub-pattern="1" style-ref="http-method"/>
-        <context sub-pattern="2" style-ref="url"/>
-        <context sub-pattern="3" style-ref="http-version"/>
+        <context once-only="true" style-ref="url">
+          <start> </start>
+          <end>[\? ]</end>
+          <include>
+            <context ref="template-var"/>
+          </include>
+        </context>
+        <context style-ref="http-get-key">
+          <start>\?|&amp;</start>
+          <end>[= ]</end>
+          <include>
+            <context ref="template-var"/>
+          </include>
+        </context>
+        <context style-ref="http-get-val">
+          <start>=</start>
+          <end>[&amp; ]</end>
+          <include>
+            <context ref="template-var"/>
+          </include>
+        </context>
+        
+        <context once-only="true" style-ref="http-version">
+          <start>HTTP/[0-9.]+</start>
+          <end>$</end>
+        </context>
       </include>
     </context>
 
@@ -113,6 +133,7 @@
           <end>,|\s*(?=})</end>
           <include>
             <context sub-pattern="0" where="start" style-ref="keyname"/>
+            <context ref="json-value"/>
           </include>
         </context>
         <context ref="catchall"/>
@@ -123,6 +144,7 @@
       <start>"</start>
       <end>"</end>
       <include>
+        <context ref="template-var"/>
         <context id="valid-escape" style-ref="special-char">
           <match>\\(?:[ntrfb"\\/]|u[0-9a-fA-F]{4})</match>
         </context>
@@ -162,12 +184,12 @@
 
     <context id="rustaman-json" class="no-spell-check">
       <include>
-        <context ref="template-var"/>
         <context ref="def:shell-like-comment"/>
         <context ref="http-query"/>
         <context ref="http-header"/>
         <context ref="json-object"/>
         <context ref="json-array"/>
+        <context ref="template-var"/>
       </include>
     </context>
   </definitions>
