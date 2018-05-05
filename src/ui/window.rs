@@ -1,6 +1,5 @@
 use gdk;
 use gdk::enums::key;
-use glib::translate::ToGlib;
 use gtk::{self, Orientation, WindowPosition, WindowType, prelude::*};
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
@@ -235,12 +234,11 @@ impl Widget for Window {
         );
 
         let settings = gtk::Settings::get_default().unwrap();
+
         let use_dark = true;
-        settings.set_long_property(
-            "gtk-application-prefer-dark-theme",
-            use_dark.to_glib() as _,
-            "",
-        );
+        settings
+            .set_property("gtk-application-prefer-dark-theme", &use_dark)
+            .expect("Should switch to dark theme");
 
         let paned = gtk::Paned::new(Orientation::Horizontal);
 
@@ -356,6 +354,7 @@ impl Widget for Window {
         paned.pack2(&main_box, true, true);
         paned.show();
         window.add(&paned);
+
         window.show();
         Window {
             model: model,

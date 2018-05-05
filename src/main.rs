@@ -3,7 +3,6 @@ extern crate log;
 extern crate pretty_env_logger;
 
 extern crate gdk;
-extern crate glib;
 extern crate gtk;
 extern crate sourceview;
 
