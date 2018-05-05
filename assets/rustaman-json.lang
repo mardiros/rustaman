@@ -50,8 +50,6 @@
   <definitions>
 
     <define-regex id="http-method-re">^(GET|POST|PUT|PATCH|HEAD|OPTIONS)</define-regex>
-    <define-regex id="http-header-name-re">^[A-Za-z0-9-]*</define-regex>
-    <define-regex id="http-header-value-re">\S*</define-regex>
     <define-regex id="template-var-re">\{\{[^\}]+\}\}</define-regex>
 
     <context id="http-query"  once-only="true" style-ref="http-method">
