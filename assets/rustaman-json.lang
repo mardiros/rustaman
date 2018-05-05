@@ -32,8 +32,7 @@
   <styles>
     <style id="http-method"        _name="HTTP Method"               map-to="def:special-char"/>
     <style id="url"                _name="URL"                       map-to="def:builtin"/>
-    <style id="http-get-key"       _name="HTTP GET Parameter Name"   map-to="def:comment"/>
-    <style id="http-get-val"       _name="HTTP GET Parameter Value"  map-to="js:string"/>
+    <style id="url-querystring"    _name="URL Query String"          map-to="def:special-char"/>
     <style id="http-version"       _name="HTTP Version"              map-to="def:comment"/>
     <style id="http-header-name"   _name="HTTP Header Name"          map-to="def:special-char"/>
     <style id="http-header-sep"    _name="HTTP Header separator"     map-to="def:comment"/>
@@ -52,7 +51,6 @@
   <definitions>
 
     <define-regex id="http-method-re">GET|POST|PUT|PATCH|HEAD|OPTIONS</define-regex>
-    <define-regex id="url">https?://[^\s]+</define-regex>
     <define-regex id="http-header-name-re">^[A-Za-z0-9-]*</define-regex>
     <define-regex id="http-header-value-re">\S*</define-regex>
     <define-regex id="template-var-re">\{\{[^\}]+\}\}</define-regex>
@@ -63,23 +61,18 @@
       <include>
         <context once-only="true" style-ref="url">
           <start> </start>
-          <end>[\? ]</end>
+          <end> </end>
           <include>
             <context ref="template-var"/>
-          </include>
-        </context>
-        <context style-ref="http-get-key">
-          <start>\?|&amp;</start>
-          <end>[= ]</end>
-          <include>
-            <context ref="template-var"/>
-          </include>
-        </context>
-        <context style-ref="http-get-val">
-          <start>=</start>
-          <end>[&amp; ]</end>
-          <include>
-            <context ref="template-var"/>
+
+            <context style-ref="url-querystring" once-only="true" end-parent="true">
+              <start>\?</start>
+              <end> </end>
+              <include>
+                <context ref="template-var"/>
+              </include>
+            </context>
+
           </include>
         </context>
         
