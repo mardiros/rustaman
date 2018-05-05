@@ -13,7 +13,7 @@ pub struct Environment {
 impl Environment {
     pub fn new(id: usize, name: &str, payload: &str) -> Self {
         Environment {
-            id: id,
+            id,
             name: name.to_owned(),
             payload: payload.to_owned(),
             status: Status::Active,

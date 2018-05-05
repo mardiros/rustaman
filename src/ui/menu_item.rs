@@ -182,12 +182,12 @@ impl Widget for MenuItem {
         }
         hbox.show();
         MenuItem {
-            hbox: hbox,
-            displaybox: displaybox,
-            toggle_btn: toggle_btn,
-            entry: entry,
+            hbox,
+            displaybox,
+            toggle_btn,
+            entry,
+            model,
             relm: relm.clone(),
-            model: model,
         }
     }
 }

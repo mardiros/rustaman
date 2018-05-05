@@ -144,10 +144,10 @@ impl Widget for RequestEditor {
         hbox.set_margin_bottom(5);
 
         RequestEditor {
-            hbox: hbox,
-            request_source: request_source,
+            hbox,
+            request_source,
+            model,
             relm: relm.clone(),
-            model: model,
         }
     }
 }

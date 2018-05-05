@@ -68,6 +68,6 @@ impl Widget for HelpBox {
 
         vbox.set_size_request(920, 500);
         vbox.show_all();
-        HelpBox { vbox: vbox }
+        HelpBox { vbox }
     }
 }

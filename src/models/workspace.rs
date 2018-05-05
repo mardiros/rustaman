@@ -7,10 +7,9 @@ use super::environment::{Environment, Environments};
 use super::status::Status;
 use super::template::Template;
 
-const DEFAULT_TEMPLATE: &'static str =
-    "# List resources\n\nGET http://localhost/\nUser-Agent: Rustaman\n";
+const DEFAULT_TEMPLATE: &str = "# List resources\n\nGET http://localhost/\nUser-Agent: Rustaman\n";
 
-const DEFAULT_ENVIRONMENT: &'static str = "%YAML 1.2\n---\n";
+const DEFAULT_ENVIRONMENT: &str = "%YAML 1.2\n---\n";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Request {
@@ -85,8 +84,8 @@ impl Workspace {
         debug!("File {} readed ({} chars.)", filepath, cfg.len());
         let payload = serde_json::from_str::<Payload>(cfg.as_str()).unwrap(); // crash if the format
         let workspace = Workspace {
+            payload,
             filepath: filepath.to_owned(),
-            payload: payload,
         };
         info!("Workspace loaded from file {}", filepath);
         Ok(workspace)
@@ -153,7 +152,7 @@ impl Workspace {
         };
         let name = format!("Req #{}", id);
         let request = Request {
-            id: id,
+            id,
             name: name.to_owned(),
             status: Status::BeingCreated,
             template: DEFAULT_TEMPLATE.to_owned(),
@@ -163,7 +162,7 @@ impl Workspace {
     }
 
     pub fn set_request_name(&mut self, id: usize, name: &str) {
-        for request in self.payload.requests.iter_mut() {
+        for request in &mut self.payload.requests {
             if request.id() == id {
                 request.activate();
                 request.set_name(name);
@@ -174,7 +173,7 @@ impl Workspace {
     }
 
     pub fn delete_request(&mut self, id: usize) {
-        for request in self.payload.requests.iter_mut() {
+        for request in &mut self.payload.requests {
             if request.id() == id {
                 request.soft_delete();
                 break;
@@ -184,7 +183,7 @@ impl Workspace {
     }
 
     pub fn set_request_template(&mut self, id: usize, template: &str) {
-        for request in self.payload.requests.iter_mut() {
+        for request in &mut self.payload.requests {
             if request.id() == id {
                 request.activate();
                 request.set_template(template);
@@ -211,7 +210,7 @@ impl Workspace {
     }
 
     pub fn set_environ_payload(&mut self, id: usize, payload: &str) {
-        for environment in self.payload.environments.iter_mut() {
+        for environment in &mut self.payload.environments {
             if environment.id() == id {
                 environment.set_payload(payload);
                 break;
@@ -221,7 +220,7 @@ impl Workspace {
     }
 
     pub fn delete_environment(&mut self, id: usize) {
-        for environment in self.payload.environments.iter_mut() {
+        for environment in &mut self.payload.environments {
             if environment.id() == id {
                 environment.soft_delete();
                 break;

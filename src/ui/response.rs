@@ -64,8 +64,8 @@ impl Widget for Response {
 
         hbox.show_all();
         Response {
-            hbox: hbox,
-            response_view: response_view,
+            hbox,
+            response_view,
             //relm: relm.clone(),
         }
     }

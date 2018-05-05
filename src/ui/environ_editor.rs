@@ -21,7 +21,7 @@ pub struct Model {
 
 impl Model {
     pub fn environments_iter(&self) -> Iter<Environment> {
-        return self.environments.iter();
+        self.environments.iter()
     }
 }
 
@@ -80,7 +80,7 @@ impl Update for EnvironEditor {
     fn model(_: &Relm<Self>, environments: Vec<Environment>) -> Model {
         Model {
             current: 0u32,
-            environments: environments,
+            environments,
         }
     }
 
@@ -344,14 +344,14 @@ impl Widget for EnvironEditor {
 
         relm.stream().emit(Msg::CreatingNewTabPageButton);
         EnvironEditor {
-            relm: relm.clone(),
-            main_box: main_box,
-            notebook: notebook,
-            environ_sources: environ_sources,
+            main_box,
+            notebook,
+            environ_sources,
+            entry,
+            model,
             plus_tab: (plus_tab, plus_box),
             entry_tab: (entry_tab, entry_box),
-            entry: entry,
-            model: model,
+            relm: relm.clone(),
         }
     }
 }

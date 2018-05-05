@@ -74,7 +74,7 @@ impl Update for Window {
 
     fn model(_: &Relm<Self>, workspace: Workspace) -> Model {
         Model {
-            workspace: workspace,
+            workspace,
             current: 0,
         }
     }
@@ -188,17 +188,10 @@ impl Update for Window {
                             .emit(Msg::ExecutingCurrentRequestTemplate),
                         _ => {}
                     }
-                } else {
-                    match keyval {
-                        key::F2 => {
-                            if self.model.current > 0 {
-                                self.menu
-                                    .stream()
-                                    .emit(MenuMsg::RenamingRequest(self.model.current))
-                            }
-                        }
-                        _ => {}
-                    }
+                } else if keyval == key::F2 && self.model.current > 0 {
+                    self.menu
+                        .stream()
+                        .emit(MenuMsg::RenamingRequest(self.model.current))
                 }
             }
         }
@@ -284,16 +277,16 @@ impl Widget for Window {
         let req_editor_box = gtk::Box::new(Orientation::Vertical, 0);
         req_editor_box.set_hexpand(true);
         req_editor_box.set_vexpand(true);
-        let editor = req_editor_box.add_widget::<RequestEditor>(());
+        let request_editor = req_editor_box.add_widget::<RequestEditor>(());
         let help_box = req_editor_box.add_widget::<HelpBox>(());
         req_editor_box.show();
         connect!(
-            editor@EditorMsg::Saving(id, ref template),
+            request_editor@EditorMsg::Saving(id, ref template),
             relm,
             Msg::RequestTemplateChanged(id, template.to_owned())
         );
         connect!(
-            editor@EditorMsg::Executing(ref template),
+            request_editor@EditorMsg::Executing(ref template),
             relm,
             Msg::ExecutingRequestTemplate(template.to_owned())
         );
@@ -335,7 +328,7 @@ impl Widget for Window {
             Msg::DeletingEnvironment(id)
         );
 
-        if model.environments().len() == 0 {
+        if model.environments().is_empty() {
             relm.stream()
                 .emit(Msg::CreatingEnvironment("Dev".to_owned()));
         }
@@ -357,13 +350,13 @@ impl Widget for Window {
 
         window.show();
         Window {
-            model: model,
-            menu: menu,
-            window: window,
-            request_editor: editor,
-            env_editor: env_editor,
-            help_box: help_box,
-            response: response,
+            model,
+            menu,
+            window,
+            request_editor,
+            env_editor,
+            help_box,
+            response,
             relm: relm.clone(),
             runner: RequestRunner::new(),
         }

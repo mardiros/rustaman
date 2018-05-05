@@ -30,7 +30,7 @@ impl RequestRunner {
                 break;
             }
             let unwrapped = line.unwrap();
-            if unwrapped.len() > 0 && !unwrapped.starts_with("#") {
+            if !unwrapped.is_empty() && !unwrapped.starts_with('#') {
                 break;
             }
             debug!("Ignoring comment {}", unwrapped);
@@ -62,7 +62,7 @@ impl RequestRunner {
             let line = lines.next();
             match line {
                 Some(unwrapped) => {
-                    if unwrapped.len() == 0 {
+                    if unwrapped.is_empty() {
                         break;
                     }
                     rb = rb.add_header(unwrapped);
@@ -79,7 +79,7 @@ impl RequestRunner {
             let line = lines.next();
             match line {
                 Some(unwrapped) => {
-                    if unwrapped.len() == 0 {
+                    if unwrapped.is_empty() {
                         break;
                     }
                     body.push_str(unwrapped);
@@ -123,7 +123,7 @@ impl RequestRunner {
                         result.push('\n');
 
                         let mut is_json = false;
-                        for line in resp.headers().iter() {
+                        for line in &resp.headers() {
                             result.push_str("< ");
                             if line.starts_with("Content-Type: application/json") {
                                 is_json = true;
@@ -134,7 +134,7 @@ impl RequestRunner {
                         let body = resp.body_as_string();
                         match body {
                             Ok(response) => {
-                                if response.len() > 0 {
+                                if !response.is_empty() {
                                     result.push_str("\n");
                                     if is_json {
                                         info!("Response format is json, prettifying result");

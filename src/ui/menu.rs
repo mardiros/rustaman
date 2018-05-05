@@ -17,7 +17,7 @@ pub struct Model {
 
 impl Model {
     pub fn requests_iter(&self) -> Iter<Request> {
-        return self.requests.iter();
+        self.requests.iter()
     }
 }
 
@@ -50,7 +50,7 @@ impl Update for Menu {
 
     fn model(_: &Relm<Self>, requests: Requests) -> Model {
         Model {
-            requests: requests,
+            requests,
             current: 0,
         }
     }
@@ -193,12 +193,12 @@ impl Widget for Menu {
         main_box.show_all();
 
         Menu {
-            main_box: main_box,
-            vbox: vbox,
+            main_box,
+            vbox,
+            search,
+            items,
+            model,
             relm: relm.clone(),
-            search: search,
-            items: items,
-            model: model,
         }
     }
 }
