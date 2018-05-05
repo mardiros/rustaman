@@ -94,7 +94,7 @@ impl Workspace {
 
     pub fn default() -> Self {
         let filepath =
-            path::workspace("rustaman.json").expect("Cannot build default workspace filename");
+            path::workspace("workspace.json").expect("Cannot build default workspace filename");
         match Workspace::from_file(filepath.to_str().unwrap()) {
             Ok(res) => res,
             Err(err) => {
