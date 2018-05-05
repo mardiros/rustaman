@@ -30,12 +30,11 @@
 <language id="rustaman-json" name="RUSTAMAN_JSON" version="2.0" _section="Other">
  
   <styles>
-    <style id="http-method"        _name="HTTP Method"               map-to="def:special-char"/>
+    <style id="http-method"        _name="HTTP Method"               map-to="def:type"/>
     <style id="url"                _name="URL"                       map-to="def:builtin"/>
-    <style id="url-querystring"    _name="URL Query String"          map-to="def:special-char"/>
+    <style id="url-querystring"    _name="URL Query String"          map-to="js:string"/>
     <style id="http-version"       _name="HTTP Version"              map-to="def:comment"/>
     <style id="http-header-name"   _name="HTTP Header Name"          map-to="def:special-char"/>
-    <style id="http-header-sep"    _name="HTTP Header separator"     map-to="def:comment"/>
     <style id="http-header-value"  _name="HTTP Header Value"         map-to="js:string"/>
     <style id="template-var"       _name="Template var"              map-to="def:preprocessor"/>
     <style id="keyname"            _name="Key"                       map-to="def:special-char"/>
@@ -50,14 +49,14 @@
 
   <definitions>
 
-    <define-regex id="http-method-re">GET|POST|PUT|PATCH|HEAD|OPTIONS</define-regex>
+    <define-regex id="http-method-re">^(GET|POST|PUT|PATCH|HEAD|OPTIONS)</define-regex>
     <define-regex id="http-header-name-re">^[A-Za-z0-9-]*</define-regex>
     <define-regex id="http-header-value-re">\S*</define-regex>
     <define-regex id="template-var-re">\{\{[^\}]+\}\}</define-regex>
 
-    <context id="http-query" end-at-line-end="true" style-ref="http-method">
+    <context id="http-query"  once-only="true" style-ref="http-method">
       <start>\%{http-method-re}</start>
-      <end>$</end>
+      <end>^$</end>
       <include>
         <context once-only="true" style-ref="url">
           <start> </start>
@@ -80,19 +79,21 @@
           <start>HTTP/[0-9.]+</start>
           <end>$</end>
         </context>
-      </include>
-    </context>
 
-    <context id="http-header">
-      <match extended="true">
-        (\%{http-header-name-re})
-        (:\s*)
-        (\%{http-header-value-re}|\%{template-var-re})
-      </match>
-      <include>
-        <context sub-pattern="1" style-ref="http-header-name"/>
-        <context sub-pattern="2" style-ref="http-header-sep"/>
-        <context sub-pattern="3" style-ref="http-header-value"/>
+        <context end-at-line-end="true" style-ref="http-header-name">
+          <start>^[^:]+:</start>
+          <end>$</end>
+          <include>
+            <context end-at-line-end="true" style-ref="http-header-value">
+              <start> </start>
+              <include>
+                <context ref="template-var"/>
+              </include>
+            </context>
+          </include>
+        </context>
+
+        <context ref="def:shell-like-comment"/>
       </include>
     </context>
 
@@ -179,7 +180,6 @@
       <include>
         <context ref="def:shell-like-comment"/>
         <context ref="http-query"/>
-        <context ref="http-header"/>
         <context ref="json-object"/>
         <context ref="json-array"/>
         <context ref="template-var"/>
