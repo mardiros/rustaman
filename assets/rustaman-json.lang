@@ -74,7 +74,7 @@
         </context>
         
         <context once-only="true" style-ref="http-version">
-          <start>HTTP/[0-9.]+</start>
+          <start>HTTP/[.0-9]+</start>
           <end>$</end>
         </context>
 
