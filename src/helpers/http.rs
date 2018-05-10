@@ -95,16 +95,19 @@ impl RequestRunner {
 
     pub fn run_request(&self, request: &str) -> String {
         let mut result = String::new();
-        for line in request.lines() {
-            result.push_str("> ");
-            result.push_str(line);
-            result.push('\n');
-        }
-        result.push('\n');
-        result.push('\n');
         let request = self.parse_request(request);
         match request {
             Ok(ref req) => {
+                let req_bytes = req.to_bytes();
+                let raw_req = String::from_utf8_lossy(req_bytes.as_slice());
+                for line in raw_req.lines() {
+                    result.push_str("> ");
+                    result.push_str(line);
+                    result.push('\n');
+                }
+                result.push('\n');
+                result.push('\n');
+
                 info!("Running the request");
                 let resp = self.client.execute(req);
                 match resp {
