@@ -37,7 +37,7 @@ impl RequestRunner {
             line = lines.next();
         }
         if line.is_none() {
-            return Err("No request found".to_owned());
+            return Err("! No request found".to_owned());
         }
 
         info!("Parsing First line {:?}", line);
@@ -51,7 +51,7 @@ impl RequestRunner {
                 verb_url_version[2],
             ),
             _ => {
-                return Err(format!("Parse error on line: {}", line.unwrap()).to_owned());
+                return Err(format!("! Parse error on line: {}", line.unwrap()).to_owned());
             }
         };
         let mut rb = RequestBuilder::new(url)
@@ -69,7 +69,7 @@ impl RequestRunner {
                 }
                 None => match rb.build() {
                     Ok(res) => return Ok(res),
-                    Err(err) => return Err(format!("{:?}", err)),
+                    Err(err) => return Err(format!("! {:?}", err)),
                 },
             }
         }
@@ -95,7 +95,7 @@ impl RequestRunner {
         rb = rb.set_body_as_str(body.as_str());
         match rb.build() {
             Ok(res) => Ok(res),
-            Err(err) => Err(format!("{:?}", err)),
+            Err(err) => Err(format!("! {:?}", err)),
         }
     }
 
