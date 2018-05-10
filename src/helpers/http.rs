@@ -79,15 +79,9 @@ impl RequestRunner {
             let line = lines.next();
             match line {
                 Some(unwrapped) => {
-                    if unwrapped.is_empty() {
-                        break;
-                    }
                     body.push_str(unwrapped);
                 }
-                None => match rb.build() {
-                    Ok(res) => return Ok(res),
-                    Err(err) => return Err(format!("{:?}", err)),
-                },
+                None => break
             }
         }
 
