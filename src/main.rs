@@ -35,6 +35,7 @@ use ui::window::Window;
 fn main() {
     pretty_env_logger::init();
     info!("Starting Rustaman");
+    gtk::init();
 
     let langmngr = sourceview::LanguageManager::get_default().unwrap();
     let mut search_path = langmngr.get_search_path();
