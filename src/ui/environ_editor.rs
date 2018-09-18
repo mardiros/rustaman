@@ -5,7 +5,7 @@ use std::vec::Vec;
 use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
-use gtk::{self, IconSize, Orientation, ReliefStyle};
+use gtk::{self, IconSize, Orientation, ScrollablePolicy, ReliefStyle, ScrolledWindow};
 use handlebars::Handlebars;
 use relm::{Relm, Update, Widget};
 use serde_yaml;
@@ -45,7 +45,7 @@ pub enum Msg {
 pub struct EnvironEditor {
     main_box: gtk::Box,
     notebook: gtk::Notebook,
-    environ_sources: HashMap<u32, (usize, String, SourceView)>,
+    environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView)>,
     relm: Relm<EnvironEditor>,
     plus_tab: (gtk::Box, gtk::Box),
     entry_tab: (gtk::Box, gtk::Box),
@@ -56,7 +56,7 @@ pub struct EnvironEditor {
 impl EnvironEditor {
     fn get_text(&self, index: u32) -> Option<String> {
         info!("{:?}", self.environ_sources);
-        let &(_, _, ref environ_source) = self.environ_sources
+        let &(_, _, _, ref environ_source) = self.environ_sources
             .get(&index)
             .expect("Should be a valid tab page index");
 
@@ -123,7 +123,7 @@ impl Update for EnvironEditor {
                     Ok(rendered) => {
                         debug!("Rendered: {}", rendered);
                         let index = self.model.current;
-                        let &(id, _, _) = self.environ_sources
+                        let &(id, _, _, _) = self.environ_sources
                             .get(&index)
                             .expect("Should be a valid tab page index");
                         self.relm.stream().emit(Msg::TemplateCompiled(rendered));
@@ -190,7 +190,7 @@ impl Update for EnvironEditor {
                     tab
                 };
 
-                let tab_page = {
+                let (tab_page, environ_source) = {
                     let langmngr = LanguageManager::get_default().unwrap();
                     let lang = langmngr.get_language("yaml").unwrap();
 
@@ -204,15 +204,23 @@ impl Update for EnvironEditor {
                     let environ_source = SourceView::new_with_buffer(&buffer);
                     environ_source.set_show_line_numbers(true);
 
+                    environ_source.set_hscroll_policy(ScrollablePolicy::Minimum);
+                    environ_source.set_vscroll_policy(ScrollablePolicy::Minimum);
                     environ_source.set_hexpand(true);
                     environ_source.set_vexpand(true);
                     environ_source.show();
-                    environ_source
+
+                    let tab_page = ScrolledWindow::new(None, None);
+                    tab_page.set_hexpand(true);
+                    tab_page.set_vexpand(true);
+                    tab_page.add(&environ_source);
+                    tab_page.show();
+                    (tab_page, environ_source)
                 };
 
                 connect!(
                     self.relm,
-                    tab_page,
+                    environ_source,
                     connect_key_press_event(_, key),
                     return Inhibit(
                         key.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
@@ -226,7 +234,7 @@ impl Update for EnvironEditor {
                 let index = self.notebook.append_page(&tab_page, Some(&tab));
                 info!("Insert Environ id {} for {}", index, name);
                 self.environ_sources
-                    .insert(index, (env.id(), name.to_owned(), tab_page));
+                    .insert(index, (env.id(), name.to_owned(), tab_page, environ_source));
             }
 
             Msg::EnvironmentCreated(env) => {
@@ -262,9 +270,9 @@ impl Update for EnvironEditor {
             Msg::EnvironmentDeleted(id) => {
                 fn get_index(
                     id: usize,
-                    envs: &HashMap<u32, (usize, String, SourceView)>,
+                    envs: &HashMap<u32, (usize, String, ScrolledWindow, SourceView)>,
                 ) -> Option<u32> {
-                    for (index, &(env_id, _, _)) in envs.iter() {
+                    for (index, &(env_id, _, _, _)) in envs.iter() {
                         if id == env_id {
                             return Some(*index);
                         }
@@ -273,7 +281,7 @@ impl Update for EnvironEditor {
                 }
                 let index = get_index(id, &self.environ_sources)
                     .expect("Invalid index while deleting environment");
-                let (_, _, tab) = self.environ_sources
+                let (_, _, tab, _) = self.environ_sources
                     .remove(&index)
                     .expect("Invalid index while deleting environment");
                 self.notebook.detach_tab(&tab);
@@ -303,7 +311,7 @@ impl Widget for EnvironEditor {
                 relm.stream().emit(Msg::AppendingEnvironment(env.clone()));
             }
         }
-        let environ_sources: HashMap<u32, (usize, String, SourceView)> = HashMap::new();
+        let environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView)> = HashMap::new();
 
         let plus_tab = gtk::Box::new(Orientation::Horizontal, 0);
         let btn = gtk::Button::new();

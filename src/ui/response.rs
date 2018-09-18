@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, Orientation};
+use gtk::{self, Orientation, ScrolledWindow};
 use relm::{Relm, Update, Widget};
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView, prelude::*};
 
@@ -54,13 +54,16 @@ impl Widget for Response {
         buffer.set_style_scheme(&style);
 
         let response_view = SourceView::new_with_buffer(&buffer);
-
-        response_view.set_editable(false);
         response_view.set_hexpand(true);
         response_view.set_vexpand(true);
+        response_view.set_editable(false);
+
+        let scrollview = ScrolledWindow::new(None, None);
+        scrollview.add(&response_view);
+
         hbox.set_margin_top(5);
         hbox.set_margin_bottom(5);
-        hbox.pack_start(&response_view, true, true, 5);
+        hbox.pack_start(&scrollview, true, true, 5);
 
         hbox.show_all();
         Response {

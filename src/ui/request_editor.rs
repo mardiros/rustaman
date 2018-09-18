@@ -1,7 +1,7 @@
 use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
-use gtk::{self, Orientation};
+use gtk::{self, Orientation, ScrolledWindow};
 use relm::{Relm, Update, Widget};
 use sourceview::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
@@ -126,6 +126,9 @@ impl Widget for RequestEditor {
         request_source.set_highlight_current_line(true);
         request_source.set_monospace(true);
 
+        let scrollview = ScrolledWindow::new(None, None);
+        scrollview.add(&request_source);
+
         connect!(
             relm,
             request_source,
@@ -139,7 +142,7 @@ impl Widget for RequestEditor {
             )
         );
 
-        hbox.pack_start(&request_source, true, true, 5);
+        hbox.pack_start(&scrollview, true, true, 5);
         hbox.set_margin_top(5);
         hbox.set_margin_bottom(5);
 
