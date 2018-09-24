@@ -5,7 +5,7 @@ use std::vec::Vec;
 use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
-use gtk::{self, IconSize, Orientation, ScrollablePolicy, ReliefStyle, ScrolledWindow};
+use gtk::{self, IconSize, Orientation, ReliefStyle, ScrolledWindow};
 use handlebars::Handlebars;
 use relm::{Relm, Update, Widget};
 use serde_yaml;
@@ -203,9 +203,6 @@ impl Update for EnvironEditor {
 
                     let environ_source = SourceView::new_with_buffer(&buffer);
                     environ_source.set_show_line_numbers(true);
-
-                    environ_source.set_hscroll_policy(ScrollablePolicy::Minimum);
-                    environ_source.set_vscroll_policy(ScrollablePolicy::Minimum);
                     environ_source.set_hexpand(true);
                     environ_source.set_vexpand(true);
                     environ_source.show();

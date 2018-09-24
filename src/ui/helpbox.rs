@@ -43,7 +43,6 @@ impl Widget for HelpBox {
     fn view(_relm: &Relm<Self>, _model: ()) -> Self {
         info!("Creating Help Box widget");
         let vbox = gtk::Box::new(Orientation::Vertical, 10);
-        vbox.set_margin_top(250);
         vbox.set_hexpand(true);
         vbox.set_vexpand(true);
         vbox.set_valign(Align::Center);
@@ -66,7 +65,6 @@ impl Widget for HelpBox {
         create_label(&vbox, "CTRL+P", "search request");
         create_label(&vbox, "CTRL+Enter", "Execute request");
 
-        vbox.set_size_request(920, 500);
         vbox.show_all();
         HelpBox { vbox }
     }

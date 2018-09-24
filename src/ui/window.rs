@@ -234,6 +234,8 @@ impl Widget for Window {
             .expect("Should switch to dark theme");
 
         let paned = gtk::Paned::new(Orientation::Horizontal);
+        paned.set_wide_handle(true);
+        paned.set_position(200);
 
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
         let menubox = gtk::Box::new(Orientation::Horizontal, 0);
@@ -273,7 +275,11 @@ impl Widget for Window {
         paned.pack1(&hbox, true, true);
 
         let main_box = gtk::Paned::new(Orientation::Horizontal);
+        main_box.set_wide_handle(true);
+        main_box.set_position(800);
+
         let editor_box = gtk::Paned::new(Orientation::Vertical);
+
         let req_editor_box = gtk::Box::new(Orientation::Vertical, 0);
         req_editor_box.set_hexpand(true);
         req_editor_box.set_vexpand(true);
@@ -294,8 +300,11 @@ impl Widget for Window {
         let env_editor_box = gtk::Box::new(Orientation::Vertical, 0);
         let env_editor = env_editor_box.add_widget::<EnvironEditor>(envs);
         env_editor_box.show_all();
+
         editor_box.pack1(&req_editor_box, false, false);
         editor_box.pack2(&env_editor_box, false, false);
+        editor_box.set_wide_handle(true);
+        editor_box.set_position(550);
         editor_box.show();
 
         connect!(
