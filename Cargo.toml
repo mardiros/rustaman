@@ -24,6 +24,7 @@ pretty_env_logger = "^0.2"
 cabot = "^0.2.0"
 regex = "^0.2.6"
 handlebars = "^0.32.0"
+dirs = "^1.0"
 
 [features]
 default = ["gtk_3_22"]

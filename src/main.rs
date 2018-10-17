@@ -21,6 +21,7 @@ extern crate cabot;
 extern crate regex;
 
 extern crate handlebars;
+extern crate dirs;
 
 mod helpers;
 mod models;

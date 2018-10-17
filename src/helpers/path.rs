@@ -4,13 +4,13 @@ use std::io::prelude::*;
 use std::io::{self, ErrorKind};
 use std::os::unix::fs::OpenOptionsExt;
 
-use std::env;
 use std::path::PathBuf;
+use dirs;
 
 pub type IOError = io::Error;
 
 fn home_dir() -> io::Result<PathBuf> {
-    match env::home_dir() {
+    match dirs::home_dir() {
         Some(path) => Ok(path),
         None => Err(IOError::new(
             ErrorKind::NotFound,
