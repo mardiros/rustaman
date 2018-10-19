@@ -9,8 +9,8 @@ use dirs;
 
 pub type IOError = io::Error;
 
-fn home_dir() -> io::Result<PathBuf> {
-    match dirs::home_dir() {
+fn config_dir() -> io::Result<PathBuf> {
+    match dirs::config_dir() {
         Some(path) => Ok(path),
         None => Err(IOError::new(
             ErrorKind::NotFound,
@@ -19,9 +19,8 @@ fn home_dir() -> io::Result<PathBuf> {
     }
 }
 
-pub fn config_dir() -> io::Result<PathBuf> {
-    let mut path = home_dir()?;
-    path.push(".config");
+pub fn rustaman_config_dir() -> io::Result<PathBuf> {
+    let mut path = config_dir()?;
     path.push("rustaman");
 
     if !path.exists() {
@@ -38,7 +37,7 @@ pub fn config_dir() -> io::Result<PathBuf> {
 /// Return the path file,
 /// Raise IOError in case of environment or permission error.
 pub fn workspace(filename: &str) -> io::Result<PathBuf> {
-    let mut path = config_dir()?;
+    let mut path = rustaman_config_dir()?;
     path.push(filename);
     Ok(path)
 }

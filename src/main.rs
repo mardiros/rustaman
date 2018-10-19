@@ -40,7 +40,7 @@ fn main() {
 
     let langmngr = sourceview::LanguageManager::get_default().unwrap();
     let mut search_path = langmngr.get_search_path();
-    let conf_path = helpers::path::config_dir()
+    let conf_path = helpers::path::rustaman_config_dir()
         .unwrap()
         .to_str()
         .unwrap()
