@@ -3,6 +3,8 @@ extern crate log;
 extern crate pretty_env_logger;
 
 extern crate gdk;
+extern crate gio;
+extern crate glib;
 extern crate gtk;
 extern crate sourceview;
 
@@ -19,9 +21,10 @@ extern crate serde_yaml;
 
 extern crate cabot;
 extern crate regex;
+extern crate url;
 
-extern crate handlebars;
 extern crate dirs;
+extern crate handlebars;
 
 mod helpers;
 mod models;
