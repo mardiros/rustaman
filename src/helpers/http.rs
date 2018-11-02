@@ -42,6 +42,16 @@ pub struct HttpRequest {
     http_frame: String,
 }
 
+impl HttpRequest {
+    pub fn http_frame(&self) -> &str {
+        self.http_frame.as_str()
+    }
+
+    pub fn authority(&self) -> (&str, u16) {
+        (self.host.as_str(), self.port)
+    }
+
+}
 
 pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
     info!("Parsing request {}", request.len());

@@ -17,6 +17,22 @@ pub struct RequestLogger {
     //relm: Relm<RequestLogger>,
 }
 
+
+impl RequestLogger {
+    fn append_text(&mut self, text: &str) {
+        let buffer = self.logger_view.get_buffer().unwrap();
+        let start_iter = buffer.get_start_iter();
+        let end_iter = buffer.get_end_iter();
+        let mut current = match buffer.get_text(&start_iter, &end_iter, true) {
+            Some(data) => data,
+            None => "".to_string(),
+        };
+        current.push_str(text);
+        buffer.set_text(current.as_str());
+
+    }
+}
+
 impl Update for RequestLogger {
     type Model = ();
     type ModelParam = ();
@@ -29,33 +45,19 @@ impl Update for RequestLogger {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::ExecutingRequest(request) => {
-                let buffer = self.logger_view.get_buffer().unwrap();
+                let mut text = String::from(">>> New Request\n");
+                let authority = request.authority();
+                let authority = format!("! Connecting to: {}:{}\n\n", authority.0, authority.1);
+                text.push_str(authority.as_str());
+                text.push_str(request.http_frame());
+                self.append_text(text.as_str());
 
-                let start_iter = buffer.get_start_iter();
-                let end_iter = buffer.get_end_iter();
-                let mut current = match buffer.get_text(&start_iter, &end_iter, true) {
-                    Some(data) => data,
-                    None => "".to_string(),
-                };
-                current.push_str(">>> New Request\n");
-                let req = format!("{:?}", request);
-                current.push_str(req.as_str());
-                current.push_str("\n\n");
-                buffer.set_text(current.as_str());
             }
 
             Msg::RequestExecuted(response) => {
-                let buffer = self.logger_view.get_buffer().unwrap();
-                let start_iter = buffer.get_start_iter();
-                let end_iter = buffer.get_end_iter();
-                let mut current = match buffer.get_text(&start_iter, &end_iter, true) {
-                    Some(data) => data,
-                    None => "".to_string(),
-                };
-                current.push_str("<<< Response ***\n");
-                current.push_str(response.as_str());
-                current.push_str("\n\n");
-                buffer.set_text(current.as_str());
+                let mut text = String::from("<<< Response\n");
+                text.push_str(response.as_str());
+                self.append_text(text.as_str());
             }
         }
     }
