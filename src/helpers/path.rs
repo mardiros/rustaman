@@ -4,8 +4,8 @@ use std::io::prelude::*;
 use std::io::{self, ErrorKind};
 use std::os::unix::fs::OpenOptionsExt;
 
-use std::path::PathBuf;
 use dirs;
+use std::path::PathBuf;
 
 pub type IOError = io::Error;
 

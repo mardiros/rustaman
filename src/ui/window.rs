@@ -1,15 +1,17 @@
 use gdk;
 use gdk::enums::key;
-use gtk::{self, Orientation, WindowPosition, WindowType, prelude::*};
+use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
 
-use super::super::helpers::http::RequestRunner;
 use super::super::models::{Environment, Request, Template, Workspace};
 use super::environ_editor::{EnvironEditor, Msg as EnvironMsg};
 use super::helpbox::{HelpBox, Msg as HelpBoxMsg};
 use super::menu::{Menu, Msg as MenuMsg};
 use super::request_editor::{Msg as EditorMsg, RequestEditor};
+use super::request_logger::{Msg as RequestLoggerMsg, RequestLogger};
 use super::response::{Msg as ResponseMsg, Response};
+use super::super::helpers::http::{Http, Msg as HttpMsg, HttpRequest};
+
 
 #[derive(Msg)]
 pub enum Msg {
@@ -18,10 +20,19 @@ pub enum Msg {
     Deleting(usize),
     Renaming(usize, String),
     RequestTemplateChanged(usize, Template),
-    ExecutingRequestTemplate(Template),
+    // Trigger the execution of the http query, start by compilign the template
     ExecutingCurrentRequestTemplate,
+    // The template is going to be compiled
+    ExecutingRequestTemplate(Template),
+    // The template is compiled, now it is going to be send throw http
     TemplateCompiled(String),
+    // The template has been rendered and will start the http request
+    HttpRequestBeingExecuted(HttpRequest),
+    // The request has been executed, we have a response
+    HttpRequestExecuted(String),
+    // The template cannot be compiled
     TemplateCompilationFailed(String),
+
     SavingEnvironment(usize, String),
     DeletingEnvironment(usize),
     CreatingEnvironment(String),
@@ -64,7 +75,7 @@ pub struct Window {
     env_editor: Component<EnvironEditor>,
     help_box: Component<HelpBox>,
     response: Component<Response>,
-    runner: RequestRunner,
+    request_logger: Component<RequestLogger>,
 }
 
 impl Update for Window {
@@ -142,11 +153,25 @@ impl Update for Window {
                     .stream()
                     .emit(EditorMsg::ExecutingCurrent);
             }
-            Msg::TemplateCompiled(template) => {
-                let resp = self.runner.run_request(template.as_str());
-                self.response
-                    .stream()
-                    .emit(ResponseMsg::RequestExecuted(resp));
+            Msg::TemplateCompiled(request) => {
+                //let resp = self.runner.run_request(template.as_str());
+                //self.response
+                //    .stream()
+                //    .emit(ResponseMsg::RequestExecuted(resp.clone()));
+                let http = relm::execute::<Http>(request);
+
+                connect_stream!(
+                    http@HttpMsg::Writing(ref request), self.relm.stream(), Msg::HttpRequestBeingExecuted(request.clone()));
+
+                connect_stream!(
+                    http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::HttpRequestExecuted(response.clone()));
+            }
+            Msg::HttpRequestBeingExecuted(request) => {
+                self.request_logger.stream().emit(RequestLoggerMsg::ExecutingRequest(request.clone()));
+            }
+            Msg::HttpRequestExecuted(response) => {
+                self.response.stream().emit(ResponseMsg::RequestExecuted(response.clone()));
+                self.request_logger.stream().emit(RequestLoggerMsg::RequestExecuted(response));
             }
             Msg::TemplateCompilationFailed(msg) => {
                 self.response
@@ -183,7 +208,8 @@ impl Update for Window {
                         key::w => self.relm.stream().emit(Msg::Quitting),
                         key::n => self.relm.stream().emit(Msg::CreatingRequest),
                         key::p => self.menu.stream().emit(MenuMsg::RequestingFilteringMenu),
-                        key::Return => self.relm
+                        key::Return => self
+                            .relm
                             .stream()
                             .emit(Msg::ExecutingCurrentRequestTemplate),
                         _ => {}
@@ -344,10 +370,14 @@ impl Widget for Window {
 
         main_box.pack1(&editor_box, false, false);
 
-        let response_box = gtk::Box::new(Orientation::Horizontal, 0);
+        let response_box = gtk::Paned::new(Orientation::Vertical);
         response_box.set_hexpand(true);
         response_box.set_vexpand(true);
+        response_box.set_position(800);
+        response_box.set_wide_handle(true);
         let response = response_box.add_widget::<Response>(());
+        let request_logger = response_box.add_widget::<RequestLogger>(());
+
         response_box.show();
         main_box.add2(&response_box);
 
@@ -366,8 +396,8 @@ impl Widget for Window {
             env_editor,
             help_box,
             response,
+            request_logger,
             relm: relm.clone(),
-            runner: RequestRunner::new(),
         }
     }
 }

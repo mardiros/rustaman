@@ -56,7 +56,8 @@ pub struct EnvironEditor {
 impl EnvironEditor {
     fn get_text(&self, index: u32) -> Option<String> {
         info!("{:?}", self.environ_sources);
-        let &(_, _, _, ref environ_source) = self.environ_sources
+        let &(_, _, _, ref environ_source) = self
+            .environ_sources
             .get(&index)
             .expect("Should be a valid tab page index");
 
@@ -123,7 +124,8 @@ impl Update for EnvironEditor {
                     Ok(rendered) => {
                         debug!("Rendered: {}", rendered);
                         let index = self.model.current;
-                        let &(id, _, _, _) = self.environ_sources
+                        let &(id, _, _, _) = self
+                            .environ_sources
                             .get(&index)
                             .expect("Should be a valid tab page index");
                         self.relm.stream().emit(Msg::TemplateCompiled(rendered));
@@ -141,7 +143,8 @@ impl Update for EnvironEditor {
                 info!("Detach Plus");
                 self.notebook.detach_tab(&self.plus_tab.1);
                 info!("Attach Entry");
-                let _index = self.notebook
+                let _index = self
+                    .notebook
                     .append_page(&self.entry_tab.1, Some(&self.entry_tab.0));
                 self.entry.grab_focus();
             }
@@ -157,7 +160,8 @@ impl Update for EnvironEditor {
                         info!("Detach Entry");
                         self.notebook.detach_tab(&self.entry_tab.1);
                         info!("Attach Plus");
-                        let _index = self.notebook
+                        let _index = self
+                            .notebook
                             .append_page(&self.plus_tab.1, Some(&self.plus_tab.0));
                     }
                     _ => {}
@@ -220,11 +224,12 @@ impl Update for EnvironEditor {
                     environ_source,
                     connect_key_press_event(_, key),
                     return Inhibit(
-                        key.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
-                            && match key.get_keyval() {
-                                key::Return => true,
-                                _ => false,
-                            }
+                        key.get_state().intersects(gdk::ModifierType::CONTROL_MASK) && match key
+                            .get_keyval()
+                        {
+                            key::Return => true,
+                            _ => false,
+                        }
                     )
                 );
 
@@ -240,7 +245,8 @@ impl Update for EnvironEditor {
                 info!("Append env");
                 self.update(Msg::AppendingEnvironment(env));
                 info!("Attach Add new tab");
-                let index = self.notebook
+                let index = self
+                    .notebook
                     .append_page(&self.plus_tab.1, Some(&self.plus_tab.0));
                 info!("new tab index: {}", index);
             }
@@ -261,7 +267,8 @@ impl Update for EnvironEditor {
                 self.model.current = id;
             }
             Msg::CreatingNewTabPageButton => {
-                let _index = self.notebook
+                let _index = self
+                    .notebook
                     .append_page(&self.plus_tab.1, Some(&self.plus_tab.0));
             }
             Msg::EnvironmentDeleted(id) => {
@@ -278,7 +285,8 @@ impl Update for EnvironEditor {
                 }
                 let index = get_index(id, &self.environ_sources)
                     .expect("Invalid index while deleting environment");
-                let (_, _, tab, _) = self.environ_sources
+                let (_, _, tab, _) = self
+                    .environ_sources
                     .remove(&index)
                     .expect("Invalid index while deleting environment");
                 self.notebook.detach_tab(&tab);
@@ -308,7 +316,8 @@ impl Widget for EnvironEditor {
                 relm.stream().emit(Msg::AppendingEnvironment(env.clone()));
             }
         }
-        let environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView)> = HashMap::new();
+        let environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView)> =
+            HashMap::new();
 
         let plus_tab = gtk::Box::new(Orientation::Horizontal, 0);
         let btn = gtk::Button::new();
