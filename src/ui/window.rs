@@ -371,9 +371,11 @@ impl Widget for Window {
 
         main_box.pack1(&editor_box, false, false);
 
-        let response_box = gtk::Box::new(Orientation::Vertical, 0);
+        let response_box = gtk::Paned::new(Orientation::Vertical);
         response_box.set_hexpand(true);
         response_box.set_vexpand(true);
+        response_box.set_position(800);
+        response_box.set_wide_handle(true);
         let response = response_box.add_widget::<Response>(());
         let request_logger = response_box.add_widget::<RequestLogger>(());
 
