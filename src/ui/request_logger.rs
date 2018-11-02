@@ -1,20 +1,20 @@
 use gtk::prelude::*;
 use gtk::{self, Orientation, ScrolledWindow};
-use relm::{self, Relm, Update, Widget};
+use relm::{Relm, Update, Widget};
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 
-use super::super::helpers::http::{Http, Msg as HttpMsg};
+use super::super::helpers::http::HttpRequest;
 
 #[derive(Msg)]
 pub enum Msg {
-    ExecutingRequest(String),
+    ExecutingRequest(HttpRequest),
     RequestExecuted(String),
 }
 
 pub struct RequestLogger {
     hbox: gtk::Box,
     logger_view: SourceView,
-    relm: Relm<RequestLogger>,
+    //relm: Relm<RequestLogger>,
 }
 
 impl Update for RequestLogger {
@@ -38,12 +38,9 @@ impl Update for RequestLogger {
                     None => "".to_string(),
                 };
                 current.push_str(">>> New Request\n");
-                current.push_str(request.as_str());
+                let req = format!("{:?}", request);
+                current.push_str(req.as_str());
                 current.push_str("\n\n");
-
-                let http = relm::execute::<Http>(request);
-                connect_stream!(
-                    http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::RequestExecuted(response.clone()));
                 buffer.set_text(current.as_str());
             }
 
@@ -71,7 +68,7 @@ impl Widget for RequestLogger {
         self.hbox.clone()
     }
 
-    fn view(relm: &Relm<Self>, _model: ()) -> Self {
+    fn view(_relm: &Relm<Self>, _model: ()) -> Self {
         info!("Creating RequestLogger widget");
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
 
@@ -100,7 +97,7 @@ impl Widget for RequestLogger {
         RequestLogger {
             hbox,
             logger_view,
-            relm: relm.clone(),
+            //relm: relm.clone(),
         }
     }
 }

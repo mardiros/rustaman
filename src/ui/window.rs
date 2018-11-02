@@ -10,6 +10,8 @@ use super::menu::{Menu, Msg as MenuMsg};
 use super::request_editor::{Msg as EditorMsg, RequestEditor};
 use super::request_logger::{Msg as RequestLoggerMsg, RequestLogger};
 use super::response::{Msg as ResponseMsg, Response};
+use super::super::helpers::http::{Http, Msg as HttpMsg, HttpRequest};
+
 
 #[derive(Msg)]
 pub enum Msg {
@@ -18,10 +20,19 @@ pub enum Msg {
     Deleting(usize),
     Renaming(usize, String),
     RequestTemplateChanged(usize, Template),
-    ExecutingRequestTemplate(Template),
+    // Trigger the execution of the http query, start by compilign the template
     ExecutingCurrentRequestTemplate,
+    // The template is going to be compiled
+    ExecutingRequestTemplate(Template),
+    // The template is compiled, now it is going to be send throw http
     TemplateCompiled(String),
+    // The template has been rendered and will start the http request
+    HttpRequestBeingExecuted(HttpRequest),
+    // The request has been executed, we have a response
+    HttpRequestExecuted(String),
+    // The template cannot be compiled
     TemplateCompilationFailed(String),
+
     SavingEnvironment(usize, String),
     DeletingEnvironment(usize),
     CreatingEnvironment(String),
@@ -142,15 +153,26 @@ impl Update for Window {
                     .stream()
                     .emit(EditorMsg::ExecutingCurrent);
             }
-            Msg::TemplateCompiled(template) => {
+            Msg::TemplateCompiled(request) => {
                 //let resp = self.runner.run_request(template.as_str());
                 //self.response
                 //    .stream()
                 //    .emit(ResponseMsg::RequestExecuted(resp.clone()));
+                let http = relm::execute::<Http>(request);
 
-                self.request_logger
-                    .stream()
-                    .emit(RequestLoggerMsg::ExecutingRequest(template));
+                connect_stream!(
+                    http@HttpMsg::Writing(ref request), self.relm.stream(), Msg::HttpRequestBeingExecuted(request.clone()));
+
+                connect_stream!(
+                    http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::HttpRequestExecuted(response.clone()));
+            }
+            Msg::HttpRequestBeingExecuted(request) => {
+                info!("HttpRequestBeingExecuted: {:?}", request);
+                self.request_logger.stream().emit(RequestLoggerMsg::ExecutingRequest(request.clone()));
+            }
+            Msg::HttpRequestExecuted(response) => {
+                info!("HttpRequestExecuted: {:?}", response);
+                self.request_logger.stream().emit(RequestLoggerMsg::RequestExecuted(response));
             }
             Msg::TemplateCompilationFailed(msg) => {
                 self.response

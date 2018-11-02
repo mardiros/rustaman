@@ -15,7 +15,7 @@ use url::Url;
 const READ_SIZE: usize = 1024;
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Scheme {
     HTTP,
     HTTPS,
@@ -34,13 +34,14 @@ impl<'a> From<&'a str> for Scheme {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpRequest {
     scheme: Scheme,
     host: String,
     port: u16,
     http_frame: String,
 }
+
 
 pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
     info!("Parsing request {}", request.len());
@@ -162,7 +163,8 @@ pub enum Msg {
     Connection(SocketConnection),
     Read((Vec<u8>, usize)),
     ReadDone(String),
-    Wrote,
+    Writing(HttpRequest),
+    Wrote((Vec<u8>, usize)),
 }
 
 unsafe impl Send for Msg {}
@@ -209,12 +211,14 @@ impl Update for Http {
                 let writer = stream.get_output_stream().expect("output");
                 self.model.stream = Some(stream);
                 let _ = self.model.request.as_ref().map(|req| {
-                    let buffer = req.http_frame.clone().into_bytes();
+                    let http_frame = req.http_frame.clone();
+                    let buffer = http_frame.into_bytes();
+                    self.model.relm.stream().emit(Msg::Writing(req.clone()));
                     connect_async!(
                         writer,
                         write_async(buffer, PRIORITY_DEFAULT),
                         self.model.relm,
-                        |_| Msg::Wrote
+                        |msg| Msg::Wrote(msg)
                     );
                 });
             }
@@ -239,7 +243,8 @@ impl Update for Http {
             }
             // To be listened by the user.
             Msg::ReadDone(_) => (),
-            Msg::Wrote => {
+            Msg::Writing(_) => (),
+            Msg::Wrote(_) => {
                 if let Some(ref stream) = self.model.stream {
                     let reader = stream.get_input_stream().expect("input");
                     connect_async!(
