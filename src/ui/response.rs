@@ -2,6 +2,12 @@ use gtk::prelude::*;
 use gtk::{self, Orientation, ScrolledWindow};
 use relm::{Relm, Update, Widget};
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
+use serde_json;
+
+fn prettify_js(payload: &str) -> String {
+    let obj: serde_json::Value = serde_json::from_str(payload).unwrap();
+    serde_json::to_string_pretty(&obj).unwrap()
+}
 
 #[derive(Msg)]
 pub enum Msg {
@@ -26,6 +32,42 @@ impl Update for Response {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::RequestExecuted(response) => {
+                let mut is_json = false;
+                let mut has_content = true;
+                let mut text = String::new();
+                let mut lines = response.lines();
+                loop {
+                    let line = lines.next();
+                    match line {
+                        Some(unwrapped) => {
+                            if unwrapped.is_empty() {
+                                break;
+                            }
+                            if unwrapped.starts_with("Content-Type: application/json") {
+                                is_json = true;
+                            }
+                        }
+                        None => has_content = false,
+                    }
+                }
+                if has_content {
+                    loop {
+                        let line = lines.next();
+                        match line {
+                            Some(unwrapped) => {
+                                text.push_str(unwrapped);
+                                text.push('\n');
+                            }
+                            None => break,
+                        }
+                    }
+                }
+                let response = if is_json && has_content {
+                    prettify_js(text.as_str())
+                } 
+                else {
+                    text
+                };
                 let buffer = self.response_view.get_buffer().unwrap();
                 buffer.set_text(response.as_str());
             }

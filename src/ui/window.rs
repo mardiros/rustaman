@@ -167,11 +167,10 @@ impl Update for Window {
                     http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::HttpRequestExecuted(response.clone()));
             }
             Msg::HttpRequestBeingExecuted(request) => {
-                info!("HttpRequestBeingExecuted: {:?}", request);
                 self.request_logger.stream().emit(RequestLoggerMsg::ExecutingRequest(request.clone()));
             }
             Msg::HttpRequestExecuted(response) => {
-                info!("HttpRequestExecuted: {:?}", response);
+                self.response.stream().emit(ResponseMsg::RequestExecuted(response.clone()));
                 self.request_logger.stream().emit(RequestLoggerMsg::RequestExecuted(response));
             }
             Msg::TemplateCompilationFailed(msg) => {
