@@ -114,11 +114,11 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
         let line = lines.next();
         match line {
             Some(unwrapped) => {
-                http_frame.push_str(unwrapped);
-                http_frame.push_str("\r\n");
                 if unwrapped.is_empty() {
                     break;
                 }
+                http_frame.push_str(unwrapped);
+                http_frame.push_str("\r\n");
             }
             None => break,
         }
@@ -146,6 +146,8 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
         http_frame.push_str(length.as_str());
         http_frame.push_str("\r\n");
     }
+
+    http_frame.push_str("User-Agent: Rustaman\r\n");
     http_frame.push_str("Connection: close\r\n");
     http_frame.push_str("\r\n");
 
