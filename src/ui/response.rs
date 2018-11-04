@@ -1,8 +1,8 @@
 use gtk::prelude::*;
 use gtk::{self, Orientation, ScrolledWindow};
 use relm::{Relm, Update, Widget};
-use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 use serde_json;
+use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 
 fn prettify_js(payload: &str) -> String {
     let obj: serde_json::Value = serde_json::from_str(payload).unwrap();
@@ -64,8 +64,7 @@ impl Update for Response {
                 }
                 let response = if is_json && has_content {
                     prettify_js(text.as_str())
-                } 
-                else {
+                } else {
                     text
                 };
                 let buffer = self.response_view.get_buffer().unwrap();

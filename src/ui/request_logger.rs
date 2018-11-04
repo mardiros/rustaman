@@ -17,7 +17,6 @@ pub struct RequestLogger {
     //relm: Relm<RequestLogger>,
 }
 
-
 impl RequestLogger {
     fn append_text(&mut self, text: &str) {
         let buffer = self.logger_view.get_buffer().unwrap();
@@ -29,7 +28,6 @@ impl RequestLogger {
         };
         current.push_str(text);
         buffer.set_text(current.as_str());
-
     }
 }
 
@@ -51,7 +49,6 @@ impl Update for RequestLogger {
                 text.push_str(authority.as_str());
                 text.push_str(request.http_frame());
                 self.append_text(text.as_str());
-
             }
 
             Msg::RequestExecuted(response) => {

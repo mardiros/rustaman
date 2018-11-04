@@ -1,6 +1,5 @@
 use std::convert::From;
 
-
 use gio::{
     IOStream, IOStreamExt, InputStreamExtManual, OutputStreamExtManual, SocketClient,
     SocketClientExt, SocketConnection,
@@ -14,14 +13,12 @@ use url::Url;
 
 const READ_SIZE: usize = 1024;
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Scheme {
     HTTP,
     HTTPS,
-    Err(String),  // until TryFrom is stable
+    Err(String), // until TryFrom is stable
 }
-
 
 impl<'a> From<&'a str> for Scheme {
     fn from(value: &str) -> Self {
@@ -32,7 +29,6 @@ impl<'a> From<&'a str> for Scheme {
         }
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
@@ -50,7 +46,6 @@ impl HttpRequest {
     pub fn authority(&self) -> (&str, u16) {
         (self.host.as_str(), self.port)
     }
-
 }
 
 pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
@@ -106,7 +101,7 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
 
     let scheme = Scheme::from(url.scheme());
     if let Scheme::Err(error) = scheme {
-        return Err(error)
+        return Err(error);
     }
 
     let mut http_frame = format!("{} {} {}\r\n", verb, query, version);
