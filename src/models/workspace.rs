@@ -197,6 +197,15 @@ impl Workspace {
         self.payload.environments.as_slice()
     }
 
+    pub fn environment(&self, id: usize) -> Option<&Environment> {
+        for environment in self.environments().iter() {
+            if environment.id() == id {
+                return Some(&environment);
+            }
+        }
+        None
+    }
+
     pub fn create_environment(&mut self, name: &str) -> &Environment {
         let id = match self.payload.environments.last() {
             None => 1,
