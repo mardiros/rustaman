@@ -36,13 +36,15 @@ pub enum Msg {
     SavingEnvironment(usize, String),
     DeletingEnvironment(usize),
     CreatingEnvironment(String),
+    TogglingEnvironment(usize),
     Quitting,
     PressingKey(gdk::EventKey),
 }
 
 pub struct Model {
     workspace: Workspace,
-    current: usize,
+    current_req: usize,
+    current_env: usize,
 }
 
 impl Model {
@@ -53,7 +55,7 @@ impl Model {
         self.workspace.requests()
     }
     pub fn current_request(&self) -> Option<&Request> {
-        self.workspace.request(self.current)
+        self.workspace.request(self.current_req)
     }
     pub fn create_request(&mut self) -> &Request {
         self.workspace.create_request()
@@ -63,6 +65,9 @@ impl Model {
     }
     pub fn create_environment(&mut self, name: &str) -> &Environment {
         self.workspace.create_environment(name)
+    }
+    pub fn current_environment(&self) -> Option<&Environment> {
+        self.workspace.environment(self.current_env)
     }
 }
 
@@ -87,7 +92,8 @@ impl Update for Window {
     fn model(_: &Relm<Self>, workspace: Workspace) -> Model {
         Model {
             workspace,
-            current: 0,
+            current_req: 0,
+            current_env: 0,
         }
     }
 
@@ -100,22 +106,22 @@ impl Update for Window {
                     .emit(MenuMsg::CreatingRequest(request.clone()))
             }
             Msg::TogglingRequest(id, active) => {
-                if self.model.current > 0 {
+                if self.model.current_req > 0 {
                     self.request_editor
                         .stream()
-                        .emit(EditorMsg::RequestingSave(self.model.current));
+                        .emit(EditorMsg::RequestingSave(self.model.current_req));
                 }
                 if active {
-                    self.model.current = id;
+                    self.model.current_req = id;
                     let req = self.model.current_request().unwrap(); // XXX
                     self.help_box.stream().emit(HelpBoxMsg::Hiding);
                     self.request_editor
                         .stream()
                         .emit(EditorMsg::TemplateChanged(req.template().to_owned()));
-                } else if self.model.current == id {
+                } else if self.model.current_req == id {
                     self.request_editor.stream().emit(EditorMsg::Hiding);
                     self.help_box.stream().emit(HelpBoxMsg::Showing);
-                    self.model.current = 0;
+                    self.model.current_req = 0;
                 }
             }
             Msg::Renaming(id, name) => {
@@ -125,10 +131,10 @@ impl Update for Window {
                 info!("Deleting template {}", id);
                 self.model.workspace.delete_request(id);
 
-                if self.model.current == id {
+                if self.model.current_req == id {
                     self.request_editor.stream().emit(EditorMsg::Hiding);
                     self.help_box.stream().emit(HelpBoxMsg::Showing);
-                    self.model.current = 0;
+                    self.model.current_req = 0;
                 }
 
                 self.menu.stream().emit(MenuMsg::Deleted(id));
@@ -141,7 +147,7 @@ impl Update for Window {
             }
             Msg::ExecutingRequestTemplate(template) => {
                 self.relm.stream().emit(Msg::RequestTemplateChanged(
-                    self.model.current,
+                    self.model.current_req,
                     template.clone(),
                 ));
 
@@ -173,7 +179,9 @@ impl Update for Window {
                     .emit(ResponseStatusMsg::ExecutingRequest(request.clone()));
                 self.request_logger
                     .stream()
-                    .emit(RequestLoggerMsg::ExecutingRequest(request.clone()));
+                    .emit(RequestLoggerMsg::ExecutingRequest(
+                        request.obfuscate(self.model.current_environment().unwrap()),
+                        ));
             }
             Msg::HttpRequestExecuted(response) => {
                 self.response_status
@@ -197,6 +205,10 @@ impl Update for Window {
                 self.env_editor
                     .stream()
                     .emit(EnvironMsg::EnvironmentCreated(env.clone()))
+            }
+            Msg::TogglingEnvironment(id) => {
+                info!("Toggling environment {}", id);
+                self.model.current_env = id;
             }
             Msg::SavingEnvironment(id, payload) => {
                 info!("Save environment {} {:?}", id, payload);
@@ -227,10 +239,10 @@ impl Update for Window {
                             .emit(Msg::ExecutingCurrentRequestTemplate),
                         _ => {}
                     }
-                } else if keyval == key::F2 && self.model.current > 0 {
+                } else if keyval == key::F2 && self.model.current_req > 0 {
                     self.menu
                         .stream()
-                        .emit(MenuMsg::RenamingRequest(self.model.current))
+                        .emit(MenuMsg::RenamingRequest(self.model.current_req))
                 }
             }
         }
@@ -338,6 +350,13 @@ impl Widget for Window {
         let envs = model.environments().to_vec();
         let env_editor_box = gtk::Box::new(Orientation::Vertical, 0);
         let env_editor = env_editor_box.add_widget::<EnvironEditor>(envs);
+
+        connect!(
+            env_editor@EnvironMsg::TogglingEnvironment(id),
+            relm,
+            Msg::TogglingEnvironment(id)
+        );
+
         env_editor_box.show_all();
 
         editor_box.pack1(&req_editor_box, false, false);

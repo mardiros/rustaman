@@ -37,7 +37,8 @@ pub enum Msg {
     CreatingEnvironment(String),
     AppendingEnvironment(Environment),
     EnvironmentCreated(Environment),
-    TogglingEnvironment(u32),
+    TogglingEnvironmentIndex(u32),
+    TogglingEnvironment(usize),
     DeletingEnvironment(usize),
     EnvironmentDeleted(usize),
 }
@@ -251,8 +252,8 @@ impl Update for EnvironEditor {
                 info!("new tab index: {}", index);
             }
 
-            Msg::TogglingEnvironment(id) => {
-                info!("Switch to page {}", id);
+            Msg::TogglingEnvironmentIndex(idx) => {
+                info!("Switch to page {}", idx);
                 /*
                 {
                     let env = self.model.environments();
@@ -264,7 +265,12 @@ impl Update for EnvironEditor {
                     }
                 }
                 */
-                self.model.current = id;
+                self.model.current = idx;
+                let &(ref id, _, _, _) = self
+                    .environ_sources
+                    .get(&idx)
+                    .expect("Should be a valid tab page index");
+                self.relm.stream().emit(Msg::TogglingEnvironment(*id))
             }
             Msg::CreatingNewTabPageButton => {
                 let _index = self
@@ -353,7 +359,7 @@ impl Widget for EnvironEditor {
             relm,
             notebook,
             connect_switch_page(_, _, id),
-            Msg::TogglingEnvironment(id)
+            Msg::TogglingEnvironmentIndex(id)
         );
 
         relm.stream().emit(Msg::CreatingNewTabPageButton);

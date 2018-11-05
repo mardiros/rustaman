@@ -11,6 +11,8 @@ use relm::{Relm, Update, UpdateNew};
 use regex::Regex;
 use url::Url;
 
+use super::super::models::{Environment};
+
 const READ_SIZE: usize = 1024;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -46,6 +48,18 @@ impl HttpRequest {
     pub fn authority(&self) -> (&str, u16) {
         (self.host.as_str(), self.port)
     }
+
+    /// Obfusface the http_frame
+    pub fn obfuscate(&self, env: &Environment) -> HttpRequest {
+        let mut req = self.clone();
+        let s = env.obfuscated_string();
+        let _: Vec<_> = s.iter().map(|ref x| {
+            let obf = format!("{}...", &x[0..3]);
+            req.http_frame = req.http_frame.replace(x.as_str(), obf.as_str())
+            }).collect();
+        req
+    }
+
 }
 
 pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
