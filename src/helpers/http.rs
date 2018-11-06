@@ -1,8 +1,9 @@
 use std::convert::From;
+use std::str::FromStr;
 
 use gio::{
     IOStream, IOStreamExt, InputStreamExtManual, OutputStreamExtManual, SocketClient,
-    SocketClientExt, SocketConnection,
+    SocketClientExt, SocketConnection, TlsCertificateFlags,
 };
 use glib::source::PRIORITY_DEFAULT;
 use glib::Cast;
@@ -38,6 +39,7 @@ pub struct HttpRequest {
     host: String,
     port: u16,
     http_frame: String,
+    tls_flags: TlsCertificateFlags,
 }
 
 impl HttpRequest {
@@ -62,10 +64,33 @@ impl HttpRequest {
 
 }
 
+fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
+    let re_extract_authority_from_directive: Regex = Regex::new(
+        r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)").unwrap();
+    let resp = re_extract_authority_from_directive.captures(line).and_then(
+        |cap| {
+            let host = cap.name("host").map(|host| host.as_str().trim_start_matches("[").trim_end_matches("]"));
+            let port = cap.name("port").map(|port| FromStr::from_str(port.as_str()).unwrap());
+            Some((host.unwrap().to_string(), port.unwrap()))
+        });
+    resp
+}
+
+fn extract_insecure_flag(line: &str) -> bool {
+    let re_extract_insecure_flag: Regex = Regex::new(
+        r"#![\s]*Allow Insecure Certificate").unwrap();
+    return re_extract_insecure_flag.is_match(line);
+}
+
+
 pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
     info!("Parsing request {}", request.len());
+
     let mut lines = request.lines();
     let mut line = lines.next();
+    let mut authority: Option<(String, u16)> = None;
+    let mut tls_flags = TlsCertificateFlags::all();
+
     loop {
         if line.is_none() {
             break;
@@ -74,7 +99,16 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
         if !unwrapped.is_empty() && !unwrapped.starts_with('#') {
             break;
         }
-        debug!("Ignoring comment {}", unwrapped);
+        if  let Some(auth) = extract_authority_from_directive(unwrapped) {
+            debug!("Authority found from the request comment: {:?}", auth);
+            authority = Some(auth);
+        }
+        else if extract_insecure_flag(unwrapped) {
+            tls_flags = TlsCertificateFlags::empty();
+        }
+        else {
+            debug!("Ignoring comment {}", unwrapped);
+        }
         line = lines.next();
     }
     if line.is_none() {
@@ -96,13 +130,15 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
         }
     };
     let url = url.parse::<Url>().map_err(|err| format!("! {}", err))?;
-    let host = url
-        .host_str()
-        .ok_or("! Host not found in HTTP Request".to_string())?;
-    let host = host.to_string();
-    let port = url
-        .port_or_known_default()
-        .ok_or("! Unknown http port to query".to_string())?;
+    if authority.is_none() {
+        let host = url
+            .host_str()
+            .ok_or("! Host not found in HTTP Request".to_string())?;
+        let port = url
+            .port_or_known_default()
+            .ok_or("! Unknown http port to query".to_string())?;
+        authority = Some((host.to_string(), port));
+    }
     let mut query = url.path().to_string();
     if let Some(qr) = url.query() {
         query.push_str("?");
@@ -163,12 +199,14 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
     if body.len() > 0 {
         http_frame.push_str(body.as_str());
     }
-
+    let authority = authority.unwrap();
+    let (host, port) = (authority.0, authority.1);
     Ok(HttpRequest {
         scheme,
         host,
         port,
         http_frame,
+        tls_flags,
     })
 }
 
@@ -215,6 +253,7 @@ impl Update for Http {
             let client = SocketClient::new();
             if req.scheme == Scheme::HTTPS {
                 client.set_tls(true);
+                client.set_tls_validation_flags(req.tls_flags);
             }
             connect_async!(
                 client,
@@ -222,6 +261,9 @@ impl Update for Http {
                 relm,
                 Msg::Connection
             );
+        }
+        else {
+            error!("Request is in error: {:?}", self.model.request);
         }
     }
 
