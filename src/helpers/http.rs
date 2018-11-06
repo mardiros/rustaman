@@ -12,7 +12,7 @@ use relm::{Relm, Update, UpdateNew};
 use regex::Regex;
 use url::Url;
 
-use super::super::models::{Environment};
+use super::super::models::Environment;
 
 const READ_SIZE: usize = 1024;
 
@@ -55,33 +55,37 @@ impl HttpRequest {
     pub fn obfuscate(&self, env: &Environment) -> HttpRequest {
         let mut req = self.clone();
         let s = env.obfuscated_string();
-        let _: Vec<_> = s.iter().map(|ref x| {
-            let obf = format!("{}...", &x[0..3]);
-            req.http_frame = req.http_frame.replace(x.as_str(), obf.as_str())
+        let _: Vec<_> = s
+            .iter()
+            .map(|ref x| {
+                let obf = format!("{}...", &x[0..3]);
+                req.http_frame = req.http_frame.replace(x.as_str(), obf.as_str())
             }).collect();
         req
     }
-
 }
 
 fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
-    let re_extract_authority_from_directive: Regex = Regex::new(
-        r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)").unwrap();
-    let resp = re_extract_authority_from_directive.captures(line).and_then(
-        |cap| {
-            let host = cap.name("host").map(|host| host.as_str().trim_start_matches("[").trim_end_matches("]"));
-            let port = cap.name("port").map(|port| FromStr::from_str(port.as_str()).unwrap());
+    let re_extract_authority_from_directive: Regex =
+        Regex::new(r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)").unwrap();
+    let resp = re_extract_authority_from_directive
+        .captures(line)
+        .and_then(|cap| {
+            let host = cap
+                .name("host")
+                .map(|host| host.as_str().trim_start_matches("[").trim_end_matches("]"));
+            let port = cap
+                .name("port")
+                .map(|port| FromStr::from_str(port.as_str()).unwrap());
             Some((host.unwrap().to_string(), port.unwrap()))
         });
     resp
 }
 
 fn extract_insecure_flag(line: &str) -> bool {
-    let re_extract_insecure_flag: Regex = Regex::new(
-        r"#![\s]*Allow Insecure Certificate").unwrap();
+    let re_extract_insecure_flag: Regex = Regex::new(r"#![\s]*Allow Insecure Certificate").unwrap();
     return re_extract_insecure_flag.is_match(line);
 }
-
 
 pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
     info!("Parsing request {}", request.len());
@@ -99,14 +103,12 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
         if !unwrapped.is_empty() && !unwrapped.starts_with('#') {
             break;
         }
-        if  let Some(auth) = extract_authority_from_directive(unwrapped) {
+        if let Some(auth) = extract_authority_from_directive(unwrapped) {
             debug!("Authority found from the request comment: {:?}", auth);
             authority = Some(auth);
-        }
-        else if extract_insecure_flag(unwrapped) {
+        } else if extract_insecure_flag(unwrapped) {
             tls_flags = TlsCertificateFlags::empty();
-        }
-        else {
+        } else {
             debug!("Ignoring comment {}", unwrapped);
         }
         line = lines.next();
@@ -261,8 +263,7 @@ impl Update for Http {
                 relm,
                 Msg::Connection
             );
-        }
-        else {
+        } else {
             error!("Request is in error: {:?}", self.model.request);
         }
     }

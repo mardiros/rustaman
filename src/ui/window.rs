@@ -181,7 +181,7 @@ impl Update for Window {
                     .stream()
                     .emit(RequestLoggerMsg::ExecutingRequest(
                         request.obfuscate(self.model.current_environment().unwrap()),
-                        ));
+                    ));
             }
             Msg::HttpRequestExecuted(response) => {
                 self.response_status

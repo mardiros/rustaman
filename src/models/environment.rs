@@ -48,7 +48,7 @@ impl Environment {
 
     pub fn parsed_payload(&self) -> serde_yaml::Result<serde_yaml::Value> {
         let parsed: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(&self.payload());
-        return parsed
+        return parsed;
     }
 
     pub fn obfuscated_string(&self) -> Vec<String> {
@@ -58,30 +58,36 @@ impl Environment {
                 let obf = data.get("__obfuscated__");
                 info!("{:?}", obf);
                 match obf {
-                    Some(serde_yaml::Value::Sequence(seq)) => {
-                        seq.iter().map(
-                            |i|
-                            if let serde_yaml::Value::String(ref s) = i { Some(s.clone()) } else {None} )
-                        .filter(|x| x.is_some()).map(|x| x.unwrap().clone()).collect()
-                        },
-                    _ => return vec![]
+                    Some(serde_yaml::Value::Sequence(seq)) => seq
+                        .iter()
+                        .map(|i| {
+                            if let serde_yaml::Value::String(ref s) = i {
+                                Some(s.clone())
+                            } else {
+                                None
+                            }
+                        }).filter(|x| x.is_some())
+                        .map(|x| x.unwrap().clone())
+                        .collect(),
+                    _ => return vec![],
                 }
             }
-            _ => return vec![]
+            _ => return vec![],
         };
 
-        let val: Vec<String> = keys.iter().map(
-            |k| {
+        let val: Vec<String> = keys
+            .iter()
+            .map(|k| {
                 if let Some(serde_yaml::Value::String(s)) = payload.as_ref().unwrap().get(k) {
                     Some(s)
+                } else {
+                    None
                 }
-                else {None}
-            }
-        ).filter(|x| x.is_some())
-         .map(|x| x.unwrap().clone()).collect();
+            }).filter(|x| x.is_some())
+            .map(|x| x.unwrap().clone())
+            .collect();
         val
     }
-
 }
 
 pub type Environments = Vec<Environment>;
