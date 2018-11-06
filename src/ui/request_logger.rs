@@ -83,7 +83,6 @@ impl Widget for RequestLogger {
         let logger_view = SourceView::new_with_buffer(&buffer);
         logger_view.set_hexpand(true);
         logger_view.set_vexpand(true);
-        logger_view.set_editable(false);
 
         let scrollview = ScrolledWindow::new(None, None);
         scrollview.add(&logger_view);
