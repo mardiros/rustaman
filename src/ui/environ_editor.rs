@@ -6,12 +6,12 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, IconSize, Orientation, ReliefStyle, ScrolledWindow};
-use handlebars::Handlebars;
 use relm::{Relm, Update, Widget};
 use serde_yaml;
 use sourceview::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
 
+use super::super::helpers::handlebars::get_template_renderer;
 use super::super::models::{Environment, Environments};
 
 pub struct Model {
@@ -94,7 +94,8 @@ impl Update for EnvironEditor {
                     None => "".to_owned(),
                 };
 
-                let mut reg = Handlebars::new();
+                let mut hbar = get_template_renderer();
+
                 debug!("Template: {}", template.as_str());
                 debug!("Params: {}", payload.as_str());
                 let params: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(&payload);
@@ -120,7 +121,7 @@ impl Update for EnvironEditor {
                 }
 
                 let params = params.unwrap();
-                let res = reg.render_template(template.as_str(), &params);
+                let res = hbar.render_template(template.as_str(), &params);
                 match res {
                     Ok(rendered) => {
                         debug!("Rendered: {}", rendered);

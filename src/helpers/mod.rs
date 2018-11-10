@@ -1,2 +1,3 @@
-pub mod http;
-pub mod path;
+pub(crate) mod handlebars;
+pub(crate) mod http;
+pub(crate) mod path;
