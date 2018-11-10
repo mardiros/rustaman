@@ -11,7 +11,6 @@ use serde_yaml;
 use sourceview::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
 
-use super::super::helpers::handlebars::get_template_renderer;
 use super::super::models::{Environment, Environments};
 
 pub struct Model {
@@ -27,9 +26,8 @@ impl Model {
 
 #[derive(Msg)]
 pub enum Msg {
-    CompilingTemplate(String),
-    TemplateCompiled(String),
-    TemplateCompilationFailed(String),
+    FetchingEnvironment,
+    FetchedEnvironment(serde_yaml::Value),
     SavingEnvironment(usize, String),
     NewEntryPressingKey(gdk::EventKey),
     RequestingNewEnvironment,
@@ -88,56 +86,20 @@ impl Update for EnvironEditor {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Msg::CompilingTemplate(template) => {
+            Msg::FetchingEnvironment => {
                 let payload = match self.get_current_text() {
                     Some(data) => data,
                     None => "".to_owned(),
                 };
-
-                let mut hbar = get_template_renderer();
-
-                debug!("Template: {}", template.as_str());
-                debug!("Params: {}", payload.as_str());
                 let params: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(&payload);
-                if let Err(err) = params {
-                    let location = err.location();
-                    let err = match location {
-                        Some(loc) => format!(
-                            r#"! Parameters is not yaml valid:
-! Line: {}
-! Column: {}
-
-! {}"#,
-                            loc.line(),
-                            loc.column(),
-                            err
-                        ),
-                        None => format!("! Parameters is not yaml valid:\n\n{:?}", err),
-                    };
-                    self.relm
-                        .stream()
-                        .emit(Msg::TemplateCompilationFailed(err.to_owned()));
-                    return;
-                }
-
-                let params = params.unwrap();
-                let res = hbar.render_template(template.as_str(), &params);
-                match res {
-                    Ok(rendered) => {
-                        debug!("Rendered: {}", rendered);
-                        let index = self.model.current;
-                        let &(id, _, _, _) = self
-                            .environ_sources
-                            .get(&index)
-                            .expect("Should be a valid tab page index");
-                        self.relm.stream().emit(Msg::TemplateCompiled(rendered));
-                        self.relm.stream().emit(Msg::SavingEnvironment(id, payload));
-                    }
-                    Err(err) => {
-                        let err = format!("! Error while running query\n\n! {:?}", err);
+                match params {
+                    Ok(ref params) => {
                         self.relm
                             .stream()
-                            .emit(Msg::TemplateCompilationFailed(err.to_owned()));
+                            .emit(Msg::FetchedEnvironment(params.clone()));
+                    }
+                    Err(err) => {
+                        // Fix me
                     }
                 }
             }

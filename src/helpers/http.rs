@@ -1,6 +1,7 @@
 use std::convert::From;
 use std::str::FromStr;
 
+use serde_yaml;
 use gio::{
     IOStream, IOStreamExt, InputStreamExtManual, OutputStreamExtManual, SocketClient,
     SocketClientExt, SocketConnection, TlsCertificateFlags,
@@ -13,6 +14,7 @@ use regex::Regex;
 use url::Url;
 
 use super::super::models::Environment;
+use super::handlebars::compile_template;
 
 const READ_SIZE: usize = 1024;
 
@@ -32,6 +34,7 @@ impl<'a> From<&'a str> for Scheme {
         }
     }
 }
+
 
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
@@ -236,10 +239,13 @@ pub struct Http {
 
 impl Update for Http {
     type Model = HttpModel;
-    type ModelParam = String;
+    type ModelParam = (String, serde_yaml::Value);
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, http_request: String) -> HttpModel {
+    fn model(relm: &Relm<Self>, params: Self::ModelParam) -> HttpModel {
+        let (http_request, context) = params;
+        // Fix errors
+        let http_request = compile_template(http_request.as_str(), &context).unwrap_or("".to_owned());
         let request = parse_request(http_request.as_str());
         let response = Vec::new();
         HttpModel {

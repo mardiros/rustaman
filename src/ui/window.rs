@@ -2,6 +2,7 @@ use gdk;
 use gdk::enums::key;
 use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
+use serde_yaml;
 
 use super::super::helpers::http::{Http, HttpRequest, Msg as HttpMsg};
 use super::super::models::{Environment, Request, Template, Workspace};
@@ -13,6 +14,7 @@ use super::request_logger::{Msg as RequestLoggerMsg, RequestLogger};
 use super::response::{Msg as ResponseMsg, Response};
 use super::response_status::{Msg as ResponseStatusMsg, ResponseStatus};
 
+
 #[derive(Msg)]
 pub enum Msg {
     CreatingRequest,
@@ -20,18 +22,14 @@ pub enum Msg {
     Deleting(usize),
     Renaming(usize, String),
     RequestTemplateChanged(usize, Template),
-    // Trigger the execution of the http query, start by compilign the template
     ExecutingCurrentRequestTemplate,
-    // The template is going to be compiled
-    ExecutingRequestTemplate(Template),
-    // The template is compiled, now it is going to be send throw http
-    TemplateCompiled(String),
+    TemplateFetched(Template),
+    EnvironmentFetched(serde_yaml::Value),
     // The template has been rendered and will start the http request
     HttpRequestBeingExecuted(HttpRequest),
     // The request has been executed, we have a response
     HttpRequestExecuted(String),
     // The template cannot be compiled
-    TemplateCompilationFailed(String),
 
     SavingEnvironment(usize, String),
     DeletingEnvironment(usize),
@@ -45,6 +43,7 @@ pub struct Model {
     workspace: Workspace,
     current_req: usize,
     current_env: usize,
+    current_template: Template,
 }
 
 impl Model {
@@ -94,6 +93,7 @@ impl Update for Window {
             workspace,
             current_req: 0,
             current_env: 0,
+            current_template: "".to_owned(),
         }
     }
 
@@ -145,33 +145,39 @@ impl Update for Window {
                     .workspace
                     .set_request_template(id, template.as_str());
             }
-            Msg::ExecutingRequestTemplate(template) => {
+            Msg::TemplateFetched(template) => {
                 self.relm.stream().emit(Msg::RequestTemplateChanged(
                     self.model.current_req,
                     template.clone(),
                 ));
-
                 self.env_editor
                     .stream()
-                    .emit(EnvironMsg::CompilingTemplate(template));
+                    .emit(EnvironMsg::FetchingEnvironment);
+                self.model.current_template = template;
             }
             Msg::ExecutingCurrentRequestTemplate => {
                 self.request_editor
                     .stream()
-                    .emit(EditorMsg::ExecutingCurrent);
+                    .emit(EditorMsg::FetchingCurrentTemplate);
             }
-            Msg::TemplateCompiled(request) => {
+            Msg::EnvironmentFetched(env) => {
                 //let resp = self.runner.run_request(template.as_str());
-                //self.response
-                //    .stream()
-                //    .emit(ResponseMsg::RequestExecuted(resp.clone()));
-                let http = relm::execute::<Http>(request);
+                let params = (self.model.current_template.clone(), env);
+                let http = relm::execute::<Http>(params);
 
+                // Clean the status and response time
                 connect_stream!(
                     http@HttpMsg::Writing(ref request), self.relm.stream(), Msg::HttpRequestBeingExecuted(request.clone()));
 
                 connect_stream!(
                     http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::HttpRequestExecuted(response.clone()));
+                /* Fix for failed
+
+                        let err = format!("{}", err);
+                        self.response
+                            .stream()
+                            .emit(ResponseMsg::RequestExecuted(err));
+                 */
             }
             Msg::HttpRequestBeingExecuted(request) => {
                 self.response_status
@@ -193,11 +199,6 @@ impl Update for Window {
                 self.request_logger
                     .stream()
                     .emit(RequestLoggerMsg::RequestExecuted(response));
-            }
-            Msg::TemplateCompilationFailed(msg) => {
-                self.response
-                    .stream()
-                    .emit(ResponseMsg::RequestExecuted(msg));
             }
             Msg::CreatingEnvironment(name) => {
                 info!("Creating environment {}", name);
@@ -343,9 +344,9 @@ impl Widget for Window {
             Msg::RequestTemplateChanged(id, template.to_owned())
         );
         connect!(
-            request_editor@EditorMsg::Executing(ref template),
+            request_editor@EditorMsg::NotifyingCurrentTemplate(ref template),
             relm,
-            Msg::ExecutingRequestTemplate(template.to_owned())
+            Msg::TemplateFetched(template.to_owned())
         );
         let envs = model.environments().to_vec();
         let env_editor_box = gtk::Box::new(Orientation::Vertical, 0);
@@ -366,15 +367,9 @@ impl Widget for Window {
         editor_box.show();
 
         connect!(
-            env_editor@EnvironMsg::TemplateCompiled(ref result),
+            env_editor@EnvironMsg::FetchedEnvironment(ref result),
             relm,
-            Msg::TemplateCompiled(result.to_owned())
-        );
-
-        connect!(
-            env_editor@EnvironMsg::TemplateCompilationFailed(ref err),
-            relm,
-            Msg::TemplateCompilationFailed(err.to_owned())
+            Msg::EnvironmentFetched(result.clone())
         );
 
         connect!(
