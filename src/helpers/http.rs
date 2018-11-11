@@ -225,7 +225,10 @@ pub struct HttpModel {
 
 #[derive(Msg)]
 pub enum Msg {
+    StartHttpRequest,
     Connection(SocketConnection),
+    ConnectionError(RustamanError),
+    RequestParsingError(String),
     Read((Vec<u8>, usize)),
     ReadDone(String),
     Writing(HttpRequest),
@@ -246,7 +249,8 @@ impl Update for Http {
     fn model(relm: &Relm<Self>, params: Self::ModelParam) -> HttpModel {
         let (http_request, context) = params;
         // Fix errors
-        let http_request = compile_template(http_request.as_str(), &context).unwrap_or("".to_owned());
+        let http_request =
+            compile_template(http_request.as_str(), &context).unwrap_or("".to_owned());
         let request = parse_request(http_request.as_str());
         let response = Vec::new();
         HttpModel {
@@ -257,27 +261,36 @@ impl Update for Http {
         }
     }
 
-    fn subscriptions(&mut self, relm: &Relm<Self>) {
-        if let Ok(ref req) = self.model.request.as_ref() {
-            let client = SocketClient::new();
-            if req.scheme == Scheme::HTTPS {
-                client.set_tls(true);
-                client.set_tls_validation_flags(req.tls_flags);
-            }
-            connect_async!(
-                client,
-                connect_to_host_async(req.host.as_str(), req.port),
-                relm,
-                Msg::Connection
-            );
-        } else {
-            error!("Request is in error: {:?}", self.model.request);
-        }
-    }
+    fn subscriptions(&mut self, _relm: &Relm<Self>) {}
 
     fn update(&mut self, message: Msg) {
         match message {
+            Msg::StartHttpRequest => match self.model.request.as_ref() {
+                Ok(req) => {
+                    let client = SocketClient::new();
+                    if req.scheme == Scheme::HTTPS {
+                        client.set_tls(true);
+                        client.set_tls_validation_flags(req.tls_flags);
+                    }
+                    connect_async!(
+                        client,
+                        connect_to_host_async(req.host.as_str(), req.port),
+                        self.model.relm,
+                        Msg::Connection,
+                        |err: gdk::Error| Msg::ConnectionError(RustamanError::from(err.clone()))
+                    );
+                }
+                Err(err) => {
+                    error!("Request is in error: {:?}", self.model.request);
+                    let err = format!("{}", err);
+                    self.model
+                        .relm
+                        .stream()
+                        .emit(Msg::RequestParsingError(err.to_owned()));
+                }
+            },
             Msg::Connection(connection) => {
+                info!("Connecting to {:?}", connection);
                 let stream: IOStream = connection.upcast();
                 let writer = stream.get_output_stream().expect("output");
                 self.model.stream = Some(stream);
@@ -326,6 +339,10 @@ impl Update for Http {
                     );
                 }
             }
+            Msg::RequestParsingError(err) => {
+                error!("{:?}", err);
+            }
+            _ => {}
         }
     }
 }

@@ -11,8 +11,8 @@ use serde_yaml;
 use sourceview::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
 
-use super::super::models::{Environment, Environments};
 use super::super::errors::RustamanError;
+use super::super::models::{Environment, Environments};
 
 pub struct Model {
     current: u32,
