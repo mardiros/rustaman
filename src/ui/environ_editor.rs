@@ -12,6 +12,7 @@ use sourceview::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
 
 use super::super::models::{Environment, Environments};
+use super::super::errors::RustamanError;
 
 pub struct Model {
     current: u32,
@@ -28,7 +29,7 @@ impl Model {
 pub enum Msg {
     FetchingEnvironment,
     FetchedEnvironment(serde_yaml::Value),
-    FetchedEnvironmentFailed(serde_yaml::Error),
+    FetchedEnvironmentFailed(RustamanError),
     SavingEnvironment(usize, String),
     NewEntryPressingKey(gdk::EventKey),
     RequestingNewEnvironment,
@@ -103,7 +104,7 @@ impl Update for EnvironEditor {
                         info!("Yaml Error {:?}", err);
                         self.relm
                             .stream()
-                            .emit(Msg::FetchedEnvironmentFailed(err));
+                            .emit(Msg::FetchedEnvironmentFailed(RustamanError::from(err)));
                     }
                 }
             }
