@@ -28,6 +28,7 @@ impl Model {
 pub enum Msg {
     FetchingEnvironment,
     FetchedEnvironment(serde_yaml::Value),
+    FetchedEnvironmentFailed(serde_yaml::Error),
     SavingEnvironment(usize, String),
     NewEntryPressingKey(gdk::EventKey),
     RequestingNewEnvironment,
@@ -93,13 +94,16 @@ impl Update for EnvironEditor {
                 };
                 let params: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(&payload);
                 match params {
-                    Ok(ref params) => {
+                    Ok(params) => {
                         self.relm
                             .stream()
-                            .emit(Msg::FetchedEnvironment(params.clone()));
+                            .emit(Msg::FetchedEnvironment(params));
                     }
                     Err(err) => {
-                        // Fix me
+                        info!("Yaml Error {:?}", err);
+                        self.relm
+                            .stream()
+                            .emit(Msg::FetchedEnvironmentFailed(err));
                     }
                 }
             }

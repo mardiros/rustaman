@@ -1,4 +1,4 @@
-use gdk;
+    use gdk;
 use gdk::enums::key;
 use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
@@ -25,6 +25,7 @@ pub enum Msg {
     ExecutingCurrentRequestTemplate,
     TemplateFetched(Template),
     EnvironmentFetched(serde_yaml::Value),
+    EnvironmentFetchedFailed(String),
     // The template has been rendered and will start the http request
     HttpRequestBeingExecuted(HttpRequest),
     // The request has been executed, we have a response
@@ -171,13 +172,11 @@ impl Update for Window {
 
                 connect_stream!(
                     http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::HttpRequestExecuted(response.clone()));
-                /* Fix for failed
-
-                        let err = format!("{}", err);
-                        self.response
-                            .stream()
-                            .emit(ResponseMsg::RequestExecuted(err));
-                 */
+            }
+            Msg::EnvironmentFetchedFailed(err) => {
+                self.response
+                    .stream()
+                    .emit(ResponseMsg::DisplayError(err));
             }
             Msg::HttpRequestBeingExecuted(request) => {
                 self.response_status
@@ -371,7 +370,11 @@ impl Widget for Window {
             relm,
             Msg::EnvironmentFetched(result.clone())
         );
-
+        connect!(
+            env_editor@EnvironMsg::FetchedEnvironmentFailed(ref err),
+            relm,
+            Msg::EnvironmentFetchedFailed(err.to_string())
+        );
         connect!(
             env_editor@EnvironMsg::CreatingEnvironment(ref name),
             relm,
