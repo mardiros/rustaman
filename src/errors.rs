@@ -1,19 +1,28 @@
 //! Define results and error. `Result<T, CabotError>`
 use std::error::Error;
 use std::fmt::{self, Display};
+
 use serde_yaml;
+use url::ParseError;
 
 
 #[derive(Debug)]
 pub enum RustamanError{
-    EnvironmentParsingError(serde_yaml::Error)
+    RequestParsingError(String),
+    EnvironmentParsingError(serde_yaml::Error),
+    UrlParseError(url::ParseError),
 }
+
+/// Result used by method that can failed.
+pub type RustamanResult<T> = Result<T, RustamanError>;
 
 
 impl Display for RustamanError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let description = match self {
             RustamanError::EnvironmentParsingError(err) => format!("Environment Yaml Parsing Error: {}", err),
+            RustamanError::UrlParseError(err) => format!("Url Parse Error: {}", err),
+            RustamanError::RequestParsingError(err) => format!("{}", err),
         };
         write!(f, "{}", description)
     }
@@ -23,6 +32,8 @@ impl Error for RustamanError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         let err: Option<&(dyn Error + 'static)> = match self {
             RustamanError::EnvironmentParsingError(err) => Some(err),
+            RustamanError::UrlParseError(err) => Some(err),
+            RustamanError::RequestParsingError(_) => None,
         };
         err
     }
@@ -32,5 +43,12 @@ impl Error for RustamanError {
 impl From<serde_yaml::Error> for RustamanError {
     fn from(err: serde_yaml::Error) -> RustamanError {
         RustamanError::EnvironmentParsingError(err)
+    }
+}
+
+
+impl From<url::ParseError> for RustamanError {
+    fn from(err: url::ParseError) -> RustamanError {
+        RustamanError::UrlParseError(err)
     }
 }

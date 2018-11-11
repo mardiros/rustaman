@@ -14,6 +14,7 @@ use regex::Regex;
 use url::Url;
 
 use super::super::models::Environment;
+use super::super::errors::{RustamanResult,RustamanError};
 use super::handlebars::compile_template;
 
 const READ_SIZE: usize = 1024;
@@ -90,7 +91,7 @@ fn extract_insecure_flag(line: &str) -> bool {
     return re_extract_insecure_flag.is_match(line);
 }
 
-pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
+pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     info!("Parsing request {}", request.len());
 
     let mut lines = request.lines();
@@ -117,7 +118,7 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
         line = lines.next();
     }
     if line.is_none() {
-        return Err("! No request found".to_owned());
+        return Err(RustamanError::RequestParsingError("No request found".to_owned()));
     }
 
     info!("Parsing First line {:?}", line);
@@ -131,17 +132,17 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
             verb_url_version[2],
         ),
         _ => {
-            return Err(format!("! Parse error on line: {}", line.unwrap()).to_owned());
+            return Err(RustamanError::RequestParsingError(format!("Parse error on line: {}", line.unwrap()).to_owned()));
         }
     };
-    let url = url.parse::<Url>().map_err(|err| format!("! {}", err))?;
+    let url = url.parse::<Url>()?;
     if authority.is_none() {
         let host = url
             .host_str()
-            .ok_or("! Host not found in HTTP Request".to_string())?;
+            .ok_or(RustamanError::RequestParsingError("Host not found in HTTP Request".to_string()))?;
         let port = url
             .port_or_known_default()
-            .ok_or("! Unknown http port to query".to_string())?;
+            .ok_or(RustamanError::RequestParsingError("Unknown http port to query".to_string()))?;
         authority = Some((host.to_string(), port));
     }
     let mut query = url.path().to_string();
@@ -156,7 +157,7 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
 
     let scheme = Scheme::from(url.scheme());
     if let Scheme::Err(error) = scheme {
-        return Err(error);
+        return Err(RustamanError::RequestParsingError(error));
     }
 
     let mut http_frame = format!("{} {} {}\r\n", verb, query, version);
@@ -216,7 +217,7 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
 }
 
 pub struct HttpModel {
-    request: Result<HttpRequest, String>,
+    request: RustamanResult<HttpRequest>,
     response: Vec<u8>,
     relm: Relm<Http>,
     stream: Option<IOStream>,
