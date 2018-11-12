@@ -28,6 +28,7 @@ extern crate handlebars;
 
 mod helpers;
 mod models;
+mod errors;
 mod ui;
 
 use std::vec::Vec;

@@ -23,8 +23,8 @@ pub enum Msg {
     RequestingSave(usize),
     Saving(usize, Template),
     TemplateChanged(Template),
-    ExecutingCurrent,
-    Executing(Template),
+    FetchingCurrentTemplate,
+    NotifyingCurrentTemplate(Template),
     Hiding,
 }
 
@@ -76,12 +76,12 @@ impl Update for RequestEditor {
                     }
                 }
             }
-            Msg::ExecutingCurrent => {
+            Msg::FetchingCurrentTemplate => {
                 let text = self.get_text();
                 match text {
                     Some(ref data) => {
                         error!("Running query");
-                        self.relm.stream().emit(Msg::Executing(data.to_owned()));
+                        self.relm.stream().emit(Msg::NotifyingCurrentTemplate(data.to_owned()));
                     }
                     None => {
                         error!("No requests to execute");

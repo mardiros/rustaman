@@ -1,6 +1,7 @@
 use std::convert::From;
 use std::str::FromStr;
 
+use serde_yaml;
 use gio::{
     IOStream, IOStreamExt, InputStreamExtManual, OutputStreamExtManual, SocketClient,
     SocketClientExt, SocketConnection, TlsCertificateFlags,
@@ -13,6 +14,8 @@ use regex::Regex;
 use url::Url;
 
 use super::super::models::Environment;
+use super::super::errors::{RustamanResult,RustamanError};
+use super::handlebars::compile_template;
 
 const READ_SIZE: usize = 1024;
 
@@ -32,6 +35,7 @@ impl<'a> From<&'a str> for Scheme {
         }
     }
 }
+
 
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
@@ -87,7 +91,7 @@ fn extract_insecure_flag(line: &str) -> bool {
     return re_extract_insecure_flag.is_match(line);
 }
 
-pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
+pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     info!("Parsing request {}", request.len());
 
     let mut lines = request.lines();
@@ -114,7 +118,7 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
         line = lines.next();
     }
     if line.is_none() {
-        return Err("! No request found".to_owned());
+        return Err(RustamanError::RequestParsingError("No request found".to_owned()));
     }
 
     info!("Parsing First line {:?}", line);
@@ -128,17 +132,17 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
             verb_url_version[2],
         ),
         _ => {
-            return Err(format!("! Parse error on line: {}", line.unwrap()).to_owned());
+            return Err(RustamanError::RequestParsingError(format!("Parse error on line: {}", line.unwrap()).to_owned()));
         }
     };
-    let url = url.parse::<Url>().map_err(|err| format!("! {}", err))?;
+    let url = url.parse::<Url>()?;
     if authority.is_none() {
         let host = url
             .host_str()
-            .ok_or("! Host not found in HTTP Request".to_string())?;
+            .ok_or(RustamanError::RequestParsingError("Host not found in HTTP Request".to_string()))?;
         let port = url
             .port_or_known_default()
-            .ok_or("! Unknown http port to query".to_string())?;
+            .ok_or(RustamanError::RequestParsingError("Unknown http port to query".to_string()))?;
         authority = Some((host.to_string(), port));
     }
     let mut query = url.path().to_string();
@@ -153,7 +157,7 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
 
     let scheme = Scheme::from(url.scheme());
     if let Scheme::Err(error) = scheme {
-        return Err(error);
+        return Err(RustamanError::RequestParsingError(error));
     }
 
     let mut http_frame = format!("{} {} {}\r\n", verb, query, version);
@@ -213,7 +217,7 @@ pub fn parse_request(request: &str) -> Result<HttpRequest, String> {
 }
 
 pub struct HttpModel {
-    request: Result<HttpRequest, String>,
+    request: RustamanResult<HttpRequest>,
     response: Vec<u8>,
     relm: Relm<Http>,
     stream: Option<IOStream>,
@@ -221,7 +225,10 @@ pub struct HttpModel {
 
 #[derive(Msg)]
 pub enum Msg {
+    StartHttpRequest,
     Connection(SocketConnection),
+    ConnectionError(RustamanError),
+    RequestParsingError(String),
     Read((Vec<u8>, usize)),
     ReadDone(String),
     Writing(HttpRequest),
@@ -236,10 +243,14 @@ pub struct Http {
 
 impl Update for Http {
     type Model = HttpModel;
-    type ModelParam = String;
+    type ModelParam = (String, serde_yaml::Value);
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, http_request: String) -> HttpModel {
+    fn model(relm: &Relm<Self>, params: Self::ModelParam) -> HttpModel {
+        let (http_request, context) = params;
+        // Fix errors
+        let http_request =
+            compile_template(http_request.as_str(), &context).unwrap_or("".to_owned());
         let request = parse_request(http_request.as_str());
         let response = Vec::new();
         HttpModel {
@@ -250,27 +261,36 @@ impl Update for Http {
         }
     }
 
-    fn subscriptions(&mut self, relm: &Relm<Self>) {
-        if let Ok(ref req) = self.model.request.as_ref() {
-            let client = SocketClient::new();
-            if req.scheme == Scheme::HTTPS {
-                client.set_tls(true);
-                client.set_tls_validation_flags(req.tls_flags);
-            }
-            connect_async!(
-                client,
-                connect_to_host_async(req.host.as_str(), req.port),
-                relm,
-                Msg::Connection
-            );
-        } else {
-            error!("Request is in error: {:?}", self.model.request);
-        }
-    }
+    fn subscriptions(&mut self, _relm: &Relm<Self>) {}
 
     fn update(&mut self, message: Msg) {
         match message {
+            Msg::StartHttpRequest => match self.model.request.as_ref() {
+                Ok(req) => {
+                    let client = SocketClient::new();
+                    if req.scheme == Scheme::HTTPS {
+                        client.set_tls(true);
+                        client.set_tls_validation_flags(req.tls_flags);
+                    }
+                    connect_async!(
+                        client,
+                        connect_to_host_async(req.host.as_str(), req.port),
+                        self.model.relm,
+                        Msg::Connection,
+                        |err: gdk::Error| Msg::ConnectionError(RustamanError::from(err.clone()))
+                    );
+                }
+                Err(err) => {
+                    error!("Request is in error: {:?}", self.model.request);
+                    let err = format!("{}", err);
+                    self.model
+                        .relm
+                        .stream()
+                        .emit(Msg::RequestParsingError(err.to_owned()));
+                }
+            },
             Msg::Connection(connection) => {
+                info!("Connecting to {:?}", connection);
                 let stream: IOStream = connection.upcast();
                 let writer = stream.get_output_stream().expect("output");
                 self.model.stream = Some(stream);
@@ -319,6 +339,10 @@ impl Update for Http {
                     );
                 }
             }
+            Msg::RequestParsingError(err) => {
+                error!("{:?}", err);
+            }
+            _ => {}
         }
     }
 }
