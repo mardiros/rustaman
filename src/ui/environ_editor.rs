@@ -72,6 +72,16 @@ impl EnvironEditor {
         let current = self.model.current;
         self.get_text(current)
     }
+
+    fn get_current_id(&self) -> usize {
+        let current = self.model.current;
+        let &(id, _, _, _) = self
+            .environ_sources
+            .get(&current)
+            .expect("Should be a valid tab page index");
+        id
+    }
+
 }
 
 impl Update for EnvironEditor {
@@ -107,6 +117,12 @@ impl Update for EnvironEditor {
                             .emit(Msg::FetchedEnvironmentFailed(RustamanError::from(err)));
                     }
                 }
+
+                self.relm.stream().emit(Msg::SavingEnvironment(
+                    self.get_current_id(),
+                    payload.to_owned(),
+                    ));
+
             }
             Msg::RequestingNewEnvironment => {
                 info!("Detach Plus");
@@ -222,17 +238,6 @@ impl Update for EnvironEditor {
 
             Msg::TogglingEnvironmentIndex(idx) => {
                 info!("Switch to page {}", idx);
-                /*
-                {
-                    let env = self.model.environments();
-                    if self.model.current < env.len() {
-                        self.relm.stream().emit(Msg::SavingEnvironment(
-                            self.model.current,
-                            self.model.get_current_text(),
-                            ));
-                    }
-                }
-                */
                 self.model.current = idx;
                 let &(ref id, _, _, _) = self
                     .environ_sources
