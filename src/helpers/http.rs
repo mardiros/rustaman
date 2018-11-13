@@ -28,6 +28,25 @@ lazy_static! {
     pub static ref RE_SPLIT_HTTP_FIRST_LINE: Regex = Regex::new("[ ]+").unwrap();
 }
 
+fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
+    let resp = RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE
+        .captures(line)
+        .and_then(|cap| {
+            let host = cap
+                .name("host")
+                .map(|host| host.as_str().trim_start_matches("[").trim_end_matches("]"));
+            let port = cap
+                .name("port")
+                .map(|port| FromStr::from_str(port.as_str()).unwrap());
+            Some((host.unwrap().to_string(), port.unwrap()))
+        });
+    resp
+}
+
+fn extract_insecure_flag(line: &str) -> bool {
+    return RE_EXTRACT_INSECURE_FLAG.is_match(line);
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Scheme {
     HTTP,
@@ -75,25 +94,6 @@ impl HttpRequest {
             }).collect();
         req
     }
-}
-
-fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
-    let resp = RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE
-        .captures(line)
-        .and_then(|cap| {
-            let host = cap
-                .name("host")
-                .map(|host| host.as_str().trim_start_matches("[").trim_end_matches("]"));
-            let port = cap
-                .name("port")
-                .map(|port| FromStr::from_str(port.as_str()).unwrap());
-            Some((host.unwrap().to_string(), port.unwrap()))
-        });
-    resp
-}
-
-fn extract_insecure_flag(line: &str) -> bool {
-    return RE_EXTRACT_INSECURE_FLAG.is_match(line);
 }
 
 pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
