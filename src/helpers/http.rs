@@ -207,8 +207,9 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         http_frame.push_str(length.as_str());
         http_frame.push_str("\r\n");
     }
-
-    http_frame.push_str("User-Agent: Rustaman\r\n");
+    if http_frame.find("\nUser-Agent:").is_none() {
+        http_frame.push_str("User-Agent: Rustaman\r\n");
+    }
     http_frame.push_str("Connection: close\r\n");
     http_frame.push_str("\r\n");
 
