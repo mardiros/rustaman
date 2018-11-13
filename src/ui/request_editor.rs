@@ -2,7 +2,7 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, Orientation, ScrolledWindow};
-use relm::{Relm, Update, Widget, connect_stream, connect};
+use relm::{connect, connect_stream, Relm, Update, Widget};
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 
 use super::super::models::Template;

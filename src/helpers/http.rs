@@ -9,7 +9,7 @@ use gio::{
 };
 use glib::source::PRIORITY_DEFAULT;
 use glib::Cast;
-use relm::{Relm, Update, UpdateNew, connect_async};
+use relm::{connect_async, Relm, Update, UpdateNew};
 use serde_yaml;
 
 use regex::Regex;
