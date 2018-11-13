@@ -1,7 +1,8 @@
 use std::convert::From;
 use std::str::FromStr;
 
-use serde_yaml;
+use lazy_static::lazy_static;
+
 use gio::{
     IOStream, IOStreamExt, InputStreamExtManual, OutputStreamExtManual, SocketClient,
     SocketClientExt, SocketConnection, TlsCertificateFlags,
@@ -9,15 +10,23 @@ use gio::{
 use glib::source::PRIORITY_DEFAULT;
 use glib::Cast;
 use relm::{Relm, Update, UpdateNew};
+use serde_yaml;
 
 use regex::Regex;
 use url::Url;
 
+use super::super::errors::{RustamanError, RustamanResult};
 use super::super::models::Environment;
-use super::super::errors::{RustamanResult,RustamanError};
 use super::handlebars::compile_template;
 
 const READ_SIZE: usize = 1024;
+lazy_static! {
+    pub static ref RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE: Regex =
+        Regex::new(r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)").unwrap();
+    pub static ref RE_EXTRACT_INSECURE_FLAG: Regex =
+        Regex::new(r"#![\s]*Allow Insecure Certificate").unwrap();
+    pub static ref RE_SPLIT_HTTP_FIRST_LINE: Regex = Regex::new("[ ]+").unwrap();
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Scheme {
@@ -35,7 +44,6 @@ impl<'a> From<&'a str> for Scheme {
         }
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
@@ -70,9 +78,7 @@ impl HttpRequest {
 }
 
 fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
-    let re_extract_authority_from_directive: Regex =
-        Regex::new(r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)").unwrap();
-    let resp = re_extract_authority_from_directive
+    let resp = RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE
         .captures(line)
         .and_then(|cap| {
             let host = cap
@@ -87,8 +93,7 @@ fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
 }
 
 fn extract_insecure_flag(line: &str) -> bool {
-    let re_extract_insecure_flag: Regex = Regex::new(r"#![\s]*Allow Insecure Certificate").unwrap();
-    return re_extract_insecure_flag.is_match(line);
+    return RE_EXTRACT_INSECURE_FLAG.is_match(line);
 }
 
 pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
@@ -118,12 +123,13 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         line = lines.next();
     }
     if line.is_none() {
-        return Err(RustamanError::RequestParsingError("No request found".to_owned()));
+        return Err(RustamanError::RequestParsingError(
+            "No request found".to_owned(),
+        ));
     }
 
     info!("Parsing First line {:?}", line);
-    let split_verb_re: Regex = Regex::new("[ ]+").unwrap();
-    let verb_url_version: Vec<&str> = split_verb_re.split(line.unwrap()).collect();
+    let verb_url_version: Vec<&str> = RE_SPLIT_HTTP_FIRST_LINE.split(line.unwrap()).collect();
     let (verb, url, version) = match verb_url_version.len() {
         2 => (verb_url_version[0], verb_url_version[1], "HTTP/1.1"),
         3 => (
@@ -132,17 +138,21 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
             verb_url_version[2],
         ),
         _ => {
-            return Err(RustamanError::RequestParsingError(format!("Parse error on line: {}", line.unwrap()).to_owned()));
+            return Err(RustamanError::RequestParsingError(
+                format!("Parse error on line: {}", line.unwrap()).to_owned(),
+            ));
         }
     };
     let url = url.parse::<Url>()?;
     if authority.is_none() {
-        let host = url
-            .host_str()
-            .ok_or(RustamanError::RequestParsingError("Host not found in HTTP Request".to_string()))?;
+        let host = url.host_str().ok_or(RustamanError::RequestParsingError(
+            "Host not found in HTTP Request".to_string(),
+        ))?;
         let port = url
             .port_or_known_default()
-            .ok_or(RustamanError::RequestParsingError("Unknown http port to query".to_string()))?;
+            .ok_or(RustamanError::RequestParsingError(
+                "Unknown http port to query".to_string(),
+            ))?;
         authority = Some((host.to_string(), port));
     }
     let mut query = url.path().to_string();
