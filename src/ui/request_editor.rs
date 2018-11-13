@@ -2,9 +2,8 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, Orientation, ScrolledWindow};
-use relm::{Relm, Update, Widget};
-use sourceview::prelude::*;
-use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
+use relm::{Relm, Update, Widget, connect_stream, connect};
+use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 
 use super::super::models::Template;
 

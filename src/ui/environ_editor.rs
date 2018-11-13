@@ -6,7 +6,7 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, IconSize, Orientation, ReliefStyle, ScrolledWindow};
-use relm::{Relm, Update, Widget};
+use relm::{Relm, Update, Widget, connect_stream, connect};
 use serde_yaml;
 use sourceview::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};

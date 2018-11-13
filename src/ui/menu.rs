@@ -5,7 +5,7 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, IconSize, Orientation};
-use relm::{Component, ContainerWidget, Relm, Update, Widget};
+use relm::{Component, ContainerWidget, Relm, Update, Widget, connect_stream, connect};
 
 use super::super::models::{Request, Requests};
 use super::menu_item::{MenuItem, Msg as MenuItemMsg};

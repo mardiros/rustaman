@@ -2,7 +2,7 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, Orientation};
-use relm::{Relm, Update, Widget};
+use relm::{Relm, Update, Widget, connect_stream, connect};
 
 use super::super::models::Request;
 

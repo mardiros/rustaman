@@ -1,7 +1,7 @@
 use gdk;
 use gdk::enums::key;
 use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
-use relm::{Component, ContainerWidget, Relm, Update, Widget};
+use relm::{Component, ContainerWidget, Relm, Update, Widget, connect_stream, connect};
 use serde_yaml;
 
 use super::super::helpers::http::{Http, HttpRequest, Msg as HttpMsg};

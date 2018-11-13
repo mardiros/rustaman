@@ -8,7 +8,6 @@ extern crate glib;
 extern crate gtk;
 extern crate sourceview;
 
-#[macro_use]
 extern crate relm;
 #[macro_use]
 extern crate relm_derive;
