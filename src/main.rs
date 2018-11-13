@@ -20,15 +20,16 @@ extern crate serde_json;
 extern crate serde_yaml;
 
 extern crate cabot;
+extern crate lazy_static;
 extern crate regex;
 extern crate url;
 
 extern crate dirs;
 extern crate handlebars;
 
+mod errors;
 mod helpers;
 mod models;
-mod errors;
 mod ui;
 
 use std::vec::Vec;
