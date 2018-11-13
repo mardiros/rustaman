@@ -1,4 +1,3 @@
-
 use gdk;
 use gdk::enums::key;
 use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
