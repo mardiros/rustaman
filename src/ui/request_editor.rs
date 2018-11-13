@@ -81,7 +81,9 @@ impl Update for RequestEditor {
                 match text {
                     Some(ref data) => {
                         error!("Running query");
-                        self.relm.stream().emit(Msg::NotifyingCurrentTemplate(data.to_owned()));
+                        self.relm
+                            .stream()
+                            .emit(Msg::NotifyingCurrentTemplate(data.to_owned()));
                     }
                     None => {
                         error!("No requests to execute");

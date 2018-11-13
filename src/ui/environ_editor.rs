@@ -81,7 +81,6 @@ impl EnvironEditor {
             .expect("Should be a valid tab page index");
         id
     }
-
 }
 
 impl Update for EnvironEditor {
@@ -106,9 +105,7 @@ impl Update for EnvironEditor {
                 let params: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(&payload);
                 match params {
                     Ok(params) => {
-                        self.relm
-                            .stream()
-                            .emit(Msg::FetchedEnvironment(params));
+                        self.relm.stream().emit(Msg::FetchedEnvironment(params));
                     }
                     Err(err) => {
                         info!("Yaml Error {:?}", err);
@@ -121,8 +118,7 @@ impl Update for EnvironEditor {
                 self.relm.stream().emit(Msg::SavingEnvironment(
                     self.get_current_id(),
                     payload.to_owned(),
-                    ));
-
+                ));
             }
             Msg::RequestingNewEnvironment => {
                 info!("Detach Plus");

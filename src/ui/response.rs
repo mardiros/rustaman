@@ -12,7 +12,7 @@ fn prettify_js(payload: &str) -> String {
 #[derive(Msg)]
 pub enum Msg {
     RequestExecuted(String),
-    DisplayError(String)
+    DisplayError(String),
 }
 
 pub struct Response {
@@ -36,7 +36,7 @@ impl Update for Response {
                 let error = format!("! {}", error);
                 let buffer = self.response_view.get_buffer().unwrap();
                 buffer.set_text(error.as_str());
-            },
+            }
             Msg::RequestExecuted(response) => {
                 let mut is_json = false;
                 let mut has_content = true;

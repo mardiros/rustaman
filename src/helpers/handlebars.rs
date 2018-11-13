@@ -1,4 +1,6 @@
-use handlebars::{Context, Handlebars, Helper, HelperResult, Output, RenderContext, TemplateRenderError};
+use handlebars::{
+    Context, Handlebars, Helper, HelperResult, Output, RenderContext, TemplateRenderError,
+};
 use std::boxed::Box;
 
 // implement via bare function
@@ -23,8 +25,10 @@ fn get_template_renderer() -> Handlebars {
     hbar
 }
 
-
-pub fn compile_template(template: &str, context: &serde_yaml::Value) -> Result<String, TemplateRenderError> {
+pub fn compile_template(
+    template: &str,
+    context: &serde_yaml::Value,
+) -> Result<String, TemplateRenderError> {
     let hbar = get_template_renderer();
     hbar.render_template(template, &context)
 }

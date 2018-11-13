@@ -1,4 +1,5 @@
-    use gdk;
+
+use gdk;
 use gdk::enums::key;
 use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
 use relm::{Component, ContainerWidget, Relm, Update, Widget};
@@ -13,7 +14,6 @@ use super::request_editor::{Msg as EditorMsg, RequestEditor};
 use super::request_logger::{Msg as RequestLoggerMsg, RequestLogger};
 use super::response::{Msg as ResponseMsg, Response};
 use super::response_status::{Msg as ResponseStatusMsg, ResponseStatus};
-
 
 #[derive(Msg)]
 pub enum Msg {
