@@ -27,15 +27,15 @@
   value in the doc, after a key, and between each comma in an array. Also
   I'd be able to add support for displaying an error for trailing commas.
 -->
-<language id="rustaman-json" name="RUSTAMAN_JSON" version="2.0" _section="Other">
+<language id="rustaman-request" name="RUSTAMAN_REQUEST" version="2.0" _section="Other">
  
   <styles>
     <style id="http-method"        _name="HTTP Method"               map-to="def:type"/>
     <style id="url"                _name="URL"                       map-to="def:builtin"/>
-    <style id="url-querystring"    _name="URL Query String"          map-to="js:string"/>
     <style id="http-version"       _name="HTTP Version"              map-to="def:comment"/>
     <style id="http-header-name"   _name="HTTP Header Name"          map-to="def:special-char"/>
     <style id="http-header-value"  _name="HTTP Header Value"         map-to="js:string"/>
+    <style id="template-helper"    _name="Template helper"           map-to="def:type"/>
     <style id="template-var"       _name="Template var"              map-to="def:preprocessor"/>
     <style id="keyname"            _name="Key"                       map-to="def:special-char"/>
     <style id="special-char"       _name="Escaped Character"         map-to="js:escape"/>
@@ -49,34 +49,27 @@
 
   <definitions>
 
-    <define-regex id="http-method-re">^(GET|POST|PUT|PATCH|HEAD|OPTIONS)</define-regex>
-    <define-regex id="template-var-re">\{\{[^\}]+\}\}</define-regex>
+    <define-regex id="http-method-re">^(GET|POST|PUT|PATCH|HEAD|OPTIONS|DELETE)</define-regex>
+
+    <context id="http-version" style-ref="http-version">
+      <match extended="true">
+        HTTP/.*
+      </match>
+    </context>
 
     <context id="http-query"  once-only="true" style-ref="http-method">
       <start>\%{http-method-re}</start>
-      <end>^$</end>
+      <end>$</end>
       <include>
-        <context once-only="true" style-ref="url">
+        <context once-only="true" style-ref="url" end-at-line-end="true">
           <start> </start>
-          <end> </end>
+          <end>$</end>
           <include>
             <context ref="template-var"/>
-
-            <context style-ref="url-querystring" once-only="true" end-parent="true">
-              <start>\?</start>
-              <end> </end>
-              <include>
-                <context ref="template-var"/>
-              </include>
-            </context>
-
+            <context ref="http-version"  style-ref="http-version"/>
           </include>
         </context>
         
-        <context once-only="true" style-ref="http-version">
-          <start>HTTP/[.0-9]+</start>
-          <end>$</end>
-        </context>
 
         <context end-at-line-end="true" style-ref="http-header-name">
           <start>^[^:]+:</start>
@@ -95,12 +88,6 @@
       </include>
     </context>
 
-    <context id="template-var" style-ref="template-var">
-      <match extended="true">
-        \%{template-var-re}
-      </match>
-    </context>
-
     <context id="json-array">
       <start>\[</start>
       <end>\]</end>
@@ -109,6 +96,26 @@
           <start></start>
           <end>,|\s*(?=\&#93;)</end>
             <include>
+            <context ref="json-value"/>
+          </include>
+        </context>
+      </include>
+    </context>
+
+    <context id="template-helper" style-ref="template-helper">
+      <match>set</match>
+    </context>
+
+    <context id="template-var" style-ref="template-var">
+      <start>\{\{</start>
+      <end>\}\}</end>
+      <include>
+        <context ref="template-helper"/>
+        <context>
+          <start>=</start>
+          <end>\s*</end>
+          <include>
+            <context sub-pattern="0" where="start" style-ref="keyname"/>
             <context ref="json-value"/>
           </include>
         </context>
@@ -174,13 +181,16 @@
       <!-- <context ref="catchall"/> -->
     </include></context>
 
-    <context id="rustaman-json" class="no-spell-check">
+    <context id="rustaman-request" class="no-spell-check">
       <include>
         <context ref="def:shell-like-comment"/>
+        <context ref="template-var"/>
+        <context ref="template-helper"/>
+        
+        <context ref="http-version"/>
         <context ref="http-query"/>
         <context ref="json-object"/>
         <context ref="json-array"/>
-        <context ref="template-var"/>
       </include>
     </context>
   </definitions>

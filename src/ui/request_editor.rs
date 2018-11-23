@@ -112,7 +112,7 @@ impl Widget for RequestEditor {
         hbox.set_vexpand(true);
 
         let langmngr = LanguageManager::get_default().unwrap();
-        let lang = langmngr.get_language("rustaman-json").unwrap();
+        let lang = langmngr.get_language("rustaman-request").unwrap();
 
         let stylemngr = StyleSchemeManager::get_default().unwrap();
         let style = stylemngr.get_scheme("solarized-dark").unwrap();
