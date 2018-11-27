@@ -4,9 +4,9 @@ use relm::{Relm, Update, Widget};
 use serde_json;
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 
-fn prettify_js(payload: &str) -> String {
-    let obj: serde_json::Value = serde_json::from_str(payload).unwrap();
-    serde_json::to_string_pretty(&obj).unwrap()
+fn prettify_js(payload: &str) -> Result<String, serde_json::Error> {
+    let obj: serde_json::Value = serde_json::from_str(payload)?;
+    Ok(serde_json::to_string_pretty(&obj).unwrap())
 }
 
 #[derive(Msg)]
@@ -69,7 +69,10 @@ impl Update for Response {
                     }
                 }
                 let response = if is_json && has_content {
-                    prettify_js(text.as_str())
+                    match prettify_js(text.as_str()) {
+                        Ok(pretty) => pretty,
+                        Err(_) => text
+                    }
                 } else {
                     text
                 };

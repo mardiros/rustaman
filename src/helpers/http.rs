@@ -19,6 +19,7 @@ use super::super::errors::{RustamanError, RustamanResult};
 use super::super::models::Environment;
 use super::handlebars::compile_template;
 
+
 const READ_SIZE: usize = 1024;
 lazy_static! {
     pub static ref RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE: Regex =
@@ -27,9 +28,48 @@ lazy_static! {
         Regex::new(r"#![\s]*Allow Insecure Certificate").unwrap();
     pub static ref RE_SPLIT_HTTP_FIRST_LINE: Regex = Regex::new("[ ]+").unwrap();
     pub static ref RE_EXTRACT_CAPTURE: Regex =
-        Regex::new(r"#![\s]*Capture:\s*(?P<var_name>.+)").unwrap();
+        Regex::new(r"#![\s]*Capture:\s*(?P<capture>.+)").unwrap();
     pub static ref RE_SPLIT_END_CAPTURE: Regex =
         Regex::new(r"#![\s]*EndCapture").unwrap();
+}
+
+fn parse_response(response: &str) -> Option<serde_yaml::Value> {
+    let mut is_json = false;
+    let mut has_content = true;
+    let mut text = String::new();
+    let mut lines = response.lines();
+    loop {
+        let line = lines.next();
+        match line {
+            Some(unwrapped) => {
+                if unwrapped.is_empty() {
+                    break;
+                }
+                if unwrapped.starts_with("Content-Type: application/json") {
+                    is_json = true;
+                }
+            }
+            None => has_content = false,
+        }
+    }
+    if has_content {
+        loop {
+            let line = lines.next();
+            match line {
+                Some(unwrapped) => {
+                    text.push_str(unwrapped);
+                    text.push('\n');
+                }
+                None => break
+            }
+        }
+    };
+    if is_json && has_content {
+        let resp: serde_yaml::Value = serde_json::from_str(text.as_str()).unwrap();
+        Some(resp)
+    } else {
+        None
+    }
 }
 
 fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
@@ -271,7 +311,8 @@ fn parse_template(template: &str) -> HttpRequests {
 
 pub struct HttpModel {
     request: HttpRequests,
-    current_request: usize,
+    current_request: Option<HttpRequest>,
+    current_request_idx: usize,
     error: Option<RustamanError>,
     context: serde_yaml::Value,
     response: Vec<u8>,
@@ -315,7 +356,8 @@ impl Update for Http {
             relm: relm.clone(),
             error: None,
             stream: None,
-            current_request: 0,
+            current_request: None,
+            current_request_idx: 0,
         }
     }
 
@@ -339,11 +381,13 @@ impl Update for Http {
                 }
             }
             Msg::StartConsumingHttpRequest => {
-                info!("StartConsumingHttpRequest: {:?}", self.model.request.requests);
-                if self.model.request.requests.len() > self.model.current_request {
-                    let req = self.model.request.requests.get(self.model.current_request).unwrap();
+                if self.model.request.requests.len() > self.model.current_request_idx {
+                    info!("StartConsumingHttpRequest: {} / {}",
+                        self.model.current_request_idx + 1, self.model.request.requests.len());
+                    let req = self.model.request.requests.get(self.model.current_request_idx).unwrap();
                     let http_request =
                         compile_template(req.as_str(), &self.model.context).unwrap_or("".to_owned());
+                    info!("{}", http_request);
                     let req = parse_request(http_request.as_str());
                     if let Err(err) = req {
                         self.model
@@ -353,11 +397,13 @@ impl Update for Http {
                     }
                     else {
                         // start consuming without error here
-                        self.model.current_request += 1;
+                        self.model.current_request_idx += 1;
+                        let req = req.unwrap();
+                        self.model.current_request = Some(req.clone());
                         self.model
                             .relm
                             .stream()
-                            .emit(Msg::Connecting(req.unwrap()));                    
+                            .emit(Msg::Connecting(req));
                     }
                  }
 
@@ -414,7 +460,27 @@ impl Update for Http {
                 self.model.response.extend(&buffer);
             }
             // To be listened by the user.
-            Msg::ReadDone(_) => (),
+            Msg::ReadDone(response) => {
+                let req = mem::replace(&mut self.model.current_request, None);
+                let req = req.unwrap();
+                if let Some(capture) = req.capture {
+                    let resp = parse_response(response.as_str());
+                    if let Some(r) = resp {
+                        match &mut self.model.context {
+                          serde_yaml::Value::Mapping(mapping)  => {
+                            mapping.insert(serde_yaml::Value::String(capture.to_string()), r);
+                          }
+                          _ => {}
+                        }
+                    }
+                }
+                self.model.response.clear();
+                self.model
+                    .relm
+                    .stream()
+                    .emit(Msg::StartConsumingHttpRequest);
+
+            },
             Msg::Writing(_) => (),
             Msg::Wrote(_) => {
                 if let Some(ref stream) = self.model.stream {
