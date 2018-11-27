@@ -29,9 +29,7 @@ pub enum Msg {
     HttpRequestBeingExecuted(HttpRequest),
     // The request has been executed, we have a response
     HttpRequestExecuted(String),
-    HttpConnectionError(String),
-    // The template cannot be compiled
-    HttpRequestParsingError(String),
+    DisplayError(String),
 
     SavingEnvironment(usize, String),
     DeletingEnvironment(usize),
@@ -175,11 +173,9 @@ impl Update for Window {
                     http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::HttpRequestExecuted(response.clone()));
 
                 connect_stream!(
-                    http@HttpMsg::ConnectionError(ref response), self.relm.stream(), Msg::HttpConnectionError(response.to_string()));
-                connect_stream!(
-                    http@HttpMsg::RequestParsingError(ref response), self.relm.stream(), Msg::HttpRequestParsingError(response.clone()));
+                    http@HttpMsg::DisplayError(ref response), self.relm.stream(), Msg::DisplayError(response.to_string()));
 
-                http.emit(HttpMsg::StartHttpRequest);
+                http.emit(HttpMsg::StartConsuming);
             }
             Msg::EnvironmentFetchedFailed(err) => {
                 self.response.stream().emit(ResponseMsg::DisplayError(err));
@@ -195,7 +191,7 @@ impl Update for Window {
                     ));
             }
 
-            Msg::HttpConnectionError(error) | Msg::HttpRequestParsingError(error) => {
+            Msg::DisplayError(error) => {
                 // Currently not called
                 self.response
                     .stream()

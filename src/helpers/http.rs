@@ -1,8 +1,8 @@
 use std::convert::From;
 use std::str::FromStr;
+use std::mem;
 
 use lazy_static::lazy_static;
-
 use gio::{
     IOStream, IOStreamExt, InputStreamExtManual, OutputStreamExtManual, SocketClient,
     SocketClientExt, SocketConnection, TlsCertificateFlags,
@@ -26,6 +26,10 @@ lazy_static! {
     pub static ref RE_EXTRACT_INSECURE_FLAG: Regex =
         Regex::new(r"#![\s]*Allow Insecure Certificate").unwrap();
     pub static ref RE_SPLIT_HTTP_FIRST_LINE: Regex = Regex::new("[ ]+").unwrap();
+    pub static ref RE_EXTRACT_CAPTURE: Regex =
+        Regex::new(r"#![\s]*Capture:\s*(?P<var_name>.+)").unwrap();
+    pub static ref RE_SPLIT_END_CAPTURE: Regex =
+        Regex::new(r"#![\s]*EndCapture").unwrap();
 }
 
 fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
@@ -39,6 +43,21 @@ fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
                 .name("port")
                 .map(|port| FromStr::from_str(port.as_str()).unwrap());
             Some((host.unwrap().to_string(), port.unwrap()))
+        });
+    resp
+}
+
+fn extract_capture_name(line: &str) -> Option<String> {
+    let resp = RE_EXTRACT_CAPTURE
+        .captures(line)
+        .and_then(|cap| {
+            let cap = cap.name("capture");
+            if let Some(capture) = cap {
+                Some(capture.as_str().to_string())
+            }
+            else {
+                None
+            }
         });
     resp
 }
@@ -71,6 +90,7 @@ pub struct HttpRequest {
     port: u16,
     http_frame: String,
     tls_flags: TlsCertificateFlags,
+    capture: Option<String>,
 }
 
 impl HttpRequest {
@@ -103,6 +123,7 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     let mut line = lines.next();
     let mut authority: Option<(String, u16)> = None;
     let mut tls_flags = TlsCertificateFlags::all();
+    let mut capture = None;
 
     loop {
         if line.is_none() {
@@ -115,6 +136,8 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         if let Some(auth) = extract_authority_from_directive(unwrapped) {
             debug!("Authority found from the request comment: {:?}", auth);
             authority = Some(auth);
+        } else if let Some(cap) = extract_capture_name(unwrapped) {
+            capture = Some(cap);
         } else if extract_insecure_flag(unwrapped) {
             tls_flags = TlsCertificateFlags::empty();
         } else {
@@ -123,6 +146,7 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         line = lines.next();
     }
     if line.is_none() {
+        error!("No request found");
         return Err(RustamanError::RequestParsingError(
             "No request found".to_owned(),
         ));
@@ -138,6 +162,7 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
             verb_url_version[2],
         ),
         _ => {
+            error!("Parse error on line: {}", line.unwrap());
             return Err(RustamanError::RequestParsingError(
                 format!("Parse error on line: {}", line.unwrap()).to_owned(),
             ));
@@ -167,6 +192,7 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
 
     let scheme = Scheme::from(url.scheme());
     if let Scheme::Err(error) = scheme {
+        info!("Scheme parsed from {:?}", url);
         return Err(RustamanError::RequestParsingError(error));
     }
 
@@ -218,17 +244,36 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     }
     let authority = authority.unwrap();
     let (host, port) = (authority.0, authority.1);
+    info!("Http request built");
     Ok(HttpRequest {
         scheme,
         host,
         port,
         http_frame,
         tls_flags,
+        capture
     })
 }
 
+#[derive(Debug, Clone)]
+pub struct HttpRequests {
+    requests: Vec<String>
+}
+
+fn parse_template(template: &str) -> HttpRequests {
+    let requests: Vec<String> = RE_SPLIT_END_CAPTURE
+        .split(template)
+        .map(|request| { request.to_string() })
+        .collect();
+    debug!("{:?}", requests);
+    HttpRequests{requests}
+}
+
 pub struct HttpModel {
-    request: RustamanResult<HttpRequest>,
+    request: HttpRequests,
+    current_request: usize,
+    error: Option<RustamanError>,
+    context: serde_yaml::Value,
     response: Vec<u8>,
     relm: Relm<Http>,
     stream: Option<IOStream>,
@@ -236,10 +281,11 @@ pub struct HttpModel {
 
 #[derive(Msg)]
 pub enum Msg {
-    StartHttpRequest,
-    Connection(SocketConnection),
-    ConnectionError(RustamanError),
-    RequestParsingError(String),
+    StartConsuming,
+    StartConsumingHttpRequest,
+    Connecting(HttpRequest),
+    ConnectionAquired(SocketConnection, HttpRequest),
+    DisplayError(RustamanError),
     Read((Vec<u8>, usize)),
     ReadDone(String),
     Writing(HttpRequest),
@@ -260,15 +306,16 @@ impl Update for Http {
     fn model(relm: &Relm<Self>, params: Self::ModelParam) -> HttpModel {
         let (http_request, context) = params;
         // Fix errors
-        let http_request =
-            compile_template(http_request.as_str(), &context).unwrap_or("".to_owned());
-        let request = parse_request(http_request.as_str());
+        let request = parse_template(http_request.as_str());
         let response = Vec::new();
         HttpModel {
             request,
+            context,
             response,
             relm: relm.clone(),
+            error: None,
             stream: None,
+            current_request: 0,
         }
     }
 
@@ -276,46 +323,76 @@ impl Update for Http {
 
     fn update(&mut self, message: Msg) {
         match message {
-            Msg::StartHttpRequest => match self.model.request.as_ref() {
-                Ok(req) => {
-                    let client = SocketClient::new();
-                    if req.scheme == Scheme::HTTPS {
-                        client.set_tls(true);
-                        client.set_tls_validation_flags(req.tls_flags);
-                    }
-                    connect_async!(
-                        client,
-                        connect_to_host_async(req.host.as_str(), req.port),
-                        self.model.relm,
-                        Msg::Connection,
-                        |err: gdk::Error| Msg::ConnectionError(RustamanError::from(err.clone()))
-                    );
-                }
-                Err(err) => {
-                    error!("Request is in error: {:?}", self.model.request);
-                    let err = format!("{}", err);
+            Msg::StartConsuming => {
+                let error = mem::replace(&mut self.model.error, None);
+                if let Some(err) = error {
                     self.model
                         .relm
                         .stream()
-                        .emit(Msg::RequestParsingError(err.to_owned()));
+                        .emit(Msg::DisplayError(err));
                 }
+                else {
+                    self.model
+                        .relm
+                        .stream()
+                        .emit(Msg::StartConsumingHttpRequest);
+                }
+            }
+            Msg::StartConsumingHttpRequest => {
+                info!("StartConsumingHttpRequest: {:?}", self.model.request.requests);
+                if self.model.request.requests.len() > self.model.current_request {
+                    let req = self.model.request.requests.get(self.model.current_request).unwrap();
+                    let http_request =
+                        compile_template(req.as_str(), &self.model.context).unwrap_or("".to_owned());
+                    let req = parse_request(http_request.as_str());
+                    if let Err(err) = req {
+                        self.model
+                            .relm
+                            .stream()
+                            .emit(Msg::DisplayError(err));
+                    }
+                    else {
+                        // start consuming without error here
+                        self.model.current_request += 1;
+                        self.model
+                            .relm
+                            .stream()
+                            .emit(Msg::Connecting(req.unwrap()));                    
+                    }
+                 }
+
+            }
+            Msg::Connecting(req) => {
+                info!("Connecting: {:?}", self.model.request.requests);
+                let client = SocketClient::new();
+                if req.scheme == Scheme::HTTPS {
+                    client.set_tls(true);
+                    client.set_tls_validation_flags(req.tls_flags);
+                }
+                let host = req.host.clone();
+                connect_async!(
+                    client,
+                    connect_to_host_async(host.as_str(), req.port),
+                    self.model.relm,
+                    |conn| Msg::ConnectionAquired(conn, req),
+                    |err: gdk::Error| Msg::DisplayError(RustamanError::from(err.clone()))
+                );
+
             },
-            Msg::Connection(connection) => {
+            Msg::ConnectionAquired(connection, req) => {
                 info!("Connecting to {:?}", connection);
                 let stream: IOStream = connection.upcast();
                 let writer = stream.get_output_stream().expect("output");
                 self.model.stream = Some(stream);
-                let _ = self.model.request.as_ref().map(|req| {
-                    let http_frame = req.http_frame.clone();
-                    let buffer = http_frame.into_bytes();
-                    self.model.relm.stream().emit(Msg::Writing(req.clone()));
-                    connect_async!(
-                        writer,
-                        write_async(buffer, PRIORITY_DEFAULT),
-                        self.model.relm,
-                        |msg| Msg::Wrote(msg)
-                    );
-                });
+
+                let buffer = req.http_frame.as_str().to_string().into_bytes();
+                self.model.relm.stream().emit(Msg::Writing(req.clone()));
+                connect_async!(
+                    writer,
+                    write_async(buffer, PRIORITY_DEFAULT),
+                    self.model.relm,
+                    |msg| Msg::Wrote(msg)
+                );
             }
             // To be listened by the user.
             Msg::Read((mut buffer, size)) => {
@@ -349,9 +426,6 @@ impl Update for Http {
                         Msg::Read
                     );
                 }
-            }
-            Msg::RequestParsingError(err) => {
-                error!("{:?}", err);
             }
             _ => {}
         }

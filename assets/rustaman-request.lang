@@ -57,7 +57,7 @@
       </match>
     </context>
 
-    <context id="http-query"  once-only="true" style-ref="http-method">
+    <context id="http-query" style-ref="http-method">
       <start>\%{http-method-re}</start>
       <end>$</end>
       <include>
