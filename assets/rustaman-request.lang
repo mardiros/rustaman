@@ -34,7 +34,7 @@
     <style id="url"                _name="URL"                       map-to="def:builtin"/>
     <style id="http-version"       _name="HTTP Version"              map-to="def:comment"/>
     <style id="http-header-name"   _name="HTTP Header Name"          map-to="def:special-char"/>
-    <style id="http-header-value"  _name="HTTP Header Value"         map-to="js:string"/>
+    <style id="http-header-value"  _name="HTTP Header Value"         map-to="def:constant"/>
     <style id="template-helper"    _name="Template helper"           map-to="def:type"/>
     <style id="template-var"       _name="Template var"              map-to="def:preprocessor"/>
     <style id="keyname"            _name="Key"                       map-to="def:special-char"/>
@@ -45,6 +45,12 @@
     <style id="error"              _name="Error"                     map-to="def:error"/>
     <style id="decimal"            _name="Decimal"                   map-to="def:decimal"/>
     <style id="float"              _name="Floating point number"     map-to="def:floating-point"/>
+    <style id="comment"            _name="Comment"                   map-to="def:doc-comment"/>
+    <style id="preprocessor"       _name="Preprocessor"              map-to="def:special-constant"/>
+    <style id="heading"            _name="Heading"                   map-to="def:heading0"/>
+    <style id="preprocessor-name"  _name="Preprocessor Name"         map-to="def:special-char"/>
+
+
   </styles>
 
   <definitions>
@@ -63,17 +69,14 @@
       <include>
         <context once-only="true" style-ref="url" end-at-line-end="true">
           <start> </start>
-          <end>$</end>
           <include>
             <context ref="template-var"/>
             <context ref="http-version"  style-ref="http-version"/>
           </include>
         </context>
-        
 
         <context end-at-line-end="true" style-ref="http-header-name">
-          <start>^[^:]+:</start>
-          <end>$</end>
+          <start>[^:]+:</start>
           <include>
             <context end-at-line-end="true" style-ref="http-header-value">
               <start> </start>
@@ -84,7 +87,6 @@
           </include>
         </context>
 
-        <context ref="def:shell-like-comment"/>
       </include>
     </context>
 
@@ -180,23 +182,49 @@
       <context ref="js:boolean" style-ref="boolean"/>
     </include></context>
 
-    <context id="error" style-ref="error">
-        <start>! </start>
-        <end>$</end>
+
+    <context id="preprocessor" end-at-line-end="true" style-ref="preprocessor">
+        <start>^#!</start>
+        <include>
+          <context end-at-line-end="true" style-ref="preprocessor-name">
+            <start>[^:]+:</start>
+            <include>
+              <context end-at-line-end="true" style-ref="preprocessor">
+                <start> </start>
+              </context>
+            </include>
+          </context>
+        <context style-ref="error">
+          <match>AllowInsecureCertificate</match>
+        </context>
+        <context style-ref="preprocessor-name">
+          <match>EndCapture</match>
+        </context>
+        </include>
+    </context>
+
+    <context id="comment" end-at-line-end="true" style-ref="comment">
+        <start>^#</start>
+        <include>
+          <context style-ref="error" end-at-line-end="true">
+            <start>.*Error: </start>
+          </context>
+          <context style-ref="heading" end-at-line-end="true">
+            <start>#</start>
+          </context>
+        </include>
     </context>
 
     <context id="rustaman-request" class="no-spell-check">
       <include>
-        <context ref="def:shell-like-comment"/>
         <context ref="template-var"/>
         <context ref="template-helper"/>
-        <context ref="error"/>
-        
-        <context ref="http-version"/>
         <context ref="http-version"/>
         <context ref="http-query"/>
         <context ref="json-object"/>
         <context ref="json-array"/>
+        <context ref="preprocessor"/>
+        <context ref="comment"/>
       </include>
     </context>
   </definitions>

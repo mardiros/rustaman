@@ -33,7 +33,7 @@ impl Update for Response {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::DisplayError(error) => {
-                let error = format!("! {}", error);
+                let error = format!("# {}", error);
                 let buffer = self.response_view.get_buffer().unwrap();
                 buffer.set_text(error.as_str());
             }

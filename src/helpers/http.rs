@@ -24,7 +24,7 @@ lazy_static! {
     pub static ref RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE: Regex =
         Regex::new(r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)").unwrap();
     pub static ref RE_EXTRACT_INSECURE_FLAG: Regex =
-        Regex::new(r"#![\s]*Allow Insecure Certificate").unwrap();
+        Regex::new(r"#![\s]*AllowInsecureCertificate").unwrap();
     pub static ref RE_SPLIT_HTTP_FIRST_LINE: Regex = Regex::new("[ ]+").unwrap();
 }
 
