@@ -92,7 +92,7 @@ impl Widget for Response {
         let hbox = gtk::Box::new(Orientation::Horizontal, 0);
 
         let langmngr = LanguageManager::get_default().unwrap();
-        let lang = langmngr.get_language("rustaman-response").unwrap();
+        let lang = langmngr.get_language("rustaman-request").unwrap();
 
         let stylemngr = StyleSchemeManager::get_default().unwrap();
         let style = stylemngr.get_scheme("solarized-dark").unwrap();

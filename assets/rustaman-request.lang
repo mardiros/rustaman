@@ -178,15 +178,21 @@
       <context ref="float"/>
       <context ref="js:null-value" style-ref="null-value"/>
       <context ref="js:boolean" style-ref="boolean"/>
-      <!-- <context ref="catchall"/> -->
     </include></context>
+
+    <context id="error" style-ref="error">
+        <start>! </start>
+        <end>$</end>
+    </context>
 
     <context id="rustaman-request" class="no-spell-check">
       <include>
         <context ref="def:shell-like-comment"/>
         <context ref="template-var"/>
         <context ref="template-helper"/>
+        <context ref="error"/>
         
+        <context ref="http-version"/>
         <context ref="http-version"/>
         <context ref="http-query"/>
         <context ref="json-object"/>
