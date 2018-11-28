@@ -104,6 +104,7 @@ impl Widget for Response {
         response_view.set_hexpand(true);
         response_view.set_vexpand(true);
         response_view.set_editable(false);
+        response_view.set_monospace(true);
 
         let scrollview = ScrolledWindow::new(None, None);
         scrollview.add(&response_view);
