@@ -105,7 +105,7 @@
     </context>
 
     <context id="template-helper" style-ref="template-helper">
-      <match>set</match>
+      <match>set|encode</match>
     </context>
 
     <context id="template-var" style-ref="template-var">
