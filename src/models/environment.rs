@@ -66,7 +66,8 @@ impl Environment {
                             } else {
                                 None
                             }
-                        }).filter(|x| x.is_some())
+                        })
+                        .filter(|x| x.is_some())
                         .map(|x| x.unwrap().clone())
                         .collect(),
                     _ => return vec![],
@@ -83,7 +84,8 @@ impl Environment {
                 } else {
                     None
                 }
-            }).filter(|x| x.is_some())
+            })
+            .filter(|x| x.is_some())
             .map(|x| x.unwrap().clone())
             .collect();
         val

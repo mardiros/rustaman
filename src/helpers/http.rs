@@ -1,14 +1,14 @@
 use std::convert::From;
-use std::str::FromStr;
 use std::mem;
+use std::str::FromStr;
 
-use lazy_static::lazy_static;
 use gio::{
     IOStream, IOStreamExt, InputStreamExtManual, OutputStreamExtManual, SocketClient,
     SocketClientExt, SocketConnection, TlsCertificateFlags,
 };
 use glib::source::PRIORITY_DEFAULT;
 use glib::Cast;
+use lazy_static::lazy_static;
 use relm::{connect_async, Relm, Update, UpdateNew};
 use serde_yaml;
 
@@ -19,7 +19,6 @@ use super::super::errors::{RustamanError, RustamanResult};
 use super::super::models::Environment;
 use super::handlebars::compile_template;
 
-
 const READ_SIZE: usize = 1024;
 lazy_static! {
     pub static ref RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE: Regex =
@@ -29,8 +28,7 @@ lazy_static! {
     pub static ref RE_SPLIT_HTTP_FIRST_LINE: Regex = Regex::new("[ ]+").unwrap();
     pub static ref RE_EXTRACT_CAPTURE: Regex =
         Regex::new(r"#![\s]*Capture:\s*(?P<capture>.+)").unwrap();
-    pub static ref RE_SPLIT_END_CAPTURE: Regex =
-        Regex::new(r"#![\s]*EndCapture").unwrap();
+    pub static ref RE_SPLIT_END_CAPTURE: Regex = Regex::new(r"#![\s]*EndCapture").unwrap();
 }
 
 fn parse_response(response: &str) -> Option<serde_yaml::Value> {
@@ -60,7 +58,7 @@ fn parse_response(response: &str) -> Option<serde_yaml::Value> {
                     text.push_str(unwrapped);
                     text.push('\n');
                 }
-                None => break
+                None => break,
             }
         }
     };
@@ -88,17 +86,14 @@ fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
 }
 
 fn extract_capture_name(line: &str) -> Option<String> {
-    let resp = RE_EXTRACT_CAPTURE
-        .captures(line)
-        .and_then(|cap| {
-            let cap = cap.name("capture");
-            if let Some(capture) = cap {
-                Some(capture.as_str().to_string())
-            }
-            else {
-                None
-            }
-        });
+    let resp = RE_EXTRACT_CAPTURE.captures(line).and_then(|cap| {
+        let cap = cap.name("capture");
+        if let Some(capture) = cap {
+            Some(capture.as_str().to_string())
+        } else {
+            None
+        }
+    });
     resp
 }
 
@@ -151,7 +146,8 @@ impl HttpRequest {
             .map(|ref x| {
                 let obf = format!("{}...", &x[0..3]);
                 req.http_frame = req.http_frame.replace(x.as_str(), obf.as_str())
-            }).collect();
+            })
+            .collect();
         req
     }
 }
@@ -291,22 +287,22 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         port,
         http_frame,
         tls_flags,
-        capture
+        capture,
     })
 }
 
 #[derive(Debug, Clone)]
 pub struct HttpRequests {
-    requests: Vec<String>
+    requests: Vec<String>,
 }
 
 fn parse_template(template: &str) -> HttpRequests {
     let requests: Vec<String> = RE_SPLIT_END_CAPTURE
         .split(template)
-        .map(|request| { request.to_string() })
+        .map(|request| request.to_string())
         .collect();
     debug!("{:?}", requests);
-    HttpRequests{requests}
+    HttpRequests { requests }
 }
 
 pub struct HttpModel {
@@ -369,12 +365,8 @@ impl Update for Http {
             Msg::StartConsuming => {
                 let error = mem::replace(&mut self.model.error, None);
                 if let Some(err) = error {
-                    self.model
-                        .relm
-                        .stream()
-                        .emit(Msg::DisplayError(err));
-                }
-                else {
+                    self.model.relm.stream().emit(Msg::DisplayError(err));
+                } else {
                     self.model
                         .relm
                         .stream()
@@ -383,30 +375,30 @@ impl Update for Http {
             }
             Msg::StartConsumingHttpRequest => {
                 if self.model.current_request_idx < self.model.request.requests.len() {
-                    info!("StartConsumingHttpRequest: {} / {}",
-                        self.model.current_request_idx + 1, self.model.request.requests.len());
-                    let req = self.model.request.requests.get(self.model.current_request_idx).unwrap();
-                    let http_request =
-                        compile_template(req.as_str(), &self.model.context).unwrap_or("".to_owned());
+                    info!(
+                        "StartConsumingHttpRequest: {} / {}",
+                        self.model.current_request_idx + 1,
+                        self.model.request.requests.len()
+                    );
+                    let req = self
+                        .model
+                        .request
+                        .requests
+                        .get(self.model.current_request_idx)
+                        .unwrap();
+                    let http_request = compile_template(req.as_str(), &self.model.context)
+                        .unwrap_or("".to_owned());
                     info!("{}", http_request);
                     let req = parse_request(http_request.as_str());
                     if let Err(err) = req {
-                        self.model
-                            .relm
-                            .stream()
-                            .emit(Msg::DisplayError(err));
-                    }
-                    else {
+                        self.model.relm.stream().emit(Msg::DisplayError(err));
+                    } else {
                         // start consuming without error here
                         let req = req.unwrap();
                         self.model.current_request = Some(req.clone());
-                        self.model
-                            .relm
-                            .stream()
-                            .emit(Msg::Connecting(req));
+                        self.model.relm.stream().emit(Msg::Connecting(req));
                     }
-                 }
-
+                }
             }
             Msg::Connecting(req) => {
                 info!("Connecting: {:?}", self.model.request.requests);
@@ -423,8 +415,7 @@ impl Update for Http {
                     |conn| Msg::ConnectionAquired(conn, req),
                     |err: gdk::Error| Msg::DisplayError(RustamanError::from(err.clone()))
                 );
-
-            },
+            }
             Msg::ConnectionAquired(connection, req) => {
                 info!("Connecting to {:?}", connection);
                 let stream: IOStream = connection.upcast();
@@ -447,8 +438,7 @@ impl Update for Http {
                     self.model.current_request_idx += 1;
                     if self.model.current_request_idx == self.model.request.requests.len() {
                         self.model.relm.stream().emit(Msg::ReadDone(buffer));
-                    }
-                    else {
+                    } else {
                         self.model.relm.stream().emit(Msg::CaptureReadDone(buffer));
                     }
                 } else {
@@ -473,10 +463,10 @@ impl Update for Http {
                     let resp = parse_response(response.as_str());
                     if let Some(r) = resp {
                         match &mut self.model.context {
-                          serde_yaml::Value::Mapping(mapping)  => {
-                            mapping.insert(serde_yaml::Value::String(capture.to_string()), r);
-                          }
-                          _ => {}
+                            serde_yaml::Value::Mapping(mapping) => {
+                                mapping.insert(serde_yaml::Value::String(capture.to_string()), r);
+                            }
+                            _ => {}
                         }
                     }
                 }
@@ -485,8 +475,7 @@ impl Update for Http {
                     .relm
                     .stream()
                     .emit(Msg::StartConsumingHttpRequest);
-
-            },
+            }
             Msg::Writing(_) => (),
             Msg::Wrote(_) => {
                 if let Some(ref stream) = self.model.stream {

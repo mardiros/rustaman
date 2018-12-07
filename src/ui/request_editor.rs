@@ -135,12 +135,11 @@ impl Widget for RequestEditor {
             request_source,
             connect_key_press_event(_, key_),
             return Inhibit(
-                key_.get_state().intersects(gdk::ModifierType::CONTROL_MASK) && match key_
-                    .get_keyval()
-                {
-                    key::Return => true,
-                    _ => false,
-                }
+                key_.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
+                    && match key_.get_keyval() {
+                        key::Return => true,
+                        _ => false,
+                    }
             )
         );
 

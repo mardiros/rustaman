@@ -71,7 +71,7 @@ impl Update for Response {
                 let response = if is_json && has_content {
                     match prettify_js(text.as_str()) {
                         Ok(pretty) => pretty,
-                        Err(_) => text
+                        Err(_) => text,
                     }
                 } else {
                     text

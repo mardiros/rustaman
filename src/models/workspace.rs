@@ -120,7 +120,7 @@ impl Workspace {
 
     pub fn safe_sync(&self) {
         self.sync().unwrap_or_else(|err| {
-            error!{"Workspace not synchronized: {}", err}
+            error! {"Workspace not synchronized: {}", err}
         });
     }
 

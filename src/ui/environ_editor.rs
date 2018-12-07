@@ -205,12 +205,11 @@ impl Update for EnvironEditor {
                     environ_source,
                     connect_key_press_event(_, key),
                     return Inhibit(
-                        key.get_state().intersects(gdk::ModifierType::CONTROL_MASK) && match key
-                            .get_keyval()
-                        {
-                            key::Return => true,
-                            _ => false,
-                        }
+                        key.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
+                            && match key.get_keyval() {
+                                key::Return => true,
+                                _ => false,
+                            }
                     )
                 );
 
