@@ -1,29 +1,11 @@
 #[macro_use]
 extern crate log;
-extern crate pretty_env_logger;
 
-extern crate gdk;
-extern crate gio;
-extern crate glib;
-extern crate gtk;
-extern crate sourceview;
-
-extern crate relm;
 #[macro_use]
 extern crate relm_derive;
 
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate serde_yaml;
-
-extern crate lazy_static;
-extern crate regex;
-extern crate url;
-
-extern crate dirs;
-extern crate handlebars;
 
 mod errors;
 mod helpers;
@@ -34,7 +16,8 @@ use std::vec::Vec;
 
 use relm::Widget;
 use sourceview::prelude::*;
-use ui::window::Window;
+
+use crate::ui::window::Window;
 
 fn main() {
     pretty_env_logger::init();
