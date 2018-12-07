@@ -29,6 +29,7 @@ pub enum Msg {
     HttpRequestBeingExecuted(HttpRequest),
     // The request has been executed, we have a response
     HttpRequestExecuted(String),
+    HttpCapturedRequestExecuted(String),
     DisplayError(String),
 
     SavingEnvironment(usize, String),
@@ -173,6 +174,9 @@ impl Update for Window {
                     http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::HttpRequestExecuted(response.clone()));
 
                 connect_stream!(
+                    http@HttpMsg::ReadDone(ref response), self.relm.stream(), Msg::HttpCapturedRequestExecuted(response.clone()));
+
+                connect_stream!(
                     http@HttpMsg::DisplayError(ref response), self.relm.stream(), Msg::DisplayError(response.to_string()));
 
                 http.emit(HttpMsg::StartConsuming);
@@ -196,6 +200,15 @@ impl Update for Window {
                 self.response
                     .stream()
                     .emit(ResponseMsg::DisplayError(error));
+            }
+
+            Msg::HttpCapturedRequestExecuted(response) => {
+                self.response_status
+                    .stream()
+                    .emit(ResponseStatusMsg::RequestExecuted(response.clone()));
+                self.request_logger
+                    .stream()
+                    .emit(RequestLoggerMsg::RequestExecuted(response));
             }
 
             Msg::HttpRequestExecuted(response) => {
