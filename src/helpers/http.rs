@@ -328,6 +328,7 @@ pub enum Msg {
     ConnectionAquired(SocketConnection, HttpRequest),
     DisplayError(RustamanError),
     Read((Vec<u8>, usize)),
+    CaptureReadDone(String),
     ReadDone(String),
     Writing(HttpRequest),
     Wrote((Vec<u8>, usize)),
@@ -381,7 +382,7 @@ impl Update for Http {
                 }
             }
             Msg::StartConsumingHttpRequest => {
-                if self.model.request.requests.len() > self.model.current_request_idx {
+                if self.model.current_request_idx < self.model.request.requests.len() {
                     info!("StartConsumingHttpRequest: {} / {}",
                         self.model.current_request_idx + 1, self.model.request.requests.len());
                     let req = self.model.request.requests.get(self.model.current_request_idx).unwrap();
@@ -397,7 +398,6 @@ impl Update for Http {
                     }
                     else {
                         // start consuming without error here
-                        self.model.current_request_idx += 1;
                         let req = req.unwrap();
                         self.model.current_request = Some(req.clone());
                         self.model
@@ -444,7 +444,13 @@ impl Update for Http {
             Msg::Read((mut buffer, size)) => {
                 if size == 0 {
                     let buffer = String::from_utf8(self.model.response.clone()).unwrap();
-                    self.model.relm.stream().emit(Msg::ReadDone(buffer));
+                    self.model.current_request_idx += 1;
+                    if self.model.current_request_idx == self.model.request.requests.len() {
+                        self.model.relm.stream().emit(Msg::ReadDone(buffer));
+                    }
+                    else {
+                        self.model.relm.stream().emit(Msg::CaptureReadDone(buffer));
+                    }
                 } else {
                     if let Some(ref stream) = self.model.stream {
                         let reader = stream.get_input_stream().expect("input");
@@ -460,7 +466,7 @@ impl Update for Http {
                 self.model.response.extend(&buffer);
             }
             // To be listened by the user.
-            Msg::ReadDone(response) => {
+            Msg::CaptureReadDone(response) | Msg::ReadDone(response) => {
                 let req = mem::replace(&mut self.model.current_request, None);
                 let req = req.unwrap();
                 if let Some(capture) = req.capture {
