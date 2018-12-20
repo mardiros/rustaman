@@ -25,7 +25,7 @@ fn encode(
     h: &Helper,
     _: &Handlebars,
     _: &Context,
-    rc: &mut RenderContext,
+    _: &mut RenderContext,
     out: &mut Output,
 ) -> HelperResult {
 
