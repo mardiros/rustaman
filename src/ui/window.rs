@@ -218,9 +218,6 @@ impl Update for Window {
                 self.response
                     .stream()
                     .emit(ResponseMsg::RequestExecuted(response.clone()));
-                self.request_logger
-                    .stream()
-                    .emit(RequestLoggerMsg::RequestExecuted(response));
             }
             Msg::CreatingEnvironment(name) => {
                 info!("Creating environment {}", name);
