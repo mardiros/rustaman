@@ -30,27 +30,25 @@
 <language id="rustaman-request" name="RUSTAMAN_REQUEST" version="2.0" _section="Other">
  
   <styles>
-    <style id="http-method"        _name="HTTP Method"               map-to="def:type"/>
-    <style id="url"                _name="URL"                       map-to="def:builtin"/>
-    <style id="http-version"       _name="HTTP Version"              map-to="def:comment"/>
-    <style id="http-header-name"   _name="HTTP Header Name"          map-to="def:special-char"/>
-    <style id="http-header-value"  _name="HTTP Header Value"         map-to="def:constant"/>
-    <style id="template-helper"    _name="Template helper"           map-to="def:type"/>
-    <style id="template-var"       _name="Template var"              map-to="def:preprocessor"/>
-    <style id="keyname"            _name="Key"                       map-to="def:special-char"/>
-    <style id="special-char"       _name="Escaped Character"         map-to="js:escape"/>
-    <style id="string"             _name="String"                    map-to="js:string"/>
-    <style id="null-value"         _name="Null Value"                map-to="js:null-value"/>
-    <style id="boolean"            _name="Boolean Value"             map-to="js:boolean"/>
+    <style id="http-method"        _name="HTTP Method"               />
+    <style id="url"                _name="URL"                       />
+    <style id="http-version"       _name="HTTP Version"              />
+    <style id="http-header-name"   _name="HTTP Header Name"          map-to="yaml:map-key"/>
+    <style id="http-header-value"  _name="HTTP Header Value"         map-to="yaml:string"/>
+    <style id="template-helper"    _name="Template helper"           />
+    <style id="template-var"       _name="Template var"              />
     <style id="error"              _name="Error"                     map-to="def:error"/>
-    <style id="decimal"            _name="Decimal"                   map-to="def:decimal"/>
-    <style id="float"              _name="Floating point number"     map-to="def:floating-point"/>
-    <style id="comment"            _name="Comment"                   map-to="def:doc-comment"/>
-    <style id="preprocessor"       _name="Preprocessor"              map-to="def:special-constant"/>
-    <style id="heading"            _name="Heading"                   map-to="def:heading0"/>
-    <style id="preprocessor-name"  _name="Preprocessor Name"         map-to="def:special-char"/>
-
-
+    <style id="json-object-key"    _name="Json Object Key"           map-to="yaml:map-key"/>
+    <style id="special-char"       _name="Escaped Character"         map-to="js:escape"/>
+    <style id="null-value"         _name="Null Value"                map-to="yaml:null"/>
+    <style id="string"             _name="String"                    map-to="yaml:string"/>
+    <style id="boolean"            _name="Boolean Value"             map-to="yaml:bool"/>
+    <style id="decimal"            _name="Decimal"                   map-to="yaml:int"/>
+    <style id="float"              _name="Floating point number"     map-to="yaml:floating"/>
+    <style id="comment"            _name="Comment"                   map-to="def:comment"/>
+    <style id="preprocessor"       _name="Preprocessor"                        />
+    <style id="preprocessor-danger" _name="Preprocessor Dangerous Instruction" />
+    
   </styles>
 
   <definitions>
@@ -117,7 +115,7 @@
           <start>=</start>
           <end>\s*</end>
           <include>
-            <context sub-pattern="0" where="start" style-ref="keyname"/>
+            <context sub-pattern="0" where="start" style-ref="json-object-key"/>
             <context ref="json-value"/>
           </include>
         </context>
@@ -128,7 +126,7 @@
       <start>\{</start>
       <end>\}</end>
       <include>
-        <context ref="string" style-ref="keyname"/>
+        <context ref="string" style-ref="json-object-key"/>
         <context>
           <start>:</start>
           <end>,|\s*(?=})</end>
@@ -186,7 +184,7 @@
     <context id="preprocessor" end-at-line-end="true" style-ref="preprocessor">
         <start>^#!</start>
         <include>
-          <context end-at-line-end="true" style-ref="preprocessor-name">
+          <context end-at-line-end="true">
             <start>[^:]+:</start>
             <include>
               <context end-at-line-end="true" style-ref="preprocessor">
@@ -194,10 +192,10 @@
               </context>
             </include>
           </context>
-        <context style-ref="error">
+        <context style-ref="preprocessor-danger">
           <match>AllowInsecureCertificate</match>
         </context>
-        <context style-ref="preprocessor-name">
+        <context>
           <match>EndCapture</match>
         </context>
         </include>
@@ -209,7 +207,7 @@
           <context style-ref="error" end-at-line-end="true">
             <start>.*Error: </start>
           </context>
-          <context style-ref="heading" end-at-line-end="true">
+          <context style-ref="doc" end-at-line-end="true">
             <start>#</start>
           </context>
         </include>

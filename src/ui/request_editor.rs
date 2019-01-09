@@ -115,7 +115,7 @@ impl Widget for RequestEditor {
         let lang = langmngr.get_language("rustaman-request").unwrap();
 
         let stylemngr = StyleSchemeManager::get_default().unwrap();
-        let style = stylemngr.get_scheme("solarized-dark").unwrap();
+        let style = stylemngr.get_scheme("rustaman-dark").unwrap();
 
         let buffer = sourceview::Buffer::new_with_language(&lang);
         buffer.set_style_scheme(&style);
