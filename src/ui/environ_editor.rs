@@ -240,6 +240,10 @@ impl Update for EnvironEditor {
                 if let Some(&(ref id, _, _, _)) = tab_data {
                     self.relm.stream().emit(Msg::TogglingEnvironment(*id))
                 }
+                else {
+                    info!("Current env has been deleted, swith to the first valid");
+                    self.notebook.set_current_page(Some(0));
+                }
             }
             Msg::CreatingNewTabPageButton => {
                 let _index = self
