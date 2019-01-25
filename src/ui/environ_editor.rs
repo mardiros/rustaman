@@ -234,11 +234,12 @@ impl Update for EnvironEditor {
             Msg::TogglingEnvironmentIndex(idx) => {
                 info!("Switch to page {}", idx);
                 self.model.current = idx;
-                let &(ref id, _, _, _) = self
+                let tab_data = self
                     .environ_sources
-                    .get(&idx)
-                    .expect("Should be a valid tab page index");
-                self.relm.stream().emit(Msg::TogglingEnvironment(*id))
+                    .get(&idx);
+                if let Some(&(ref id, _, _, _)) = tab_data {
+                    self.relm.stream().emit(Msg::TogglingEnvironment(*id))
+                }
             }
             Msg::CreatingNewTabPageButton => {
                 let _index = self
