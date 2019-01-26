@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::slice::Iter;
 use std::vec::Vec;
 
@@ -46,7 +45,7 @@ pub enum Msg {
 pub struct EnvironEditor {
     main_box: gtk::Box,
     notebook: gtk::Notebook,
-    environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView, Button)>,
+    environ_sources: Vec<(usize, String, ScrolledWindow, SourceView, Button)>,
     relm: Relm<EnvironEditor>,
     plus_tab: (gtk::Box, gtk::Box),
     entry_tab: (gtk::Box, gtk::Box),
@@ -57,9 +56,9 @@ pub struct EnvironEditor {
 impl EnvironEditor {
     fn get_text(&self, index: u32) -> Option<String> {
         info!("{:?}", self.environ_sources);
-        let &(_, _, _, ref environ_source, _) = self
+        let (_, _, _, ref environ_source, _) = self
             .environ_sources
-            .get(&index)
+            .get(index as usize)
             .expect("Should be a valid tab page index");
 
         let buffer = environ_source.get_buffer().unwrap();
@@ -75,11 +74,11 @@ impl EnvironEditor {
 
     fn get_current_id(&self) -> usize {
         let current = self.model.current;
-        let &(id, _, _, _, _) = self
+        let (id, _, _, _, _) = self
             .environ_sources
-            .get(&current)
+            .get(current as usize)
             .expect("Should be a valid tab page index");
-        id
+        *id
     }
 }
 
@@ -219,13 +218,13 @@ impl Update for EnvironEditor {
                 match self.environ_sources.len() {
                     0 => button.hide(),
                     1 => {
-                        let (_, (_, _, _, _, button)) = self.environ_sources.iter().nth(0).unwrap();
+                        let (_, _, _, _, button) = self.environ_sources.get(0).unwrap();
                         button.show();
                     }
                     _ => {}
                 };
                 self.environ_sources.insert(
-                    index,
+                    index as usize,
                     (env.id(), name.to_owned(), tab_page, environ_source, button),
                 );
             }
@@ -245,11 +244,12 @@ impl Update for EnvironEditor {
             Msg::TogglingEnvironmentIndex(idx) => {
                 info!("Switch to page {}", idx);
                 self.model.current = idx;
-                let &(ref id, _, _, _, _) = self
-                    .environ_sources
-                    .get(&idx)
-                    .expect("Should be a valid tab page index");
-                self.relm.stream().emit(Msg::TogglingEnvironment(*id))
+                if let Some(&(id, _, _, _, _)) = self.environ_sources.get(idx as usize) {
+                    self.relm.stream().emit(Msg::TogglingEnvironment(id));
+                } else {
+                    self.notebook.set_current_page(Some(0));
+                    self.model.current = 0;
+                }
             }
             Msg::CreatingNewTabPageButton => {
                 let _index = self
@@ -259,11 +259,11 @@ impl Update for EnvironEditor {
             Msg::EnvironmentDeleted(id) => {
                 fn get_index(
                     id: usize,
-                    envs: &HashMap<u32, (usize, String, ScrolledWindow, SourceView, Button)>,
+                    envs: &Vec<(usize, String, ScrolledWindow, SourceView, Button)>,
                 ) -> Option<u32> {
-                    for (index, &(env_id, _, _, _, _)) in envs.iter() {
-                        if id == env_id {
-                            return Some(*index);
+                    for (index, (env_id, _, _, _, _)) in envs.iter().enumerate() {
+                        if id == *env_id {
+                            return Some(index as u32);
                         }
                     }
                     None
@@ -271,14 +271,11 @@ impl Update for EnvironEditor {
                 let index = get_index(id, &self.environ_sources)
                     .expect("Invalid index while deleting environment");
 
-                let (_, _, tab, _, _) = self
-                    .environ_sources
-                    .remove(&index)
-                    .expect("Invalid index while deleting environment");
+                let (_, _, tab, _, _) = self.environ_sources.remove(index as usize);
                 self.notebook.detach_tab(&tab);
 
                 if self.environ_sources.len() == 1 {
-                    let (_, (_, _, _, _, button)) = self.environ_sources.iter().nth(0).unwrap();
+                    let (_, _, _, _, button) = self.environ_sources.get(0).unwrap();
                     button.hide();
                 }
             }
@@ -307,8 +304,7 @@ impl Widget for EnvironEditor {
                 relm.stream().emit(Msg::AppendingEnvironment(env.clone()));
             }
         }
-        let environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView, Button)> =
-            HashMap::new();
+        let environ_sources: Vec<(usize, String, ScrolledWindow, SourceView, Button)> = vec![];
 
         let plus_tab = gtk::Box::new(Orientation::Horizontal, 0);
         let btn = gtk::Button::new();
