@@ -1,6 +1,11 @@
 use gdk;
 use gdk::enums::key;
-use gtk::{self, prelude::*, Orientation, WindowPosition, WindowType};
+use gtk::{
+    self, prelude::*, ButtonsType, DialogFlags, GtkWindowExt, MessageDialog, MessageType,
+    Orientation, WindowPosition, WindowType,
+};
+use gtk_sys::GTK_RESPONSE_OK;
+
 use relm::{connect, connect_stream, Component, ContainerWidget, Relm, Update, Widget};
 use serde_yaml;
 
@@ -236,12 +241,25 @@ impl Update for Window {
                     .workspace
                     .set_environ_payload(id, payload.as_str());
             }
+
             Msg::DeletingEnvironment(id) => {
-                info!("Deleting environment {}", id);
-                self.model.workspace.delete_environment(id);
-                self.env_editor
-                    .stream()
-                    .emit(EnvironMsg::EnvironmentDeleted(id))
+                let dialog: MessageDialog = MessageDialog::new(
+                    Some(&self.window),
+                    DialogFlags::DESTROY_WITH_PARENT,
+                    MessageType::Warning,
+                    ButtonsType::OkCancel,
+                    "Are you sure you want to delete?",
+                );
+                let result = dialog.run();
+
+                if result == GTK_RESPONSE_OK as i32 {
+                    info!("Deleting environment {}", id);
+                    self.model.workspace.delete_environment(id);
+                    self.env_editor
+                        .stream()
+                        .emit(EnvironMsg::EnvironmentDeleted(id))
+                }
+                dialog.destroy();
             }
             Msg::Quitting => gtk::main_quit(),
             Msg::PressingKey(key) => {
