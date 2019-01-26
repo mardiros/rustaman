@@ -5,7 +5,7 @@ use std::vec::Vec;
 use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
-use gtk::{self, IconSize, Orientation, ReliefStyle, ScrolledWindow};
+use gtk::{self, Button, IconSize, Orientation, ReliefStyle, ScrolledWindow};
 use relm::{connect, connect_stream, Relm, Update, Widget};
 use serde_yaml;
 use sourceview::prelude::*;
@@ -46,7 +46,7 @@ pub enum Msg {
 pub struct EnvironEditor {
     main_box: gtk::Box,
     notebook: gtk::Notebook,
-    environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView)>,
+    environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView, Button)>,
     relm: Relm<EnvironEditor>,
     plus_tab: (gtk::Box, gtk::Box),
     entry_tab: (gtk::Box, gtk::Box),
@@ -57,7 +57,7 @@ pub struct EnvironEditor {
 impl EnvironEditor {
     fn get_text(&self, index: u32) -> Option<String> {
         info!("{:?}", self.environ_sources);
-        let &(_, _, _, ref environ_source) = self
+        let &(_, _, _, ref environ_source, _) = self
             .environ_sources
             .get(&index)
             .expect("Should be a valid tab page index");
@@ -75,7 +75,7 @@ impl EnvironEditor {
 
     fn get_current_id(&self) -> usize {
         let current = self.model.current;
-        let &(id, _, _, _) = self
+        let &(id, _, _, _, _) = self
             .environ_sources
             .get(&current)
             .expect("Should be a valid tab page index");
@@ -152,16 +152,17 @@ impl Update for EnvironEditor {
                 let env_id = env.id();
                 let name = env.name();
                 let payload = env.payload();
+
+                let close_image =
+                    gtk::Image::new_from_icon_name("window-close", IconSize::Button.into());
+                let button = gtk::Button::new();
+
+                button.set_relief(ReliefStyle::None);
+                button.set_focus_on_click(false);
+                button.add(&close_image);
                 let tab = {
-                    let close_image =
-                        gtk::Image::new_from_icon_name("window-close", IconSize::Button.into());
-                    let button = gtk::Button::new();
                     let label = gtk::Label::new(name);
                     let tab = gtk::Box::new(Orientation::Horizontal, 0);
-
-                    button.set_relief(ReliefStyle::None);
-                    button.set_focus_on_click(false);
-                    button.add(&close_image);
                     connect!(
                         self.relm,
                         button,
@@ -215,8 +216,18 @@ impl Update for EnvironEditor {
 
                 let index = self.notebook.append_page(&tab_page, Some(&tab));
                 info!("Insert Environ id {} for {}", index, name);
-                self.environ_sources
-                    .insert(index, (env.id(), name.to_owned(), tab_page, environ_source));
+                match self.environ_sources.len() {
+                    0 => button.hide(),
+                    1 => {
+                        let (_, (_, _, _, _, button)) = self.environ_sources.iter().nth(0).unwrap();
+                        button.show();
+                    }
+                    _ => {}
+                };
+                self.environ_sources.insert(
+                    index,
+                    (env.id(), name.to_owned(), tab_page, environ_source, button),
+                );
             }
 
             Msg::EnvironmentCreated(env) => {
@@ -234,7 +245,7 @@ impl Update for EnvironEditor {
             Msg::TogglingEnvironmentIndex(idx) => {
                 info!("Switch to page {}", idx);
                 self.model.current = idx;
-                let &(ref id, _, _, _) = self
+                let &(ref id, _, _, _, _) = self
                     .environ_sources
                     .get(&idx)
                     .expect("Should be a valid tab page index");
@@ -248,9 +259,9 @@ impl Update for EnvironEditor {
             Msg::EnvironmentDeleted(id) => {
                 fn get_index(
                     id: usize,
-                    envs: &HashMap<u32, (usize, String, ScrolledWindow, SourceView)>,
+                    envs: &HashMap<u32, (usize, String, ScrolledWindow, SourceView, Button)>,
                 ) -> Option<u32> {
-                    for (index, &(env_id, _, _, _)) in envs.iter() {
+                    for (index, &(env_id, _, _, _, _)) in envs.iter() {
                         if id == env_id {
                             return Some(*index);
                         }
@@ -259,11 +270,17 @@ impl Update for EnvironEditor {
                 }
                 let index = get_index(id, &self.environ_sources)
                     .expect("Invalid index while deleting environment");
-                let (_, _, tab, _) = self
+
+                let (_, _, tab, _, _) = self
                     .environ_sources
                     .remove(&index)
                     .expect("Invalid index while deleting environment");
                 self.notebook.detach_tab(&tab);
+
+                if self.environ_sources.len() == 1 {
+                    let (_, (_, _, _, _, button)) = self.environ_sources.iter().nth(0).unwrap();
+                    button.hide();
+                }
             }
             _ => {}
         }
@@ -290,7 +307,7 @@ impl Widget for EnvironEditor {
                 relm.stream().emit(Msg::AppendingEnvironment(env.clone()));
             }
         }
-        let environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView)> =
+        let environ_sources: HashMap<u32, (usize, String, ScrolledWindow, SourceView, Button)> =
             HashMap::new();
 
         let plus_tab = gtk::Box::new(Orientation::Horizontal, 0);
