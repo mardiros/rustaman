@@ -2,6 +2,7 @@ use std::vec::Vec;
 
 use serde_json;
 
+use super::super::errors::RustamanResult;
 use super::super::helpers::path;
 use super::environment::{Environment, Environments};
 use super::status::Status;
@@ -78,7 +79,7 @@ impl Workspace {
         }
     }
 
-    pub fn from_file(filepath: &str) -> Result<Self, path::IOError> {
+    pub fn from_file(filepath: &str) -> RustamanResult<Self> {
         info!("Try loading workspace from file {}", filepath);
         let cfg = path::read_file(filepath)?;
         debug!("File {} readed ({} chars.)", filepath, cfg.len());
@@ -109,7 +110,7 @@ impl Workspace {
         }
     }
 
-    pub fn sync(&self) -> Result<(), path::IOError> {
+    pub fn sync(&self) -> RustamanResult<()> {
         info!("Writing workspace in file {}", self.filepath());
         let filecontent = serde_json::to_string_pretty(&self.payload);
         let filecontent =

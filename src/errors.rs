@@ -1,6 +1,7 @@
 //! Define results and error. `Result<T, CabotError>`
 use std::error::Error;
 use std::fmt::{self, Display};
+use std::io;
 
 use gdk;
 use serde_yaml;
@@ -13,6 +14,7 @@ pub enum RustamanError {
     UrlParseError(url::ParseError),
     GtkStrError(String),
     GdkError(gdk::Error),
+    IOError(io::Error),
 }
 
 /// Result used by method that can failed.
@@ -28,6 +30,7 @@ impl Display for RustamanError {
             RustamanError::RequestParsingError(err) => format!("{}", err),
             RustamanError::GtkStrError(err) => format!("{}", err),
             RustamanError::GdkError(err) => format!("{}", err),
+            RustamanError::IOError(err) => format!("{}", err),
         };
         write!(f, "{}", description)
     }
@@ -39,6 +42,7 @@ impl Error for RustamanError {
             RustamanError::EnvironmentParsingError(err) => Some(err),
             RustamanError::UrlParseError(err) => Some(err),
             RustamanError::GdkError(err) => Some(err),
+            RustamanError::IOError(err) => Some(err),
             _ => None,
         };
         err
@@ -60,5 +64,11 @@ impl From<url::ParseError> for RustamanError {
 impl From<gdk::Error> for RustamanError {
     fn from(err: gdk::Error) -> RustamanError {
         RustamanError::GdkError(err)
+    }
+}
+
+impl From<io::Error> for RustamanError {
+    fn from(err: io::Error) -> RustamanError {
+        RustamanError::IOError(err)
     }
 }

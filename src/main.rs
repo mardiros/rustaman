@@ -15,7 +15,7 @@ mod ui;
 use std::io::Write;
 use std::vec::Vec;
 
-use clap::App;
+use clap::{App, Arg};
 use relm::Widget;
 use sourceview::{prelude::*, LanguageManager, StyleSchemeManager};
 
@@ -27,8 +27,28 @@ fn run() -> RustamanResult<()> {
         //.version(constants::VERSION)
         .author("Guillaume Gauvrit <guillaume@gauvr.it>")
         .about("Template based http client using GTK")
+        .arg(
+            Arg::with_name("WORKSPACE")
+                .short("w")
+                .long("workspace")
+                .help("Use specific workspace file")
+                .takes_value(true),
+        )
         .get_matches();
     gtk::init().expect("Unable to initialize gtk");
+
+    let workspace = matches.value_of("WORKSPACE");
+    let workspace = if let Some(filepath) = workspace {
+        models::Workspace::from_file(filepath)
+            .or_else(|_| -> RustamanResult<models::Workspace> {
+                let workspace = models::Workspace::new(filepath);
+                workspace.sync()?;
+                Ok(workspace)
+            })
+            .unwrap()
+    } else {
+        models::Workspace::default()
+    };
 
     let conf_path = helpers::path::rustaman_config_dir()
         .unwrap()
@@ -54,7 +74,6 @@ fn run() -> RustamanResult<()> {
     info!("Set search path: {:?}", path2);
     stylemngr.set_search_path(path2.as_slice());
 
-    let workspace = models::Workspace::default();
     Window::run(workspace).map_err(|_| {
         RustamanError::GtkStrError("Unexpected error while running the window".to_string())
     })?;
