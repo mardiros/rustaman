@@ -12,16 +12,15 @@ mod helpers;
 mod models;
 mod ui;
 
-use std::vec::Vec;
 use std::io::Write;
+use std::vec::Vec;
 
+use clap::App;
 use relm::Widget;
 use sourceview::{prelude::*, LanguageManager, StyleSchemeManager};
-use clap::App;
 
+use crate::errors::{RustamanError, RustamanResult};
 use crate::ui::window::Window;
-use crate::errors::RustamanResult;
-
 
 fn run() -> RustamanResult<()> {
     let matches = App::new("rustaman")
@@ -37,25 +36,30 @@ fn run() -> RustamanResult<()> {
         .unwrap()
         .to_owned();
 
-    let langmngr = LanguageManager::get_default().unwrap();
+    let langmngr = LanguageManager::get_default().ok_or(RustamanError::GtkStrError(
+        "Unable to load the Language Manager".to_string(),
+    ))?;
     let mut search_path = langmngr.get_search_path();
     search_path.push(conf_path.clone());
     let path2: Vec<&str> = search_path.iter().map(|path| path.as_str()).collect();
     info!("Set langmngr search path: {:?}", path2);
     langmngr.set_search_path(path2.as_slice());
 
-    let stylemngr = StyleSchemeManager::get_default().unwrap();
+    let stylemngr = StyleSchemeManager::get_default().ok_or(RustamanError::GtkStrError(
+        "Unable to load the Style Scheme Manager".to_string(),
+    ))?;
     let mut style_path = stylemngr.get_search_path();
     style_path.push(conf_path);
     let path2: Vec<&str> = style_path.iter().map(|path| path.as_str()).collect();
     info!("Set search path: {:?}", path2);
     stylemngr.set_search_path(path2.as_slice());
-    
+
     let workspace = models::Workspace::default();
-    Window::run(workspace).unwrap();
+    Window::run(workspace).map_err(|_| {
+        RustamanError::GtkStrError("Unexpected error while running the window".to_string())
+    })?;
     Ok(())
 }
-
 
 fn main() {
     pretty_env_logger::init();

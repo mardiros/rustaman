@@ -1,8 +1,8 @@
-use url::form_urlencoded;
 use handlebars::{
-    Context, Handlebars, Helper, HelperResult, Output, RenderContext, TemplateRenderError
+    Context, Handlebars, Helper, HelperResult, Output, RenderContext, TemplateRenderError,
 };
 use std::boxed::Box;
+use url::form_urlencoded;
 
 // implement via bare function
 fn set_helper(
@@ -28,7 +28,6 @@ fn encode(
     _: &mut RenderContext,
     out: &mut Output,
 ) -> HelperResult {
-
     let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
     let encoded: String = form_urlencoded::Serializer::new(String::new())
         .append_pair("x", param)

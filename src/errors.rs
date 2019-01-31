@@ -11,6 +11,7 @@ pub enum RustamanError {
     RequestParsingError(String),
     EnvironmentParsingError(serde_yaml::Error),
     UrlParseError(url::ParseError),
+    GtkStrError(String),
     GdkError(gdk::Error),
 }
 
@@ -25,6 +26,7 @@ impl Display for RustamanError {
             }
             RustamanError::UrlParseError(err) => format!("Url Parse Error: {}", err),
             RustamanError::RequestParsingError(err) => format!("{}", err),
+            RustamanError::GtkStrError(err) => format!("{}", err),
             RustamanError::GdkError(err) => format!("{}", err),
         };
         write!(f, "{}", description)
@@ -37,7 +39,7 @@ impl Error for RustamanError {
             RustamanError::EnvironmentParsingError(err) => Some(err),
             RustamanError::UrlParseError(err) => Some(err),
             RustamanError::GdkError(err) => Some(err),
-            RustamanError::RequestParsingError(_) => None,
+            _ => None,
         };
         err
     }
