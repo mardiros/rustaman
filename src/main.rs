@@ -13,16 +13,22 @@ mod models;
 mod ui;
 
 use std::vec::Vec;
+use std::io::Write;
 
 use relm::Widget;
 use sourceview::{prelude::*, LanguageManager, StyleSchemeManager};
+use clap::App;
 
 use crate::ui::window::Window;
+use crate::errors::RustamanResult;
 
 
-fn main() {
-    pretty_env_logger::init();
-    info!("Starting Rustaman");
+fn run() -> RustamanResult<()> {
+    let matches = App::new("rustaman")
+        //.version(constants::VERSION)
+        .author("Guillaume Gauvrit <guillaume@gauvr.it>")
+        .about("Template based http client using GTK")
+        .get_matches();
     gtk::init().expect("Unable to initialize gtk");
 
     let conf_path = helpers::path::rustaman_config_dir()
@@ -47,4 +53,20 @@ fn main() {
     
     let workspace = models::Workspace::default();
     Window::run(workspace).unwrap();
+    Ok(())
+}
+
+
+fn main() {
+    pretty_env_logger::init();
+    info!("Starting Rustaman");
+    match run() {
+        Ok(()) => {
+            debug!("Rustaman ended succesfully");
+        }
+        Err(err) => {
+            let _ = writeln!(&mut std::io::stderr(), "{}", err);
+            std::process::exit(1);
+        }
+    }
 }
