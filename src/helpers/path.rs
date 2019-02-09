@@ -1,13 +1,11 @@
 use std::fs::OpenOptions;
 use std::fs::{self, File};
 use std::io::prelude::*;
-use std::io::{self, ErrorKind};
+use std::io::{self, Error as IOError, ErrorKind};
 use std::os::unix::fs::OpenOptionsExt;
 
 use dirs;
 use std::path::PathBuf;
-
-pub type IOError = io::Error;
 
 fn config_dir() -> io::Result<PathBuf> {
     match dirs::config_dir() {
