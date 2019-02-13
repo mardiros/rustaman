@@ -60,6 +60,7 @@ fn run() -> RustamanResult<()> {
         "Unable to load the Language Manager".to_string(),
     ))?;
     let mut search_path = langmngr.get_search_path();
+    search_path.push(helpers::path::assets_dir());
     search_path.push(conf_path.clone());
     let path2: Vec<&str> = search_path.iter().map(|path| path.as_str()).collect();
     info!("Set langmngr search path: {:?}", path2);
@@ -69,6 +70,7 @@ fn run() -> RustamanResult<()> {
         "Unable to load the Style Scheme Manager".to_string(),
     ))?;
     let mut style_path = stylemngr.get_search_path();
+    style_path.push(helpers::path::assets_dir());
     style_path.push(conf_path);
     let path2: Vec<&str> = style_path.iter().map(|path| path.as_str()).collect();
     info!("Set search path: {:?}", path2);
