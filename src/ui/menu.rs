@@ -86,6 +86,7 @@ impl Update for Menu {
             }
 
             Msg::Deleted(id) => {
+                self.model.current = 0;
                 let item = self.items.remove(&id);
                 if item.is_some() {
                     self.vbox.remove_widget::<MenuItem>(item.unwrap());
