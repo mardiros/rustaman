@@ -15,7 +15,7 @@ You can install the package `rustaman-git` from [AUR](https://aur.archlinux.org/
 
 ## Install from source
 
-You must have GTK 3 installed on your OK to get it working.
+You must have GTK 3 installed on your OS to get it working.
 The GTK SourveView has to be installed too.
 
 
