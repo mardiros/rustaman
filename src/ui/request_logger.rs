@@ -43,18 +43,20 @@ impl Update for RequestLogger {
     fn update(&mut self, event: Msg) {
         match event {
             Msg::ExecutingRequest(request) => {
-                let mut text = String::from(">>> New Request\n");
+                let mut text = String::from("\n>>> New request\n");
                 let authority = request.authority();
-                let authority = format!("! Connecting to: {}:{}\n\n", authority.0, authority.1);
+                let authority = format!("#! Authority: {}:{}\n\n", authority.0, authority.1);
                 text.push_str(authority.as_str());
                 text.push_str(request.http_frame());
                 self.append_text(text.as_str());
+                self.append_text(">>> End of request\n");
             }
 
             Msg::RequestExecuted(response) => {
                 let mut text = String::from("<<< Response\n");
                 text.push_str(response.as_str());
                 self.append_text(text.as_str());
+                self.append_text("\n<<< End of response\n");
             }
         }
     }

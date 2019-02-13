@@ -61,6 +61,18 @@
       </match>
     </context>
 
+    <context id="http-header" end-at-line-end="true" style-ref="http-header-name">
+      <start>[^:]+:</start>
+      <include>
+        <context end-at-line-end="true" style-ref="http-header-value">
+          <start> </start>
+          <include>
+            <context ref="template-var"/>
+          </include>
+        </context>
+      </include>
+    </context>
+
     <context id="http-query" style-ref="http-method">
       <start>\%{http-method-re}</start>
       <end>$</end>
@@ -73,18 +85,7 @@
           </include>
         </context>
 
-        <context end-at-line-end="true" style-ref="http-header-name">
-          <start>[^:]+:</start>
-          <include>
-            <context end-at-line-end="true" style-ref="http-header-value">
-              <start> </start>
-              <include>
-                <context ref="template-var"/>
-              </include>
-            </context>
-          </include>
-        </context>
-
+        <context ref="http-header" />
       </include>
     </context>
 

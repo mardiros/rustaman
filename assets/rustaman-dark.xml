@@ -57,6 +57,9 @@
   <style name="rustaman-request:preprocessor"        foreground="magenta"/>
   <style name="rustaman-request:preprocessor-danger" foreground="red"/>
 
+  <style name="rustaman-response:request"            foreground="text"/>
+  <style name="rustaman-response:response"           foreground="text"/>
+
   <style name="def:comment"                          foreground="dark-green"/>
 
   <!-- json has been override to be yaml style too -->
