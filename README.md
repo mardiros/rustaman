@@ -8,6 +8,11 @@ A Template based HTTP client.
 unstable/under development
 
 
+## Install on Archlinux
+
+You can install the package `rustaman-git` from [AUR](https://aur.archlinux.org/packages/rustaman-git).
+
+
 ## Install from source
 
 You must have GTK 3 installed on your OK to get it working.
