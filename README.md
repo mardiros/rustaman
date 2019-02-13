@@ -1,6 +1,6 @@
 # Rustaman
 
-A Templating REST Client.
+A Template based HTTP client.
 
 
 ## Status
