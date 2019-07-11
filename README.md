@@ -1,5 +1,15 @@
 # Rustaman
 
+<!--
+[![Build Status](https://travis-ci.org/mardiros/rustaman.svg?branch=master)](https://travis-ci.org/mardiros/rustaman)
+[![Current Crates.io Version](https://img.shields.io/crates/v/rustaman.svg)](https://crates.io/crates/rustaman)
+[![Latests Documentation](https://docs.rs/rustaman/badge.svg)](https://docs.rs/crate/rustaman)
+-->
+
+[![dependency status](https://deps.rs/repo/github/mardiros/rustaman/status.svg)](https://deps.rs/repo/github/mardiros/rustaman)
+
+
+
 A Template based HTTP client.
 
 
