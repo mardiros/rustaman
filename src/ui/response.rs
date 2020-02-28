@@ -1,4 +1,3 @@
-use gtk::prelude::*;
 use gtk::{self, Orientation, ScrolledWindow};
 use relm::{Relm, Update, Widget};
 use serde_json;
@@ -101,7 +100,7 @@ impl Widget for Response {
         let style = stylemngr.get_scheme("rustaman-dark").unwrap();
 
         let buffer = sourceview::Buffer::new_with_language(&lang);
-        buffer.set_style_scheme(&style);
+        buffer.set_style_scheme(Some(&style));
 
         let response_view = SourceView::new_with_buffer(&buffer);
         response_view.set_hexpand(true);
@@ -109,7 +108,7 @@ impl Widget for Response {
         response_view.set_editable(false);
         response_view.set_monospace(true);
 
-        let scrollview = ScrolledWindow::new(None, None);
+        let scrollview = ScrolledWindow::new(gtk::NONE_ADJUSTMENT, gtk::NONE_ADJUSTMENT);
         scrollview.add(&response_view);
 
         hbox.set_margin_top(5);

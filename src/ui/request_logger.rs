@@ -1,5 +1,5 @@
-use gtk::prelude::*;
 use gtk::{self, Orientation, ScrolledWindow};
+use glib::GString;
 use relm::{Relm, Update, Widget};
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 
@@ -22,10 +22,11 @@ impl RequestLogger {
         let buffer = self.logger_view.get_buffer().unwrap();
         let start_iter = buffer.get_start_iter();
         let end_iter = buffer.get_end_iter();
-        let mut current = match buffer.get_text(&start_iter, &end_iter, true) {
+        let current = match buffer.get_text(&start_iter, &end_iter, true) {
             Some(data) => data,
-            None => "".to_string(),
+            None => GString::from(""),
         };
+        let mut current = current.as_str().to_string();
         current.push_str(text);
         buffer.set_text(current.as_str());
     }
@@ -80,13 +81,13 @@ impl Widget for RequestLogger {
         let style = stylemngr.get_scheme("rustaman-dark").unwrap();
 
         let buffer = sourceview::Buffer::new_with_language(&lang);
-        buffer.set_style_scheme(&style);
+        buffer.set_style_scheme(Some(&style));
 
         let logger_view = SourceView::new_with_buffer(&buffer);
         logger_view.set_hexpand(true);
         logger_view.set_vexpand(true);
 
-        let scrollview = ScrolledWindow::new(None, None);
+        let scrollview = ScrolledWindow::new(gtk::NONE_ADJUSTMENT, gtk::NONE_ADJUSTMENT);
         scrollview.add(&logger_view);
 
         hbox.set_margin_top(5);

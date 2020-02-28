@@ -4,7 +4,6 @@ use gtk::{
     self, prelude::*, ButtonsType, DialogFlags, GtkWindowExt, MessageDialog, MessageType,
     Orientation, WindowPosition, WindowType,
 };
-use gtk_sys::GTK_RESPONSE_OK;
 
 use relm::{connect, connect_stream, Component, ContainerWidget, Relm, Update, Widget};
 use serde_yaml;
@@ -252,7 +251,7 @@ impl Update for Window {
                 );
                 let result = dialog.run();
 
-                if result == GTK_RESPONSE_OK as i32 {
+                if result == gtk::ResponseType::Ok {
                     info!("Deleting environment {}", id);
                     self.model.workspace.delete_environment(id);
                     self.env_editor

@@ -2,8 +2,9 @@ use std::convert::From;
 use std::mem;
 use std::str::FromStr;
 
+use gio::prelude::*;
 use gio::{
-    IOStream, IOStreamExt, InputStreamExtManual, OutputStreamExtManual, SocketClient,
+    IOStream, IOStreamExt, SocketClient,
     SocketClientExt, SocketConnection, TlsCertificateFlags,
 };
 use glib::source::PRIORITY_DEFAULT;
@@ -412,8 +413,7 @@ impl Update for Http {
                     client,
                     connect_to_host_async(host.as_str(), req.port),
                     self.model.relm,
-                    |conn| Msg::ConnectionAquired(conn, req),
-                    |err: gdk::Error| Msg::DisplayError(RustamanError::from(err.clone()))
+                    |conn| Msg::ConnectionAquired(conn, req)
                 );
             }
             Msg::ConnectionAquired(connection, req) => {

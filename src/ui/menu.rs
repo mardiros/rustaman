@@ -5,7 +5,7 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, IconSize, Orientation};
-use relm::{connect, connect_stream, Component, ContainerWidget, Relm, Update, Widget};
+use relm::{connect, Component, ContainerWidget, Relm, Update, Widget};
 
 use super::super::models::{Request, Requests};
 use super::menu_item::{MenuItem, Msg as MenuItemMsg};
@@ -159,7 +159,7 @@ impl Widget for Menu {
 
         //let add_request = gtk::Button::new_with_label("+");
         let add_request = gtk::Button::new();
-        let add_image = gtk::Image::new_from_icon_name("document-new", IconSize::Button.into());
+        let add_image = gtk::Image::new_from_icon_name(Some("document-new"), IconSize::Button.into());
         add_request.set_relief(gtk::ReliefStyle::Half);
         add_request.set_focus_on_click(false);
         add_request.add(&add_image);
@@ -186,7 +186,7 @@ impl Widget for Menu {
             }
         }
 
-        let scrollbox = gtk::ScrolledWindow::new(None, None);
+        let scrollbox = gtk::ScrolledWindow::new(gtk::NONE_ADJUSTMENT, gtk::NONE_ADJUSTMENT);
         scrollbox.add(&vbox);
         scrollbox.show();
 

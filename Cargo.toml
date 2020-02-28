@@ -3,39 +3,46 @@ name = "rustaman"
 version = "0.1.0"
 authors = ["Guillaume Gauvrit <guillaume@gauvr.it>"]
 edition = "2018"
+readme = "README.md"
+keywords = ["http", "https", "request", "client", "GUI"]
+categories = ["web-programming::http-client", "GUI"]
+description = """Simple HTTP Client."""
+license = "BSD-3-Clause"
+repository = "https://github.com/mardiros/rustaman"
+
+[[bin]]
+name = "rustaman"
+path = "src/main.rs"
+
+[features]
+default = ["gtk_3_24"]
+gtk_3_22_30 = ["gtk/v3_22_30",  "gdk/v3_22", "gio/v2_56", "glib/v2_56"] #for CI tools
+gtk_3_24 = ["gtk_3_22_30", "gtk/v3_24", "gdk/v3_24", "gio/v2_58", "glib/v2_58"] #for CI tools
 
 [dependencies]
 
-clap = "^2.32.0"
+clap = "2.33.0"
 
-gtk = "^0.5.0"
-gdk = "^0.9.0"
-gio = "^0.5.1"
-glib = "^0.6.0"
-gtk-sys = "^0.7.0"
-relm = "^0.15.0"
-relm-derive =  "^0.15.0"
+gtk = "0.8.1"
+gdk = "0.12.1"
+gio = "0.8.1"
+glib = "0.9.3"
+gtk-sys = "0.9.2"
+relm = "0.19.0"
+relm-derive =  "0.19.0"
 
-sourceview = "^0.5.0"
+sourceview = "0.8.0"
 
-serde = "^1.0.27"
-serde_derive = "^1.0.80"
-serde_json = "^1.0.9"
-serde_yaml = "^0.7.3"
+serde = "1.0.104"
+serde_derive = "1.0.104"
+serde_json = "1.0.48"
+serde_yaml = "0.8.11"
 
-log = "^0.4"
-pretty_env_logger = "^0.2.5"
+log = "0.4.8"
+pretty_env_logger = "0.4.0"
 
-lazy_static = "^1.2.0"
-regex = "^1.0.6"
-url = "^1.7.2"
-handlebars = "^1.1.0"
-dirs = "^1.0"
-
-[features]
-default = ["gtk_3_22"]
-gtk_3_10 = ["gtk/v3_10"]
-gtk_3_16 = ["gtk_3_10", "gtk/v3_16"]
-gtk_3_18 = ["gtk_3_16", "gtk/v3_18"] #for CI tools
-gtk_3_20 = ["gtk_3_18", "gtk/v3_20"] #for CI tools
-gtk_3_22 = ["gtk_3_20", "gtk/v3_22"] #for CI tools
+lazy_static = "1.4.0"
+regex = "1.3.4"
+url = "2.1.1"
+handlebars = "3.0.1"
+dirs = "2.0.2"

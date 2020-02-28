@@ -3,7 +3,6 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::io;
 
-use gdk;
 use serde_yaml;
 use url;
 
@@ -13,7 +12,6 @@ pub enum RustamanError {
     EnvironmentParsingError(serde_yaml::Error),
     UrlParseError(url::ParseError),
     GtkStrError(String),
-    GdkError(gdk::Error),
     IOError(io::Error),
 }
 
@@ -29,7 +27,6 @@ impl Display for RustamanError {
             RustamanError::UrlParseError(err) => format!("Url Parse Error: {}", err),
             RustamanError::RequestParsingError(err) => format!("{}", err),
             RustamanError::GtkStrError(err) => format!("{}", err),
-            RustamanError::GdkError(err) => format!("{}", err),
             RustamanError::IOError(err) => format!("{}", err),
         };
         write!(f, "{}", description)
@@ -41,7 +38,6 @@ impl Error for RustamanError {
         let err: Option<&(dyn Error + 'static)> = match self {
             RustamanError::EnvironmentParsingError(err) => Some(err),
             RustamanError::UrlParseError(err) => Some(err),
-            RustamanError::GdkError(err) => Some(err),
             RustamanError::IOError(err) => Some(err),
             _ => None,
         };
@@ -58,12 +54,6 @@ impl From<serde_yaml::Error> for RustamanError {
 impl From<url::ParseError> for RustamanError {
     fn from(err: url::ParseError) -> RustamanError {
         RustamanError::UrlParseError(err)
-    }
-}
-
-impl From<gdk::Error> for RustamanError {
-    fn from(err: gdk::Error) -> RustamanError {
-        RustamanError::GdkError(err)
     }
 }
 

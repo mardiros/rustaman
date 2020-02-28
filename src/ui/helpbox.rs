@@ -49,11 +49,11 @@ impl Widget for HelpBox {
 
         fn create_label(vbox: &gtk::Box, shortcut: &str, title: &str) {
             let hbox = gtk::Box::new(Orientation::Horizontal, 0);
-            let label = gtk::Label::new(shortcut);
+            let label = gtk::Label::new(Some(shortcut));
             label.set_justify(Justification::Right);
             label.set_hexpand(true);
             hbox.add(&label);
-            let label = gtk::Label::new(title);
+            let label = gtk::Label::new(Some(title));
             label.set_justify(Justification::Left);
             label.set_hexpand(true);
             hbox.add(&label);

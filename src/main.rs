@@ -17,6 +17,7 @@ use std::vec::Vec;
 
 use clap::{App, Arg};
 use relm::Widget;
+use glib;
 use sourceview::{prelude::*, LanguageManager, StyleSchemeManager};
 
 use crate::errors::{RustamanError, RustamanResult};
@@ -60,8 +61,8 @@ fn run() -> RustamanResult<()> {
         "Unable to load the Language Manager".to_string(),
     ))?;
     let mut search_path = langmngr.get_search_path();
-    search_path.push(helpers::path::assets_dir());
-    search_path.push(conf_path.clone());
+    search_path.push(glib::GString::from(helpers::path::assets_dir()));
+    search_path.push(glib::GString::from(conf_path.clone()));
     let path2: Vec<&str> = search_path.iter().map(|path| path.as_str()).collect();
     info!("Set langmngr search path: {:?}", path2);
     langmngr.set_search_path(path2.as_slice());
@@ -70,8 +71,8 @@ fn run() -> RustamanResult<()> {
         "Unable to load the Style Scheme Manager".to_string(),
     ))?;
     let mut style_path = stylemngr.get_search_path();
-    style_path.push(helpers::path::assets_dir());
-    style_path.push(conf_path);
+    style_path.push(glib::GString::from(helpers::path::assets_dir()));
+    style_path.push(glib::GString::from(conf_path));
     let path2: Vec<&str> = style_path.iter().map(|path| path.as_str()).collect();
     info!("Set search path: {:?}", path2);
     stylemngr.set_search_path(path2.as_slice());
@@ -83,6 +84,7 @@ fn run() -> RustamanResult<()> {
 }
 
 fn main() {
+    
     pretty_env_logger::init();
     info!("Starting Rustaman");
     match run() {

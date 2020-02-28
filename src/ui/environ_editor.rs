@@ -5,7 +5,7 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, Button, IconSize, Orientation, ReliefStyle, ScrolledWindow};
-use relm::{connect, connect_stream, Relm, Update, Widget};
+use relm::{connect, Relm, Update, Widget};
 use serde_yaml;
 use sourceview::prelude::*;
 use sourceview::{self, LanguageManager, StyleSchemeManager, View as SourceView};
@@ -64,7 +64,7 @@ impl EnvironEditor {
         let buffer = environ_source.get_buffer().unwrap();
         let start_iter = buffer.get_start_iter();
         let end_iter = buffer.get_end_iter();
-        buffer.get_text(&start_iter, &end_iter, true)
+        buffer.get_text(&start_iter, &end_iter, true).map(|x| x.as_str().to_string())
     }
 
     fn get_current_text(&self) -> Option<String> {
@@ -153,14 +153,14 @@ impl Update for EnvironEditor {
                 let payload = env.payload();
 
                 let close_image =
-                    gtk::Image::new_from_icon_name("window-close", IconSize::Button.into());
+                    gtk::Image::new_from_icon_name(Some("window-close"), IconSize::Button.into());
                 let button = gtk::Button::new();
 
                 button.set_relief(ReliefStyle::None);
                 button.set_focus_on_click(false);
                 button.add(&close_image);
                 let tab = {
-                    let label = gtk::Label::new(name);
+                    let label = gtk::Label::new(Some(name));
                     let tab = gtk::Box::new(Orientation::Horizontal, 0);
                     connect!(
                         self.relm,
@@ -183,7 +183,7 @@ impl Update for EnvironEditor {
                     let style = stylemngr.get_scheme("rustaman-dark").unwrap();
 
                     let buffer = sourceview::Buffer::new_with_language(&lang);
-                    buffer.set_style_scheme(&style);
+                    buffer.set_style_scheme(Some(&style));
                     buffer.set_text(payload);
 
                     let environ_source = SourceView::new_with_buffer(&buffer);
@@ -192,7 +192,7 @@ impl Update for EnvironEditor {
                     environ_source.set_vexpand(true);
                     environ_source.show();
 
-                    let tab_page = ScrolledWindow::new(None, None);
+                    let tab_page = ScrolledWindow::new(gtk::NONE_ADJUSTMENT, gtk::NONE_ADJUSTMENT);
                     tab_page.set_hexpand(true);
                     tab_page.set_vexpand(true);
                     tab_page.add(&environ_source);

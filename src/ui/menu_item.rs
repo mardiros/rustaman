@@ -2,7 +2,7 @@ use gdk;
 use gdk::enums::key;
 use gtk::prelude::*;
 use gtk::{self, Orientation};
-use relm::{connect, connect_stream, Relm, Update, Widget};
+use relm::{connect, Relm, Update, Widget};
 
 use super::super::models::Request;
 
@@ -158,7 +158,7 @@ impl Widget for MenuItem {
         rename.show();
         delete.show();
         let combo_btn = gtk::MenuButton::new();
-        combo_btn.set_popup(&menu);
+        combo_btn.set_popup(Some(&menu));
         combo_btn.set_use_popover(true);
         combo_btn.show();
         displaybox.add(&combo_btn);

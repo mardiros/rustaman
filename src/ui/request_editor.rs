@@ -1,8 +1,7 @@
 use gdk;
 use gdk::enums::key;
-use gtk::prelude::*;
 use gtk::{self, Orientation, ScrolledWindow};
-use relm::{connect, connect_stream, Relm, Update, Widget};
+use relm::{connect, Relm, Update, Widget};
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 
 use super::super::models::Template;
@@ -39,7 +38,7 @@ impl RequestEditor {
         let buffer = self.request_source.get_buffer().unwrap();
         let start_iter = buffer.get_start_iter();
         let end_iter = buffer.get_end_iter();
-        buffer.get_text(&start_iter, &end_iter, true)
+        buffer.get_text(&start_iter, &end_iter, true).map(|x| x.as_str().to_string())
     }
 }
 
@@ -118,7 +117,7 @@ impl Widget for RequestEditor {
         let style = stylemngr.get_scheme("rustaman-dark").unwrap();
 
         let buffer = sourceview::Buffer::new_with_language(&lang);
-        buffer.set_style_scheme(&style);
+        buffer.set_style_scheme(Some(&style));
 
         let request_source = SourceView::new_with_buffer(&buffer);
         request_source.set_insert_spaces_instead_of_tabs(true);
@@ -127,7 +126,7 @@ impl Widget for RequestEditor {
         request_source.set_highlight_current_line(true);
         request_source.set_monospace(true);
 
-        let scrollview = ScrolledWindow::new(None, None);
+        let scrollview = ScrolledWindow::new(gtk::NONE_ADJUSTMENT, gtk::NONE_ADJUSTMENT);
         scrollview.add(&request_source);
 
         connect!(
