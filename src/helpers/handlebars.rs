@@ -1,5 +1,5 @@
 use handlebars::{
-    Context, BlockContext, Handlebars, Helper, HelperResult, Output, RenderContext, TemplateRenderError,
+    Context, Handlebars, Helper, HelperResult, Output, RenderContext, TemplateRenderError,
 };
 use std::boxed::Box;
 use url::form_urlencoded;
@@ -12,12 +12,10 @@ fn set_helper(
     rc: &mut RenderContext,
     _out: &mut dyn Output,
 ) -> HelperResult {
-    let mut block_context = BlockContext::new();
     for (key, val) in h.hash().iter() {
         let val = val.value();
-        block_context.set_local_var(key.to_string(), val.clone());
+        rc.set_local_var(key.to_string(), val.clone());
     }
-    rc.push_block(block_context);
     Ok(())
 }
 
