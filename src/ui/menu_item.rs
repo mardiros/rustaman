@@ -81,6 +81,7 @@ impl Update for MenuItem {
                             self.toggle_btn.set_label(name.as_str());
                             self.entry.hide();
                             self.displaybox.show();
+                            self.model.request.set_name(name.as_str());
                             self.relm
                                 .stream()
                                 .emit(Msg::Renaming(self.model.id(), name.to_owned()))
