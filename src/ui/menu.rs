@@ -159,7 +159,8 @@ impl Widget for Menu {
 
         //let add_request = gtk::Button::new_with_label("+");
         let add_request = gtk::Button::new();
-        let add_image = gtk::Image::new_from_icon_name(Some("document-new"), IconSize::Button.into());
+        let add_image =
+            gtk::Image::new_from_icon_name(Some("document-new"), IconSize::Button.into());
         add_request.set_relief(gtk::ReliefStyle::Half);
         add_request.set_focus_on_click(false);
         add_request.add(&add_image);

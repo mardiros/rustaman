@@ -4,8 +4,7 @@ use std::str::FromStr;
 
 use gio::prelude::*;
 use gio::{
-    IOStream, IOStreamExt, SocketClient,
-    SocketClientExt, SocketConnection, TlsCertificateFlags,
+    IOStream, IOStreamExt, SocketClient, SocketClientExt, SocketConnection, TlsCertificateFlags,
 };
 use glib::source::PRIORITY_DEFAULT;
 use glib::Cast;

@@ -17,12 +17,10 @@ fn config_dir() -> io::Result<PathBuf> {
     }
 }
 
-
 #[cfg(any(unix))]
 pub fn assets_dir() -> String {
     String::from("/usr/share/rustaman")
 }
-
 
 pub fn rustaman_config_dir() -> io::Result<PathBuf> {
     let mut path = config_dir()?;

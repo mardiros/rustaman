@@ -1,5 +1,5 @@
-use gtk::{self, Orientation, ScrolledWindow};
 use glib::GString;
+use gtk::{self, Orientation, ScrolledWindow};
 use relm::{Relm, Update, Widget};
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
 

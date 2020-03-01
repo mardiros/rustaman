@@ -64,7 +64,9 @@ impl EnvironEditor {
         let buffer = environ_source.get_buffer().unwrap();
         let start_iter = buffer.get_start_iter();
         let end_iter = buffer.get_end_iter();
-        buffer.get_text(&start_iter, &end_iter, true).map(|x| x.as_str().to_string())
+        buffer
+            .get_text(&start_iter, &end_iter, true)
+            .map(|x| x.as_str().to_string())
     }
 
     fn get_current_text(&self) -> Option<String> {

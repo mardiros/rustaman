@@ -16,8 +16,8 @@ use std::io::Write;
 use std::vec::Vec;
 
 use clap::{App, Arg};
-use relm::Widget;
 use glib;
+use relm::Widget;
 use sourceview::{prelude::*, LanguageManager, StyleSchemeManager};
 
 use crate::errors::{RustamanError, RustamanResult};
@@ -84,7 +84,6 @@ fn run() -> RustamanResult<()> {
 }
 
 fn main() {
-    
     pretty_env_logger::init();
     info!("Starting Rustaman");
     match run() {
