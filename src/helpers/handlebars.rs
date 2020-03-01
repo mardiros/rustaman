@@ -1,22 +1,36 @@
-use handlebars::{
-    Context, Handlebars, Helper, HelperResult, Output, RenderContext, TemplateRenderError,
-};
 use std::boxed::Box;
+
+use handlebars::{
+    Context, Decorator, Handlebars, Helper, HelperResult, Output, RenderContext, RenderError,
+    TemplateRenderError,
+};
+use serde_json::value::Value as Json;
 use url::form_urlencoded;
 
-// implement via bare function
-fn set_helper(
-    h: &Helper,
+// a decorator mutates current context data
+fn set_decorator(
+    d: &Decorator,
     _: &Handlebars,
-    _: &Context,
+    ctx: &Context,
     rc: &mut RenderContext,
-    _out: &mut dyn Output,
-) -> HelperResult {
-    for (key, val) in h.hash().iter() {
-        let val = val.value();
-        rc.set_local_var(key.to_string(), val.clone());
+) -> Result<(), RenderError> {
+    // get the input of decorator
+    let data_to_set = d.hash();
+    // retrieve the json value in current context
+    let ctx_data = ctx.data();
+
+    if let Json::Object(m) = ctx_data {
+        let mut new_ctx_data = m.clone();
+
+        for (k, v) in data_to_set {
+            new_ctx_data.insert(k.to_string(), v.value().clone());
+        }
+
+        rc.set_context(Context::wraps(new_ctx_data)?);
+        Ok(())
+    } else {
+        Err(RenderError::new("Cannot extend non-object data"))
     }
-    Ok(())
 }
 
 // implement via bare function
@@ -35,13 +49,12 @@ fn encode(
     Ok(())
 }
 
-
 pub fn compile_template(
     template: &str,
     context: &serde_yaml::Value,
 ) -> Result<String, TemplateRenderError> {
     let mut hbar = Handlebars::new();
-    hbar.register_helper("set", Box::new(set_helper));
+    hbar.register_decorator("set", Box::new(set_decorator));
     hbar.register_helper("encode", Box::new(encode));
     hbar.render_template(template, &context)
 }
