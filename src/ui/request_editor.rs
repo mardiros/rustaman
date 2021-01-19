@@ -1,5 +1,5 @@
 use gdk;
-use gdk::enums::key;
+use gdk::keys::constants;
 use gtk::{self, Orientation, ScrolledWindow};
 use relm::{connect, Relm, Update, Widget};
 use sourceview::{self, prelude::*, LanguageManager, StyleSchemeManager, View as SourceView};
@@ -138,7 +138,7 @@ impl Widget for RequestEditor {
             return Inhibit(
                 key_.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
                     && match key_.get_keyval() {
-                        key::Return => true,
+                        constants::Return => true,
                         _ => false,
                     }
             )

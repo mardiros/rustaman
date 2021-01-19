@@ -37,6 +37,7 @@ fn parse_response(response: &str) -> Option<serde_yaml::Value> {
     let mut text = String::new();
     let mut lines = response.lines();
     loop {
+
         let line = lines.next();
         match line {
             Some(unwrapped) => {

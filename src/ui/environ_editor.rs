@@ -2,7 +2,7 @@ use std::slice::Iter;
 use std::vec::Vec;
 
 use gdk;
-use gdk::enums::key;
+use gdk::keys::constants;
 use gtk::prelude::*;
 use gtk::{self, Button, IconSize, Orientation, ReliefStyle, ScrolledWindow};
 use relm::{connect, Relm, Update, Widget};
@@ -133,12 +133,12 @@ impl Update for EnvironEditor {
             Msg::NewEntryPressingKey(key) => {
                 let keyval = key.get_keyval();
                 match keyval {
-                    key::Return => {
-                        let name = self.entry.get_text().unwrap().to_owned();
+                    constants::Return => {
+                        let name = self.entry.get_text().to_owned();
                         self.entry.set_text("");
                         self.relm.stream().emit(Msg::CreatingEnvironment(name));
                     }
-                    key::Escape => {
+                    constants::Escape => {
                         info!("Detach Entry");
                         self.notebook.detach_tab(&self.entry_tab.1);
                         info!("Attach Plus");
@@ -155,7 +155,7 @@ impl Update for EnvironEditor {
                 let payload = env.payload();
 
                 let close_image =
-                    gtk::Image::new_from_icon_name(Some("window-close"), IconSize::Button.into());
+                    gtk::Image::from_icon_name(Some("window-close"), IconSize::Button.into());
                 let button = gtk::Button::new();
 
                 button.set_relief(ReliefStyle::None);
@@ -209,7 +209,7 @@ impl Update for EnvironEditor {
                     return Inhibit(
                         key.get_state().intersects(gdk::ModifierType::CONTROL_MASK)
                             && match key.get_keyval() {
-                                key::Return => true,
+                                constants::Return => true,
                                 _ => false,
                             }
                     )

@@ -1,5 +1,5 @@
 use gdk;
-use gdk::enums::key;
+use gdk::keys::constants;
 use gtk::prelude::*;
 use gtk::{self, Orientation};
 use relm::{connect, Relm, Update, Widget};
@@ -74,20 +74,17 @@ impl Update for MenuItem {
             Msg::EntryKeyPress(key) => {
                 let keyval = key.get_keyval();
                 match keyval {
-                    key::Return => {
-                        let text = self.entry.get_text();
-                        if text.is_some() {
-                            let name = text.unwrap();
-                            self.toggle_btn.set_label(name.as_str());
-                            self.entry.hide();
-                            self.displaybox.show();
-                            self.model.request.set_name(name.as_str());
-                            self.relm
-                                .stream()
-                                .emit(Msg::Renaming(self.model.id(), name.to_owned()))
-                        }
+                    constants::Return => {
+                        let name = self.entry.get_text();
+                        self.toggle_btn.set_label(name.as_str());
+                        self.entry.hide();
+                        self.displaybox.show();
+                        self.model.request.set_name(name.as_str());
+                        self.relm
+                            .stream()
+                            .emit(Msg::Renaming(self.model.id(), name.to_owned()))
                     }
-                    key::Escape => {
+                    constants::Escape => {
                         let name = self.model.name();
                         self.entry.set_text(&name);
                         self.entry.hide();
@@ -144,7 +141,7 @@ impl Widget for MenuItem {
         let displaybox = gtk::Box::new(Orientation::Horizontal, 0);
         displaybox.set_hexpand(true);
 
-        let toggle_btn = gtk::ToggleButton::new_with_label(model.name());
+        let toggle_btn = gtk::ToggleButton::with_label(model.name());
         toggle_btn.set_hexpand(true);
         toggle_btn.set_focus_on_click(false);
         toggle_btn.set_relief(gtk::ReliefStyle::Half);
@@ -152,9 +149,9 @@ impl Widget for MenuItem {
         displaybox.add(&toggle_btn);
 
         let menu = gtk::Menu::new();
-        let rename = gtk::MenuItem::new_with_label("Rename");
+        let rename = gtk::MenuItem::with_label("Rename");
         menu.append(&rename);
-        let delete = gtk::MenuItem::new_with_label("Delete");
+        let delete = gtk::MenuItem::with_label("Delete");
         menu.append(&delete);
         rename.show();
         delete.show();

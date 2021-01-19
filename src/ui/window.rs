@@ -1,5 +1,5 @@
 use gdk;
-use gdk::enums::key;
+use gdk::keys::constants;
 use gtk::{
     self, prelude::*, ButtonsType, DialogFlags, GtkWindowExt, MessageDialog, MessageType,
     Orientation, WindowPosition, WindowType,
@@ -258,7 +258,7 @@ impl Update for Window {
                         .stream()
                         .emit(EnvironMsg::EnvironmentDeleted(id))
                 }
-                dialog.destroy();
+                dialog.close();
             }
             Msg::Quitting => gtk::main_quit(),
             Msg::PressingKey(key) => {
@@ -267,16 +267,16 @@ impl Update for Window {
 
                 if keystate.intersects(gdk::ModifierType::CONTROL_MASK) {
                     match keyval {
-                        key::w => self.relm.stream().emit(Msg::Quitting),
-                        key::n => self.relm.stream().emit(Msg::CreatingRequest),
-                        key::p => self.menu.stream().emit(MenuMsg::RequestingFilteringMenu),
-                        key::Return => self
+                        constants::w => self.relm.stream().emit(Msg::Quitting),
+                        constants::n => self.relm.stream().emit(Msg::CreatingRequest),
+                        constants::p => self.menu.stream().emit(MenuMsg::RequestingFilteringMenu),
+                        constants::Return => self
                             .relm
                             .stream()
                             .emit(Msg::ExecutingCurrentRequestTemplate),
                         _ => {}
                     }
-                } else if keyval == key::F2 && self.model.current_req > 0 {
+                } else if keyval == constants::F2 && self.model.current_req > 0 {
                     self.menu
                         .stream()
                         .emit(MenuMsg::RenamingRequest(self.model.current_req))

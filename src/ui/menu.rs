@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::slice::Iter;
 
 use gdk;
-use gdk::enums::key;
+use gdk::keys::constants;
 use gtk::prelude::*;
 use gtk::{self, IconSize, Orientation};
 use relm::{connect, Component, ContainerWidget, Relm, Update, Widget};
@@ -121,11 +121,11 @@ impl Update for Menu {
             Msg::SearchEntryPressingKey(key) => {
                 let keyval = key.get_keyval();
                 let name = match keyval {
-                    key::Escape => {
+                    constants::Escape => {
                         self.search.set_text("");
                         "".to_owned()
                     }
-                    _ => self.search.get_text().unwrap().to_owned(),
+                    _ => self.search.get_text().to_owned(),
                 };
 
                 for menuitem in self.items.values_mut() {
@@ -157,10 +157,10 @@ impl Widget for Menu {
         searchbox.set_margin_top(5);
         searchbox.set_margin_bottom(10);
 
-        //let add_request = gtk::Button::new_with_label("+");
+        //let add_request = gtk::Button::with_label("+");
         let add_request = gtk::Button::new();
         let add_image =
-            gtk::Image::new_from_icon_name(Some("document-new"), IconSize::Button.into());
+            gtk::Image::from_icon_name(Some("document-new"), IconSize::Button.into());
         add_request.set_relief(gtk::ReliefStyle::Half);
         add_request.set_focus_on_click(false);
         add_request.add(&add_image);
