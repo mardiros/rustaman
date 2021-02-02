@@ -4,11 +4,11 @@ use std::io::prelude::*;
 use std::io::{self, Error as IOError, ErrorKind};
 use std::os::unix::fs::OpenOptionsExt;
 
-use dirs;
+use dirs_next;
 use std::path::PathBuf;
 
 fn config_dir() -> io::Result<PathBuf> {
-    match dirs::config_dir() {
+    match dirs_next::config_dir() {
         Some(path) => Ok(path),
         None => Err(IOError::new(
             ErrorKind::NotFound,
