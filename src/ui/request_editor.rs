@@ -80,7 +80,7 @@ impl Update for RequestEditor {
                 let text = self.get_text();
                 match text {
                     Some(ref data) => {
-                        error!("Running query");
+                        debug!("Running query");
                         self.relm
                             .stream()
                             .emit(Msg::NotifyingCurrentTemplate(data.to_owned()));
