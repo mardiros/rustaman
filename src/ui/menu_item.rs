@@ -51,7 +51,7 @@ impl Update for MenuItem {
 
     fn model(_: &Relm<Self>, request: Request) -> Model {
         Model {
-            request: request.clone(),
+            request,
         }
     }
 
@@ -86,7 +86,7 @@ impl Update for MenuItem {
                     }
                     constants::Escape => {
                         let name = self.model.name();
-                        self.entry.set_text(&name);
+                        self.entry.set_text(name);
                         self.entry.hide();
                         self.displaybox.show();
                         self.relm

@@ -16,7 +16,7 @@ use std::io::Write;
 use std::vec::Vec;
 
 use clap::{App, Arg};
-use glib;
+
 use relm::Widget;
 use sourceview::{prelude::*, LanguageManager, StyleSchemeManager};
 

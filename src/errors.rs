@@ -3,8 +3,8 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::io;
 
-use serde_yaml;
-use url;
+
+
 
 #[derive(Debug)]
 pub enum RustamanError {
@@ -20,16 +20,15 @@ pub type RustamanResult<T> = Result<T, RustamanError>;
 
 impl Display for RustamanError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let description = match self {
+        match self {
             RustamanError::EnvironmentParsingError(err) => {
-                format!("Environment Yaml Parsing Error: {}", err)
+                write!(f, "Environment Yaml Parsing Error: {}", err)
             }
-            RustamanError::UrlParseError(err) => format!("Url Parse Error: {}", err),
-            RustamanError::RequestParsingError(err) => format!("{}", err),
-            RustamanError::GtkStrError(err) => format!("{}", err),
-            RustamanError::IOError(err) => format!("{}", err),
-        };
-        write!(f, "{}", description)
+            RustamanError::UrlParseError(err) => write!(f, "Url Parse Error: {}", err),
+            RustamanError::RequestParsingError(err) => write!(f, "{}", err),
+            RustamanError::GtkStrError(err) => write!(f, "{}", err),
+            RustamanError::IOError(err) => write!(f, "{}", err),
+        }
     }
 }
 

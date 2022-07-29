@@ -1,6 +1,6 @@
 use std::vec::Vec;
 
-use serde_json;
+
 
 use super::super::errors::RustamanResult;
 use super::super::helpers::path;
@@ -140,7 +140,7 @@ impl Workspace {
     pub fn request(&self, id: usize) -> Option<&Request> {
         for request in self.requests().iter() {
             if request.id() == id {
-                return Some(&request);
+                return Some(request);
             }
         }
         None
@@ -154,7 +154,7 @@ impl Workspace {
         let name = format!("Req #{}", id);
         let request = Request {
             id,
-            name: name.to_owned(),
+            name,
             status: Status::BeingCreated,
             template: DEFAULT_TEMPLATE.to_owned(),
         };
@@ -201,7 +201,7 @@ impl Workspace {
     pub fn environment(&self, id: usize) -> Option<&Environment> {
         for environment in self.environments().iter() {
             if environment.id() == id {
-                return Some(&environment);
+                return Some(environment);
             }
         }
         None

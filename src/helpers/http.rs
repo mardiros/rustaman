@@ -10,7 +10,7 @@ use glib::source::PRIORITY_DEFAULT;
 use glib::Cast;
 use lazy_static::lazy_static;
 use relm::{connect_async, Relm, Update, UpdateNew};
-use serde_yaml;
+
 
 use regex::Regex;
 use url::Url;
@@ -77,11 +77,11 @@ fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
         .and_then(|cap| {
             let host = cap
                 .name("host")
-                .map(|host| host.as_str().trim_start_matches("[").trim_end_matches("]"));
+                .map(|host| host.as_str().trim_start_matches('[').trim_end_matches(']'));
             let port = cap
                 .name("port")
                 .map(|port| FromStr::from_str(port.as_str()).unwrap());
-            Some((host.unwrap().to_string(), port.unwrap()))
+            Some((host?.to_string(), port?))
         });
     resp
 }
@@ -89,17 +89,13 @@ fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
 fn extract_capture_name(line: &str) -> Option<String> {
     let resp = RE_EXTRACT_CAPTURE.captures(line).and_then(|cap| {
         let cap = cap.name("capture");
-        if let Some(capture) = cap {
-            Some(capture.as_str().to_string())
-        } else {
-            None
-        }
+        cap.map(|capture| capture.as_str().to_string())
     });
     resp
 }
 
 fn extract_insecure_flag(line: &str) -> bool {
-    return RE_EXTRACT_INSECURE_FLAG.is_match(line);
+    RE_EXTRACT_INSECURE_FLAG.is_match(line)
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -144,7 +140,7 @@ impl HttpRequest {
         let s = env.obfuscated_string();
         let _: Vec<_> = s
             .iter()
-            .map(|ref x| {
+            .map(|x| {
                 let obf = format!("{}...", &x[0..3]);
                 req.http_frame = req.http_frame.replace(x.as_str(), obf.as_str())
             })
@@ -201,7 +197,7 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         _ => {
             error!("Parse error on line: {}", line.unwrap());
             return Err(RustamanError::RequestParsingError(
-                format!("Parse error on line: {}", line.unwrap()).to_owned(),
+                format!("Parse error on line: {}", line.unwrap()),
             ));
         }
     };
@@ -219,11 +215,11 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     }
     let mut query = url.path().to_string();
     if let Some(qr) = url.query() {
-        query.push_str("?");
+        query.push('?');
         query.push_str(qr);
     }
     if let Some(frag) = url.fragment() {
-        query.push_str("#");
+        query.push('#');
         query.push_str(frag);
     }
 
@@ -264,19 +260,19 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
             None => break,
         }
     }
-    if body.len() > 0 {
+    if !body.is_empty() {
         let length = format!("{}", body.len());
         http_frame.push_str("Content-Length: ");
         http_frame.push_str(length.as_str());
         http_frame.push_str("\r\n");
     }
-    if http_frame.find("\nUser-Agent:").is_none() {
+    if !http_frame.contains("\nUser-Agent:") {
         http_frame.push_str("User-Agent: Rustaman\r\n");
     }
     http_frame.push_str("Connection: close\r\n");
     http_frame.push_str("\r\n");
 
-    if body.len() > 0 {
+    if !body.is_empty() {
         http_frame.push_str(body.as_str());
     }
     let authority = authority.unwrap();
@@ -423,12 +419,12 @@ impl Update for Http {
                 self.model.stream = Some(stream);
 
                 let buffer = req.http_frame.as_str().to_string().into_bytes();
-                self.model.relm.stream().emit(Msg::Writing(req.clone()));
+                self.model.relm.stream().emit(Msg::Writing(req));
                 connect_async!(
                     writer,
                     write_async(buffer, PRIORITY_DEFAULT),
                     self.model.relm,
-                    |msg| Msg::Wrote(msg)
+                    Msg::Wrote
                 );
             }
             // To be listened by the user.
@@ -441,16 +437,14 @@ impl Update for Http {
                     } else {
                         self.model.relm.stream().emit(Msg::CaptureReadDone(buffer));
                     }
-                } else {
-                    if let Some(ref stream) = self.model.stream {
-                        let reader = stream.get_input_stream().expect("input");
-                        connect_async!(
-                            reader,
-                            read_async(vec![0; READ_SIZE], PRIORITY_DEFAULT),
-                            self.model.relm,
-                            Msg::Read
-                        );
-                    }
+                } else if let Some(ref stream) = self.model.stream {
+                    let reader = stream.get_input_stream().expect("input");
+                    connect_async!(
+                        reader,
+                        read_async(vec![0; READ_SIZE], PRIORITY_DEFAULT),
+                        self.model.relm,
+                        Msg::Read
+                    );
                 }
                 buffer.truncate(size);
                 self.model.response.extend(&buffer);
@@ -464,7 +458,7 @@ impl Update for Http {
                     if let Some(r) = resp {
                         match &mut self.model.context {
                             serde_yaml::Value::Mapping(mapping) => {
-                                mapping.insert(serde_yaml::Value::String(capture.to_string()), r);
+                                mapping.insert(serde_yaml::Value::String(capture), r);
                             }
                             _ => {}
                         }
