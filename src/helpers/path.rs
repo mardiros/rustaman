@@ -25,13 +25,14 @@ pub fn assets_dir() -> String {
 pub fn rustaman_config_dir() -> io::Result<PathBuf> {
     let mut path = config_dir()?;
     path.push("rustaman");
+    let path = path;
 
     if !path.exists() {
-        fs::create_dir_all(path.to_str().unwrap())?;
+        fs::create_dir_all(&path)?;
     } else if !path.is_dir() {
         return Err(IOError::new(
             ErrorKind::InvalidData,
-            format!("{} should be a directory", path.to_str().unwrap()),
+            format!("{} should be a directory", &path.display()),
         ));
     }
     Ok(path)
