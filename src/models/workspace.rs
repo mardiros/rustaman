@@ -81,12 +81,14 @@ impl Workspace {
 
     pub fn from_file(filepath: &str) -> RustamanResult<Self> {
         info!("Try loading workspace from file {}", filepath);
-        let cfg = path::read_file(filepath)?;
-        debug!("File {} readed ({} chars.)", filepath, cfg.len());
-        let payload = serde_json::from_str::<Payload>(cfg.as_str()).unwrap(); // crash if the format
+        let file = std::fs::File::open(filepath)?;
+        let reader = std::io::BufReader::new(file);
+        let payload = serde_json::from_reader(reader).expect("Format error");
+        debug!("Payload constructed from File {} readed by serde_json with BufReader", filepath);
+
         let workspace = Workspace {
             payload,
-            filepath: filepath.to_owned(),
+            filepath: filepath.to_string(),
         };
         info!("Workspace loaded from file {}", filepath);
         Ok(workspace)

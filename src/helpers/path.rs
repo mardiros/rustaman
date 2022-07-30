@@ -56,11 +56,3 @@ pub fn write_file(filepath: &str, filecontent: &str) -> io::Result<()> {
     file.write_all(filecontent.as_bytes())?;
     Ok(())
 }
-
-pub fn read_file(filepath: &str) -> io::Result<String> {
-    let mut file = File::open(filepath)?;
-    let mut buf: Vec<u8> = Vec::new();
-    file.read_to_end(&mut buf)?;
-    let res = String::from_utf8(buf).unwrap(); // UTF8 error will crash...
-    Ok(res)
-}
