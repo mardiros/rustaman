@@ -25,8 +25,8 @@ impl Update for Response {
     type ModelParam = ();
     type Msg = Msg;
 
-    fn model(_: &Relm<Self>, _: ()) -> () {
-        ()
+    fn model(_: &Relm<Self>, _: ()) {
+
     }
 
     fn update(&mut self, event: Msg) {

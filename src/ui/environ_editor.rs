@@ -118,7 +118,7 @@ impl Update for EnvironEditor {
 
                 self.relm.stream().emit(Msg::SavingEnvironment(
                     self.get_current_id(),
-                    payload.to_owned(),
+                    payload,
                 ));
             }
             Msg::RequestingNewEnvironment => {
@@ -155,7 +155,7 @@ impl Update for EnvironEditor {
                 let payload = env.payload();
 
                 let close_image =
-                    gtk::Image::from_icon_name(Some("window-close"), IconSize::Button.into());
+                    gtk::Image::from_icon_name(Some("window-close"), IconSize::Button);
                 let button = gtk::Button::new();
 
                 button.set_relief(ReliefStyle::None);

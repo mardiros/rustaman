@@ -1,6 +1,6 @@
 use std::vec::Vec;
 
-use serde_yaml;
+
 
 use super::status::Status;
 
@@ -47,8 +47,8 @@ impl Environment {
     }
 
     pub fn parsed_payload(&self) -> serde_yaml::Result<serde_yaml::Value> {
-        let parsed: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(&self.payload());
-        return parsed;
+        let parsed: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(self.payload());
+        parsed
     }
 
     pub fn obfuscated_string(&self) -> Vec<String> {
@@ -67,8 +67,7 @@ impl Environment {
                                 None
                             }
                         })
-                        .filter(|x| x.is_some())
-                        .map(|x| x.unwrap().clone())
+                        .flatten()
                         .collect(),
                     _ => return vec![],
                 }
