@@ -6,7 +6,7 @@ edition = "2018"
 readme = "README.md"
 keywords = ["http", "https", "request", "client", "GUI"]
 categories = ["web-programming::http-client", "GUI"]
-description = """Simple HTTP Client."""
+description = """Template based http client using GTK"""
 license = "BSD-3-Clause"
 repository = "https://github.com/mardiros/rustaman"
 
@@ -21,7 +21,7 @@ gtk_3_24 = ["gtk_3_22_30", "gtk/v3_24", "gdk/v3_24", "gio/v2_58", "glib/v2_58"] 
 
 [dependencies]
 
-clap = "2.33.0"
+clap = { version = "3.2.23", features = [ "derive" ] }
 
 gtk = "0.9.2"
 gdk = "0.13.2"
