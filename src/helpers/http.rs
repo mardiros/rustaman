@@ -8,9 +8,7 @@ use gio::{
 };
 use glib::source::PRIORITY_DEFAULT;
 use glib::Cast;
-use lazy_static::lazy_static;
 use relm::{connect_async, Relm, Update, UpdateNew};
-
 
 use regex::Regex;
 use url::Url;
@@ -20,15 +18,16 @@ use super::super::models::Environment;
 use super::handlebars::compile_template;
 
 const READ_SIZE: usize = 1024;
-lazy_static! {
-    pub static ref RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE: Regex =
-        Regex::new(r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)").unwrap();
-    pub static ref RE_EXTRACT_INSECURE_FLAG: Regex =
-        Regex::new(r"#![\s]*AllowInsecureCertificate").unwrap();
-    pub static ref RE_SPLIT_HTTP_FIRST_LINE: Regex = Regex::new("[ ]+").unwrap();
-    pub static ref RE_EXTRACT_CAPTURE: Regex =
-        Regex::new(r"#![\s]*Capture:\s*(?P<capture>.+)").unwrap();
-    pub static ref RE_SPLIT_END_CAPTURE: Regex = Regex::new(r"#![\s]*EndCapture").unwrap();
+
+/// Regex Macro: From once_cell documentation.
+/// https://docs.rs/once_cell/latest/once_cell/
+///
+/// Allow use in function context of initialized once regex.
+macro_rules! regex {
+    ($re:literal $(,)?) => {{
+        static RE: once_cell::sync::OnceCell<regex::Regex> = once_cell::sync::OnceCell::new();
+        RE.get_or_init(|| regex::Regex::new($re).unwrap())
+    }};
 }
 
 fn parse_response(response: &str) -> Option<serde_yaml::Value> {
@@ -72,7 +71,8 @@ fn parse_response(response: &str) -> Option<serde_yaml::Value> {
 }
 
 fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
-    let resp = RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE
+    let re_extract_authority_from_directive = regex!(r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)");
+    let resp = re_extract_authority_from_directive
         .captures(line)
         .and_then(|cap| {
             let host = cap
@@ -87,7 +87,10 @@ fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
 }
 
 fn extract_capture_name(line: &str) -> Option<String> {
-    let resp = RE_EXTRACT_CAPTURE.captures(line).and_then(|cap| {
+    let re_extract_capture = regex!(r"#![\s]*Capture:\s*(?P<capture>.+)");
+    let resp = re_extract_capture
+        .captures(line)
+        .and_then(|cap| {
         let cap = cap.name("capture");
         cap.map(|capture| capture.as_str().to_string())
     });
@@ -95,7 +98,8 @@ fn extract_capture_name(line: &str) -> Option<String> {
 }
 
 fn extract_insecure_flag(line: &str) -> bool {
-    RE_EXTRACT_INSECURE_FLAG.is_match(line)
+    let re_extract_insecure_flag = regex!(r"#![\s]*AllowInsecureCertificate");
+    re_extract_insecure_flag.is_match(line)
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -186,7 +190,8 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     }
 
     info!("Parsing First line {:?}", line);
-    let verb_url_version: Vec<&str> = RE_SPLIT_HTTP_FIRST_LINE.split(line.unwrap()).collect();
+    let re_split_http_first_line = regex!("[ ]+");
+    let verb_url_version: Vec<&str> = re_split_http_first_line.split(line.unwrap()).collect();
     let (verb, url, version) = match verb_url_version.len() {
         2 => (verb_url_version[0], verb_url_version[1], "HTTP/1.1"),
         3 => (
@@ -294,7 +299,8 @@ pub struct HttpRequests {
 }
 
 fn parse_template(template: &str) -> HttpRequests {
-    let requests: Vec<String> = RE_SPLIT_END_CAPTURE
+    let re_split_end_capture: &Regex = regex!(r"#![\s]*EndCapture");
+    let requests: Vec<String> = re_split_end_capture
         .split(template)
         .map(|request| request.to_string())
         .collect();
