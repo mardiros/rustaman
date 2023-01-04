@@ -15,7 +15,8 @@ mod ui;
 use std::io::Write;
 use std::vec::Vec;
 
-use clap::{App, Arg};
+use clap::Parser;
+use clap::ValueHint::FilePath;
 
 use relm::Widget;
 use sourceview::{prelude::*, LanguageManager, StyleSchemeManager};
@@ -23,26 +24,24 @@ use sourceview::{prelude::*, LanguageManager, StyleSchemeManager};
 use crate::errors::{RustamanError, RustamanResult};
 use crate::ui::window::Window;
 
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Use specific workspace file expect a file like: workspace.json
+    #[clap(short='w', long="workspace",name="WORKSPACE", value_hint=FilePath)]
+    workspace: Option<String>,
+}
+
 fn run() -> RustamanResult<()> {
-    let matches = App::new("rustaman")
-        //.version(constants::VERSION)
-        .author("Guillaume Gauvrit <guillaume@gauvr.it>")
-        .about("Template based http client using GTK")
-        .arg(
-            Arg::with_name("WORKSPACE")
-                .short("w")
-                .long("workspace")
-                .help("Use specific workspace file")
-                .takes_value(true),
-        )
-        .get_matches();
+
+    let args = Args::parse();
     gtk::init().expect("Unable to initialize gtk");
 
-    let workspace = matches.value_of("WORKSPACE");
+    let workspace = args.workspace;
     let workspace = if let Some(filepath) = workspace {
-        models::Workspace::from_file(filepath)
+        models::Workspace::from_file(&filepath)
             .or_else(|_| -> RustamanResult<models::Workspace> {
-                let workspace = models::Workspace::new(filepath);
+                let workspace = models::Workspace::new(&filepath);
                 workspace.sync()?;
                 Ok(workspace)
             })
