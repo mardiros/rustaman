@@ -1,5 +1,4 @@
-use std::fs::OpenOptions;
-use std::fs::{self, File};
+use std::fs::{self, OpenOptions};
 use std::io::prelude::*;
 use std::io::{self, Error as IOError, ErrorKind};
 use std::os::unix::fs::OpenOptionsExt;
