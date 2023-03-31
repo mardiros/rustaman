@@ -2,7 +2,6 @@ use std::boxed::Box;
 
 use handlebars::{
     Context, Decorator, Handlebars, Helper, HelperResult, Output, RenderContext, RenderError,
-    TemplateRenderError,
 };
 use serde_json::value::Value as Json;
 use url::form_urlencoded;
@@ -52,7 +51,7 @@ fn encode(
 pub fn compile_template(
     template: &str,
     context: &serde_yaml::Value,
-) -> Result<String, TemplateRenderError> {
+) -> Result<String, RenderError> {
     let mut hbar = Handlebars::new();
     hbar.register_decorator("set", Box::new(set_decorator));
     hbar.register_helper("encode", Box::new(encode));
