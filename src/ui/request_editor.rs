@@ -9,27 +9,27 @@ use sourceview5::{self, prelude::*};
 
 use crate::models::Request;
 
-use super::super::models::Template;
-
 #[derive(Debug, Clone)]
 pub enum RequestMsg {
     // RequestingSave(usize),
     // Saving(usize, Template),
-    TemplateChanged(Template),
+    RequestChanged(Request),
     // FetchingCurrentTemplate,
     // NotifyingCurrentTemplate(Template),
     // Hiding,
 }
 
 pub enum RequestOutput {
-    Saving(usize, Template),
+    Saving(Request),
 }
 
 pub struct RequestEditor {
     request: Option<Request>,
 }
 
-pub struct Widgets {}
+pub struct Widgets {
+    buffer: sourceview5::Buffer,
+}
 
 impl Component for RequestEditor {
     type Init = Option<Request>;
@@ -85,11 +85,21 @@ impl Component for RequestEditor {
 
         ComponentParts {
             model: RequestEditor { request },
-            widgets: Widgets {},
+            widgets: Widgets { buffer },
         }
     }
 
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {}
+    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
+        match message {
+            RequestMsg::RequestChanged(request) => {
+                self.request = Some(request);
+            }
+        }
+    }
 
-    fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {}
+    fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {
+        if let Some(request) = self.request.as_ref() {
+            widgets.buffer.set_text(request.template());
+        }
+    }
 }

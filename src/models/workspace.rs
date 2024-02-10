@@ -6,7 +6,7 @@ use super::environment::{Environment, Environments};
 use super::status::Status;
 use super::template::Template;
 
-const DEFAULT_TEMPLATE: &str = "# TODO: DOCUMENT ME\n\nGET http://localhost/\n";
+pub const DEFAULT_TEMPLATE: &str = "# TODO: DOCUMENT ME\n\nGET http://localhost/\n";
 
 const DEFAULT_ENVIRONMENT: &str = "%YAML 1.2\n---\n";
 

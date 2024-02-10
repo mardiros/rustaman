@@ -2,13 +2,15 @@
 // We can't replace them without raising the GTK requirement to 4.10.
 #![allow(deprecated)]
 
+use relm4::component::Connector;
 use relm4::factory::FactoryVecDeque;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 
-use crate::models::Request;
-use crate::ui::menu_item::{MenuItemMsg, MenuItemOutput};
+use crate::models::{DEFAULT_TEMPLATE, Request};
+use crate::ui::menu_item::MenuItemOutput;
+use crate::ui::request_editor::RequestMsg;
 use crate::ui::response_body::ResponseBody;
 use crate::ui::traffic_log::TrafficLog;
 
@@ -29,6 +31,7 @@ pub enum AppMsg {
 pub struct App {
     workspace: Workspace,
     menu_items: FactoryVecDeque<MenuItem>,
+    request_editor: Connector<RequestEditor>,
 }
 
 pub struct Widgets {}
@@ -82,7 +85,7 @@ impl Component for App {
         left_menu.set_vexpand(true);
         left_menu.append(menu_items_container);
 
-        let req_ed = RequestEditor::builder().launch(None);
+        let request_editor = RequestEditor::builder().launch(None);
         let env_ed = EnvironmentEditor::builder().launch(None);
 
         let resp_body = ResponseBody::builder().launch(());
@@ -94,7 +97,7 @@ impl Component for App {
                 set_hexpand: true,
                 set_vexpand: true,
                 gtk::Paned::new(gtk::Orientation::Vertical) {
-                    set_start_child: Some(req_ed.widget()),
+                    set_start_child: Some(request_editor.widget()),
                     set_end_child: Some(env_ed.widget()),
                 }
             }
@@ -145,6 +148,7 @@ impl Component for App {
             model: App {
                 workspace,
                 menu_items,
+                request_editor,
             },
             widgets: Widgets {},
         }
@@ -159,6 +163,11 @@ impl Component for App {
             AppMsg::TogglingRequest(request_id, active) => {
                 info!("toggling request {:?}. active {}", request_id, active);
                 if active {
+                    
+                    if let Some(request) = self.workspace.request(request_id) {
+                        self.request_editor.emit(RequestMsg::RequestChanged(request.clone()));
+                    }
+
                     for item in menu_items_guard.iter_mut() {
                         if item.id() == request_id {
                             item.set_selected(true);
