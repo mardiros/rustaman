@@ -3,9 +3,6 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::io;
 
-
-
-
 #[derive(Debug)]
 pub enum RustamanError {
     RequestParsingError(String),

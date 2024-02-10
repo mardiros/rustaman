@@ -1,7 +1,5 @@
 use std::vec::Vec;
 
-
-
 use super::super::errors::RustamanResult;
 use super::super::helpers::path;
 use super::environment::{Environment, Environments};
@@ -84,7 +82,10 @@ impl Workspace {
         let file = std::fs::File::open(filepath)?;
         let reader = std::io::BufReader::new(file);
         let payload = serde_json::from_reader(reader).expect("Format error");
-        debug!("Payload constructed from File {} readed by serde_json with BufReader", filepath);
+        debug!(
+            "Payload constructed from File {} readed by serde_json with BufReader",
+            filepath
+        );
 
         let workspace = Workspace {
             payload,

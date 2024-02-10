@@ -19,12 +19,14 @@ path = "src/main.rs"
 
 clap = { version = "4.4.18", features = ["derive"] }
 dirs-next = "2.0.0"
-gtk = { version = "0.6", package = "gtk4" }
 log = "0.4.20"
 pretty_env_logger = "0.5.0"
-relm4 = "0.6.2"
+relm4 = "0.7.0-beta.2"
+relm4-components = "0.7.0-beta.2"
 serde = "1.0.196"
 serde_derive = "1.0.196"
 serde_json = "1.0.113"
 serde_yaml = "0.9.31"
+sourceview5 = "0.7.0"
+sourceview5-sys = "0.7.0"
 url = "2.2.0"

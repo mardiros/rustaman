@@ -1,7 +1,5 @@
 use std::vec::Vec;
 
-
-
 use super::status::Status;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

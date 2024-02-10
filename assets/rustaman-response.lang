@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<language id="rustaman-response" name="RUSTAMAN_RESPONSE" version="2.0" _section="Other">
+
+  <styles>
+    <style id="http-query"           _name="HTTP Query"            map-to="rustaman-response:request"/>
+    <style id="http-response"        _name="HTTP Response"         map-to="rustaman-response:response"/>
+    <style id="error"                _name="Error"                 map-to="def:error"/>
+  </styles>
+
+  <definitions>
+
+    <context id="http-query" style-ref="http-query">
+        <start>&gt;&gt;&gt; New request</start>
+        <end>&gt;&gt;&gt; End of request</end>
+        <include>
+          <context ref="rustaman-request:http-version"/>
+          <context ref="rustaman-request:http-query"/>
+          <context ref="rustaman-request:json-object"/>
+          <context ref="rustaman-request:json-array"/>
+          <context ref="rustaman-request:preprocessor"/>
+          <context ref="rustaman-request:comment"/>
+        </include>
+
+    </context>
+
+    <context id="http-response" style-ref="http-response">
+        <start>&lt;&lt;&lt; Response</start>
+        <end>&lt;&lt;&lt; End of response</end>
+        <include>
+          <context ref="rustaman-request:preprocessor"/>
+          <context ref="rustaman-request:http-version"/>
+          <context ref="rustaman-request:http-header"/>
+          <context ref="rustaman-request:json-object"/>
+          <context ref="rustaman-request:json-array"/>
+        </include>
+    </context>
+
+    <context id="error" style-ref="error">
+        <start>! </start>
+        <end>$</end>
+    </context>
+
+    <context id="rustaman-response" class="no-spell-check">
+      <include>
+        <context ref="http-query"/>
+        <context ref="http-response"/>
+      </include>
+    </context>
+  </definitions>
+</language>

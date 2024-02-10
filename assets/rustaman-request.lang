@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+ This file is part of GtkSourceView
+
+ Author: Sapphire Becker <guess@logicplace.com>
+ Copyright (C) 2011 by Sapphire Becker <guess@logicplace.com>
+
+ GtkSourceView is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ GtkSourceView is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+-->
+<!--
+ TODO:
+  If once-only or end-parent is ever supported for context-reference and
+  context-to-be-included elements this can be updated to allow only one
+  value in the doc, after a key, and between each comma in an array. Also
+  I'd be able to add support for displaying an error for trailing commas.
+-->
+<language id="rustaman-request" name="rustaman-request" version="2.0" _section="Other">
+ 
+  <styles>
+    <style id="http-method"        _name="HTTP Method"               />
+    <style id="url"                _name="URL"                       />
+    <style id="http-version"       _name="HTTP Version"              />
+    <style id="http-header-name"   _name="HTTP Header Name"          map-to="yaml:map-key"/>
+    <style id="http-header-value"  _name="HTTP Header Value"         map-to="yaml:string"/>
+    <style id="template-helper"    _name="Template helper"           />
+    <style id="template-var"       _name="Template var"              />
+    <style id="error"              _name="Error"                     map-to="def:error"/>
+    <style id="keyname"            _name="Json Object Key"           map-to="yaml:map-key"/>
+    <style id="json-object-key"    _name="Json Object Key"           map-to="yaml:map-key"/>
+    <style id="special-char"       _name="Escaped Character"         map-to="js:escape"/>
+    <style id="null"               _name="Null"                      map-to="yaml:null"/>
+    <style id="string"             _name="String"                    map-to="yaml:string"/>
+    <style id="bool"               _name="Boolean Value"             map-to="yaml:bool"/>
+    <style id="decimal"            _name="Decimal"                   map-to="yaml:int"/>
+    <style id="float"              _name="Floating point number"     map-to="yaml:float"/>
+    <style id="doc"                _name="Documentation"             map-to="def:comment"/>
+    <style id="comment"            _name="Comment"                   map-to="yaml:comment"/>
+    <style id="preprocessor"       _name="Preprocessor"                        />
+    <style id="preprocessor-danger" _name="Preprocessor Dangerous Instruction" />
+    
+  </styles>
+
+  <definitions>
+
+    <define-regex id="http-method-re">(GET|POST|PUT|PATCH|HEAD|OPTIONS|DELETE)</define-regex>
+
+    <context id="http-version" style-ref="http-version">
+      <match extended="true">
+        HTTP/.*
+      </match>
+    </context>
+
+    <context id="http-header" end-at-line-end="true" style-ref="http-header-name">
+      <start>[^:]+:</start>
+      <include>
+        <context end-at-line-end="true" style-ref="http-header-value">
+          <start> </start>
+          <include>
+            <context ref="template-var"/>
+          </include>
+        </context>
+      </include>
+    </context>
+
+    <context id="http-query" style-ref="http-method">
+      <start>\%{http-method-re}</start>
+      <end>$</end>
+      <include>
+        <context once-only="true" style-ref="url" end-at-line-end="true">
+          <start> </start>
+          <include>
+            <context ref="template-var"/>
+            <context ref="http-version"  style-ref="http-version"/>
+          </include>
+        </context>
+
+        <context ref="http-header" />
+      </include>
+    </context>
+
+    <context id="json-array">
+      <start>\[</start>
+      <end>\]</end>
+      <include>
+        <context>
+          <start></start>
+          <end>,|\s*(?=\&#93;)</end>
+            <include>
+            <context ref="json-value"/>
+          </include>
+        </context>
+      </include>
+    </context>
+
+    <context id="template-helper" style-ref="template-helper">
+      <match>set|encode</match>
+    </context>
+
+    <context id="template-var" style-ref="template-var">
+      <start>\{\{</start>
+      <end>\}\}</end>
+      <include>
+        <context ref="template-helper"/>
+      </include>
+    </context>
+
+    <context id="json-object">
+      <start>\{</start>
+      <end>\}</end>
+      <include>
+        <context ref="string" style-ref="json-object-key"/>
+        <context>
+          <start>:</start>
+          <end>,|\s*(?=})</end>
+          <include>
+            <context sub-pattern="0" where="start" style-ref="keyname"/>
+            <context ref="json-value"/>
+          </include>
+        </context>
+        <context ref="catchall"/>
+      </include>
+    </context>
+
+    <context id="string" style-ref="string" end-at-line-end="true" class="string" class-disabled="no-spell-check">
+      <start>"</start>
+      <end>"</end>
+      <include>
+        <context ref="template-var"/>
+        <context id="valid-escape" style-ref="special-char">
+          <match>\\(?:[ntrfb"\\/]|u[0-9a-fA-F]{4})</match>
+        </context>
+        <context id="invalid-escape" style-ref="error">
+          <match>\\(?:x[0-9a-fA-F]{2}|[0-3]?[0-7]{1,2}|.)</match>
+        </context>
+        <context id="line-continue" style-ref="error">
+          <start>\\$</start>
+          <end>^</end>
+        </context>
+      </include>
+    </context>
+
+    <context id="decimal" style-ref="decimal">
+      <match>-?(?:[1-9][0-9]*|0)(?![.eE])</match>
+    </context>
+
+    <context id="float" style-ref="float">
+      <match>-?(?:[1-9][0-9]*|0)(?:\.[0-9]+)?(?:[eE][+\-]?[0-9]+)?</match>
+    </context>
+
+    <context id="bool" style-ref="bool">
+      <keyword>false</keyword>
+      <keyword>true</keyword>
+    </context>
+
+    <context id="null" style-ref="null">
+      <keyword>null</keyword>
+    </context>
+
+    <context id="catchall" style-ref="error" extend-parent="false">
+      <match>\S</match>
+    </context>
+
+    <context id="json-value"><include>
+      <context ref="json-object"/>
+      <context ref="json-array"/>
+      <context ref="string"/>
+      <context ref="template-var"/>
+      <context ref="decimal"/>
+      <context ref="float"/>
+      <context ref="null"/>
+      <context ref="bool"/>
+    </include></context>
+
+
+    <context id="preprocessor" end-at-line-end="true" style-ref="preprocessor">
+        <start>^#!</start>
+        <include>
+          <context end-at-line-end="true">
+            <start>[^:]+:</start>
+            <include>
+              <context end-at-line-end="true" style-ref="preprocessor">
+                <start> </start>
+              </context>
+            </include>
+          </context>
+        <context style-ref="preprocessor-danger">
+          <match>AllowInsecureCertificate</match>
+        </context>
+        <context>
+          <match>EndCapture</match>
+        </context>
+        </include>
+    </context>
+
+    <context id="comment" end-at-line-end="true" style-ref="comment">
+        <start>^#</start>
+        <include>
+          <context style-ref="error" end-at-line-end="true">
+            <start>.*Error: </start>
+          </context>
+          <context style-ref="doc" end-at-line-end="true">
+            <start>#</start>
+          </context>
+        </include>
+    </context>
+
+    <context id="rustaman-request" class="no-spell-check">
+      <include>
+        <context ref="preprocessor"/>
+        <context ref="comment"/>
+        <context ref="http-query"/>
+        <context ref="template-var"/>
+        <context ref="template-helper"/>
+        <context ref="http-version"/>
+        <context ref="json-object"/>
+        <context ref="json-array"/>
+      </include>
+    </context>
+  </definitions>
+</language>
