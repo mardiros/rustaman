@@ -2,14 +2,14 @@
 <language id="rustaman-response" name="RUSTAMAN_RESPONSE" version="2.0" _section="Other">
 
   <styles>
-    <style id="http-query"           _name="HTTP Query"            map-to="rustaman-response:request"/>
-    <style id="http-response"        _name="HTTP Response"         map-to="rustaman-response:response"/>
+    <style id="http-log-request"     _name="HTTP Request"          />
+    <style id="http-log-response"    _name="HTTP Response"         />
     <style id="error"                _name="Error"                 map-to="def:error"/>
   </styles>
 
   <definitions>
 
-    <context id="http-query" style-ref="http-query">
+    <context id="http-log-request" style-ref="http-log-request">
         <start>&gt;&gt;&gt; New request</start>
         <end>&gt;&gt;&gt; End of request</end>
         <include>
@@ -23,7 +23,7 @@
 
     </context>
 
-    <context id="http-response" style-ref="http-response">
+    <context id="http-log-response" style-ref="http-log-response">
         <start>&lt;&lt;&lt; Response</start>
         <end>&lt;&lt;&lt; End of response</end>
         <include>
@@ -42,8 +42,8 @@
 
     <context id="rustaman-response" class="no-spell-check">
       <include>
-        <context ref="http-query"/>
-        <context ref="http-response"/>
+        <context ref="http-log-request"/>
+        <context ref="http-log-response"/>
       </include>
     </context>
   </definitions>

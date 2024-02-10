@@ -57,8 +57,8 @@
   <style name="rustaman-request:preprocessor"        foreground="magenta"/>
   <style name="rustaman-request:preprocessor-danger" foreground="red"/>
 
-  <style name="rustaman-response:request"            foreground="text"/>
-  <style name="rustaman-response:response"           foreground="text"/>
+  <style name="rustaman-response:http-log-request"   foreground="dark-green"/>
+  <style name="rustaman-response:http-log-response"  foreground="dark-green"/>
 
   <style name="def:comment"                          foreground="dark-green"/>
 

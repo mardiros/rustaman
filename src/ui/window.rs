@@ -10,6 +10,7 @@ use relm4::{gtk, ComponentParts, ComponentSender};
 use crate::models::Request;
 use crate::ui::menu_item::{MenuItemMsg, MenuItemOutput};
 use crate::ui::response_body::ResponseBody;
+use crate::ui::traffic_log::TrafficLog;
 
 use super::super::models::Workspace;
 use super::environ_editor::EnvironmentEditor;
@@ -85,6 +86,7 @@ impl Component for App {
         let env_ed = EnvironmentEditor::builder().launch(None);
 
         let resp_body = ResponseBody::builder().launch(());
+        let traffic_log = TrafficLog::builder().launch(());
 
         relm4::view! {
             request_box = gtk::Box {
@@ -105,7 +107,7 @@ impl Component for App {
                 set_vexpand: true,
                 gtk::Paned::new(gtk::Orientation::Vertical) {
                     set_start_child: Some(resp_body.widget()),
-                    set_end_child: Some(&gtk::Box::new(gtk::Orientation::Horizontal, 4)),
+                    set_end_child: Some(traffic_log.widget()),
                 }
             }
         }
