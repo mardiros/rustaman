@@ -8,10 +8,11 @@ use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 
+use crate::helpers;
 use crate::models::Request;
 use crate::ui::environments::EnvironmentsMsg;
 use crate::ui::menu_item::MenuItemOutput;
-use crate::ui::request_editor::RequestMsg;
+use crate::ui::request_editor::{RequestMsg, RequestOutput};
 use crate::ui::response_body::ResponseBody;
 use crate::ui::traffic_log::TrafficLog;
 
@@ -31,7 +32,7 @@ pub enum AppMsg {
 pub struct App {
     workspace: Workspace,
     menu_items: FactoryVecDeque<MenuItem>,
-    request_editor: Connector<RequestEditor>,
+    request_editor: Controller<RequestEditor>,
     environments: Controller<EnvironmentsTabs>,
 }
 
@@ -86,7 +87,13 @@ impl Component for App {
         left_menu.set_vexpand(true);
         left_menu.append(menu_items_container);
 
-        let request_editor = RequestEditor::builder().launch(None);
+        let request_editor =
+            RequestEditor::builder()
+                .launch(None)
+                .forward(sender.input_sender(), |msg| match msg {
+                    RequestOutput::RunHttpRequest => AppMsg::RunHttpRequest,
+                });
+
         let environments = EnvironmentsTabs::builder()
             .launch(workspace.environments().to_vec())
             .forward(sender.input_sender(), |msg| match msg {
@@ -184,15 +191,29 @@ impl Component for App {
                 }
             }
             AppMsg::RunHttpRequest => {
+                let mut environ = String::new();
+                let mut template = String::new();
                 if let Some(env_id) = self.environments.widgets().environment_id() {
-                    let environ = self.environments.widgets().get_environment();
+                    environ = self.environments.widgets().get_environment();
                     self.workspace.set_environ_payload(env_id, environ.as_str());
                 }
                 if let Some(request_id) = self.request_editor.model().request_id() {
                     let request_editor = self.request_editor.widgets();
-                    let template = request_editor.get_template();
+                    template = request_editor.get_template();
                     self.workspace
                         .set_request_template(request_id, template.as_str());
+                }
+
+                let request =
+                    helpers::handlebars::render_template(template.as_str(), environ.as_str());
+
+                match request {
+                    Ok(req) => {
+                        debug!("{:?}", req);
+                    }
+                    Err(err) => {
+                        error!("{:?}", err);
+                    }
                 }
             }
             _ => (),

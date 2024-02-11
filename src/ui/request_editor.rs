@@ -7,6 +7,7 @@ use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 use sourceview5::{self, prelude::*};
 
+use crate::helpers::sourceview::create_buffer;
 use crate::models::Request;
 
 #[derive(Debug, Clone)]
@@ -14,8 +15,9 @@ pub enum RequestMsg {
     RequestChanged(Request),
 }
 
+#[derive(Debug, Clone)]
 pub enum RequestOutput {
-    Saving(Request),
+    RunHttpRequest,
 }
 
 pub struct RequestEditor {
@@ -44,7 +46,7 @@ impl Widgets {
 impl Component for RequestEditor {
     type Init = Option<Request>;
     type Input = RequestMsg;
-    type Output = ();
+    type Output = RequestOutput;
     type CommandOutput = ();
     type Widgets = Widgets;
     type Root = gtk::Box;
@@ -58,28 +60,22 @@ impl Component for RequestEditor {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let buffer = sourceview5::Buffer::new(None);
-        buffer.set_highlight_syntax(true);
-
-        let langmngr = sourceview5::LanguageManager::default();
-        let stmngr = sourceview5::StyleSchemeManager::default();
-
-        let search_path = langmngr.search_path();
-        debug!("{:?}", search_path);
-
-        if let Some(ref language) = langmngr.language("rustaman-request") {
-            buffer.set_language(Some(language));
-        } else {
-            error!("Can't find rustaman-request.lang lang in {:?}", search_path)
-        }
-        if let Some(ref scheme) = stmngr.scheme("rustaman-dark") {
-            buffer.set_style_scheme(Some(scheme));
-        } else {
-            error!("Can't find rustaman-dark.xml theme   in {:?}", search_path)
-        }
-
+        let buffer = create_buffer("rustaman-request");
         let request_source = sourceview5::View::with_buffer(&buffer);
+
+        let sender = sender.output_sender().clone();
+        let controller = gtk::EventControllerKey::new();
+        controller.connect_key_pressed(move |_evt, key, _code, mask| {
+            if key == gtk::gdk::Key::Return && mask == gtk::gdk::ModifierType::CONTROL_MASK {
+                error!("Emmitting {:?}", RequestOutput::RunHttpRequest);
+                sender.emit(RequestOutput::RunHttpRequest);
+                return true.into();
+            }
+            false.into()
+        });
+
         request_source.set_margin_all(10);
+        request_source.add_controller(controller);
 
         relm4::view! {
             #[local_ref]

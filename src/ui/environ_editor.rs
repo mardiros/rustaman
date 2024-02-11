@@ -5,14 +5,12 @@
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
-use sourceview5::{self, prelude::*};
 
+use crate::helpers::sourceview::create_buffer;
 use crate::models::Environment;
 
 #[derive(Debug, Clone)]
-pub enum EnvironmentMsg {
-    RunHttpRequest,
-}
+pub enum EnvironmentMsg {}
 
 #[derive(Debug, Clone)]
 pub enum EnvironmentOutput {
@@ -40,29 +38,6 @@ impl Widgets {
     }
 }
 
-fn create_buffer() -> sourceview5::Buffer {
-    let buffer = sourceview5::Buffer::new(None);
-    buffer.set_highlight_syntax(true);
-
-    let langmngr = sourceview5::LanguageManager::default();
-    let stmngr = sourceview5::StyleSchemeManager::default();
-
-    if let Some(ref language) = langmngr.language("yaml") {
-        buffer.set_language(Some(language));
-    } else {
-        error!("Can't find yaml.lang lang in {:?}", langmngr.search_path())
-    }
-    if let Some(ref scheme) = stmngr.scheme("rustaman-dark") {
-        buffer.set_style_scheme(Some(scheme));
-    } else {
-        error!(
-            "Can't find rustaman-dark.xml theme in {:?}",
-            stmngr.search_path()
-        )
-    }
-    buffer
-}
-
 impl Component for EnvironmentEditor {
     type Init = Environment;
     type Input = EnvironmentMsg;
@@ -80,13 +55,12 @@ impl Component for EnvironmentEditor {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let buffer = create_buffer();
+        let buffer = create_buffer("yaml");
 
         let sender = sender.output_sender().clone();
         let controller = gtk::EventControllerKey::new();
         controller.connect_key_pressed(move |_evt, key, _code, mask| {
             if key == gtk::gdk::Key::Return && mask == gtk::gdk::ModifierType::CONTROL_MASK {
-                error!("Emmitting {:?}", EnvironmentOutput::RunHttpRequest);
                 sender.emit(EnvironmentOutput::RunHttpRequest);
                 return true.into();
             }

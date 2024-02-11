@@ -5,6 +5,7 @@ use std::io;
 
 #[derive(Debug)]
 pub enum RustamanError {
+    RenderError(handlebars::RenderError),
     RequestParsingError(String),
     EnvironmentParsingError(serde_yaml::Error),
     UrlParseError(url::ParseError),
@@ -25,6 +26,7 @@ impl Display for RustamanError {
             RustamanError::RequestParsingError(err) => write!(f, "{}", err),
             RustamanError::GtkStrError(err) => write!(f, "{}", err),
             RustamanError::IOError(err) => write!(f, "{}", err),
+            RustamanError::RenderError(err) => write!(f, "{}", err),
         }
     }
 }
@@ -56,5 +58,11 @@ impl From<url::ParseError> for RustamanError {
 impl From<io::Error> for RustamanError {
     fn from(err: io::Error) -> RustamanError {
         RustamanError::IOError(err)
+    }
+}
+
+impl From<handlebars::RenderError> for RustamanError {
+    fn from(err: handlebars::RenderError) -> RustamanError {
+        RustamanError::RenderError(err)
     }
 }

@@ -2,10 +2,11 @@ use std::boxed::Box;
 
 use handlebars::{
     Context, Decorator, Handlebars, Helper, HelperResult, Output, RenderContext, RenderError,
-    TemplateRenderError,
 };
 use serde_json::value::Value as Json;
 use url::form_urlencoded;
+
+use crate::errors::{RustamanError, RustamanResult};
 
 // a decorator mutates current context data
 fn set_decorator(
@@ -49,12 +50,11 @@ fn encode(
     Ok(())
 }
 
-pub fn compile_template(
-    template: &str,
-    context: &serde_yaml::Value,
-) -> Result<String, TemplateRenderError> {
+pub fn render_template(template: &str, environment: &str) -> RustamanResult<String> {
     let mut hbar = Handlebars::new();
+    let context: serde_yaml::Value = serde_yaml::from_str(&environment)?;
     hbar.register_decorator("set", Box::new(set_decorator));
     hbar.register_helper("encode", Box::new(encode));
-    hbar.render_template(template, &context)
+    let resp = hbar.render_template(template, &context)?;
+    Ok(resp)
 }
