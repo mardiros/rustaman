@@ -8,24 +8,22 @@ use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 
-use crate::models::{DEFAULT_TEMPLATE, Request};
+use crate::models::Request;
 use crate::ui::menu_item::MenuItemOutput;
 use crate::ui::request_editor::RequestMsg;
 use crate::ui::response_body::ResponseBody;
 use crate::ui::traffic_log::TrafficLog;
 
 use super::super::models::Workspace;
-use super::environ_editor::EnvironmentEditor;
+use super::environments::EnvironmentsTabs;
 use super::menu_item::MenuItem;
 use super::request_editor::RequestEditor;
 
 #[derive(Debug, Clone)]
 pub enum AppMsg {
-    CreatingRequest,
     CreateRequest(Request),
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
-    Quitting,
 }
 
 pub struct App {
@@ -86,7 +84,7 @@ impl Component for App {
         left_menu.append(menu_items_container);
 
         let request_editor = RequestEditor::builder().launch(None);
-        let env_ed = EnvironmentEditor::builder().launch(None);
+        let environments = EnvironmentsTabs::builder().launch(workspace.environments().to_vec());
 
         let resp_body = ResponseBody::builder().launch(());
         let traffic_log = TrafficLog::builder().launch(());
@@ -98,7 +96,7 @@ impl Component for App {
                 set_vexpand: true,
                 gtk::Paned::new(gtk::Orientation::Vertical) {
                     set_start_child: Some(request_editor.widget()),
-                    set_end_child: Some(env_ed.widget()),
+                    set_end_child: Some(environments.widget()),
                 }
             }
         }
@@ -129,7 +127,6 @@ impl Component for App {
             }
         }
 
-
         relm4::view! {
             #[local_ref]
             root -> gtk::ApplicationWindow {
@@ -154,7 +151,7 @@ impl Component for App {
         }
     }
 
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
         let mut menu_items_guard = self.menu_items.guard();
         match message {
             AppMsg::CreateRequest(request) => {
@@ -163,9 +160,9 @@ impl Component for App {
             AppMsg::TogglingRequest(request_id, active) => {
                 info!("toggling request {:?}. active {}", request_id, active);
                 if active {
-                    
                     if let Some(request) = self.workspace.request(request_id) {
-                        self.request_editor.emit(RequestMsg::RequestChanged(request.clone()));
+                        self.request_editor
+                            .emit(RequestMsg::RequestChanged(request.clone()));
                     }
 
                     for item in menu_items_guard.iter_mut() {
@@ -182,5 +179,5 @@ impl Component for App {
         }
     }
 
-    fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {}
+    fn update_view(&self, _widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {}
 }

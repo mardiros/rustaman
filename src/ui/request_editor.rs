@@ -11,12 +11,7 @@ use crate::models::Request;
 
 #[derive(Debug, Clone)]
 pub enum RequestMsg {
-    // RequestingSave(usize),
-    // Saving(usize, Template),
     RequestChanged(Request),
-    // FetchingCurrentTemplate,
-    // NotifyingCurrentTemplate(Template),
-    // Hiding,
 }
 
 pub enum RequestOutput {

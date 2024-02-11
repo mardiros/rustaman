@@ -7,9 +7,7 @@ use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 use sourceview5::{self, prelude::*};
 
-use crate::models::{Environment, Environments};
-
-use super::super::models::Template;
+use crate::models::Environment;
 
 #[derive(Debug, Clone)]
 pub enum EnvironmentMsg {}
@@ -17,13 +15,13 @@ pub enum EnvironmentMsg {}
 pub enum EnvironmentOutput {}
 
 pub struct EnvironmentEditor {
-    environment: Option<Environment>,
+    environment: Environment,
 }
 
 pub struct Widgets {}
 
 impl Component for EnvironmentEditor {
-    type Init = Option<Environment>;
+    type Init = Environment;
     type Input = EnvironmentMsg;
     type Output = ();
     type CommandOutput = ();
@@ -37,7 +35,7 @@ impl Component for EnvironmentEditor {
     fn init(
         environment: Self::Init,
         root: &Self::Root,
-        sender: ComponentSender<Self>,
+        _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let buffer = sourceview5::Buffer::new(None);
         buffer.set_highlight_syntax(true);
@@ -62,6 +60,7 @@ impl Component for EnvironmentEditor {
 
         let environment_source = sourceview5::View::with_buffer(&buffer);
         environment_source.set_margin_all(10);
+        buffer.set_text(environment.payload());
 
         relm4::view! {
             #[local_ref]
@@ -77,11 +76,18 @@ impl Component for EnvironmentEditor {
 
         ComponentParts {
             model: EnvironmentEditor { environment },
-            widgets: Widgets {},
+            widgets: Widgets { },
         }
     }
 
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {}
+    fn update(
+        &mut self,
+        _message: Self::Input,
+        _sender: ComponentSender<Self>,
+        _root: &Self::Root,
+    ) {
+    }
 
-    fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {}
+    fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {
+    }
 }

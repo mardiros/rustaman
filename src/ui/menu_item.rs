@@ -1,7 +1,6 @@
 use relm4::factory::{DynamicIndex, FactoryComponent, FactorySender};
 use relm4::gtk;
 use relm4::gtk::prelude::*;
-use relm4::prelude::*;
 
 use super::super::models::Request;
 
@@ -35,12 +34,6 @@ impl MenuItem {
 
 #[derive(Debug, Clone)]
 pub enum MenuItemMsg {
-    // SetActive(bool),
-    // EntryKeyPress(gdk::EventKey),
-    // RenamingRequest,
-    // Renaming(usize, String),
-    // Deleting(usize),
-    // FilteringName(String),
 }
 
 #[derive(Debug, Clone)]

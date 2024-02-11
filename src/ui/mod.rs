@@ -1,4 +1,5 @@
 pub(crate) mod menu_item;
+pub(crate) mod environments;
 pub(crate) mod environ_editor;
 pub(crate) mod request_editor;
 pub(crate) mod response_body;
