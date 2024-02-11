@@ -2,6 +2,8 @@
 // We can't replace them without raising the GTK requirement to 4.10.
 #![allow(deprecated)]
 
+use std::borrow::Borrow;
+
 use relm4::component::Connector;
 use relm4::factory::FactoryVecDeque;
 use relm4::gtk::prelude::*;
@@ -9,6 +11,7 @@ use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 
 use crate::models::Request;
+use crate::ui::environments::EnvironmentsMsg;
 use crate::ui::menu_item::MenuItemOutput;
 use crate::ui::request_editor::RequestMsg;
 use crate::ui::response_body::ResponseBody;
@@ -24,12 +27,14 @@ pub enum AppMsg {
     CreateRequest(Request),
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
+    RunHttpRequest,
 }
 
 pub struct App {
     workspace: Workspace,
     menu_items: FactoryVecDeque<MenuItem>,
     request_editor: Connector<RequestEditor>,
+    environments: Controller<EnvironmentsTabs>,
 }
 
 pub struct Widgets {}
@@ -84,7 +89,11 @@ impl Component for App {
         left_menu.append(menu_items_container);
 
         let request_editor = RequestEditor::builder().launch(None);
-        let environments = EnvironmentsTabs::builder().launch(workspace.environments().to_vec());
+        let environments = EnvironmentsTabs::builder()
+            .launch(workspace.environments().to_vec())
+            .forward(sender.input_sender(), |msg| match msg {
+                EnvironmentsMsg::RunHttpRequest => AppMsg::RunHttpRequest,
+            });
 
         let resp_body = ResponseBody::builder().launch(());
         let traffic_log = TrafficLog::builder().launch(());
@@ -146,6 +155,7 @@ impl Component for App {
                 workspace,
                 menu_items,
                 request_editor,
+                environments,
             },
             widgets: Widgets {},
         }
@@ -173,6 +183,18 @@ impl Component for App {
                             item.set_selected(false);
                         }
                     }
+                }
+            }
+            AppMsg::RunHttpRequest => {
+                if let Some(env_id) = self.environments.widgets().environment_id() {
+                    let environ = self.environments.widgets().get_environment();
+                    self.workspace.set_environ_payload(env_id, environ.as_str());
+                }
+                if let Some(request_id) = self.request_editor.model().request_id() {
+                    let request_editor = self.request_editor.widgets();
+                    let template = request_editor.get_template();
+                    self.workspace
+                        .set_request_template(request_id, template.as_str());
                 }
             }
             _ => (),

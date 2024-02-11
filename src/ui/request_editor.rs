@@ -22,8 +22,23 @@ pub struct RequestEditor {
     request: Option<Request>,
 }
 
+impl RequestEditor {
+    pub fn request_id(&self) -> Option<usize> {
+        return self.request.as_ref().map(|r| r.id());
+    }
+}
+
 pub struct Widgets {
     buffer: sourceview5::Buffer,
+}
+
+impl Widgets {
+    pub fn get_template(&self) -> String {
+        let start_iter = self.buffer.start_iter();
+        let end_iter = self.buffer.end_iter();
+        let text = self.buffer.text(&start_iter, &end_iter, true);
+        text.as_str().to_string()
+    }
 }
 
 impl Component for RequestEditor {
