@@ -14,9 +14,7 @@ pub enum EnvironmentsMsg {
     RunHttpRequest,
 }
 
-pub struct EnvironmentsTabs {
-    environments: Environments,
-}
+pub struct EnvironmentsTabs {}
 
 impl EnvironmentsTabs {}
 
@@ -92,7 +90,7 @@ impl Component for EnvironmentsTabs {
         }
 
         ComponentParts {
-            model: EnvironmentsTabs { environments },
+            model: EnvironmentsTabs {},
             widgets: Widgets { notebook, editors },
         }
     }

@@ -13,15 +13,6 @@ impl MenuItem {
     pub fn id(&self) -> usize {
         self.request.id()
     }
-
-    pub fn name(&self) -> &str {
-        self.request.name()
-    }
-
-    pub fn active(&self) -> bool {
-        self.request.active()
-    }
-
     pub fn selected(&self) -> bool {
         self.selected
     }
@@ -29,12 +20,10 @@ impl MenuItem {
     pub fn set_selected(&mut self, value: bool) {
         self.selected = value
     }
-
 }
 
 #[derive(Debug, Clone)]
-pub enum MenuItemMsg {
-}
+pub enum MenuItemMsg {}
 
 #[derive(Debug, Clone)]
 pub enum MenuItemOutput {
@@ -71,7 +60,10 @@ impl FactoryComponent for MenuItem {
         _index: &DynamicIndex,
         _sender: FactorySender<Self>,
     ) -> Self {
-        Self { request, selected: false }
+        Self {
+            request,
+            selected: false,
+        }
     }
 
     fn init_widgets(
@@ -134,7 +126,7 @@ impl FactoryComponent for MenuItem {
         }
         entry.hide();
 
-        MenuItemWidgets {toggle}
+        MenuItemWidgets { toggle }
     }
 
     fn update(&mut self, msg: Self::Input, _sender: FactorySender<Self>) {

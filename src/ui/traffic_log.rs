@@ -58,10 +58,14 @@ impl Component for TrafficLog {
             #[local_ref]
             root -> gtk::Box {
                 set_spacing: 5,
-                #[local_ref]
-                request_source -> SourceView {
+                gtk::ScrolledWindow {
                     set_hexpand: true,
                     set_vexpand: true,
+                    #[local_ref]
+                    request_source -> SourceView {
+                        set_hexpand: true,
+                        set_vexpand: true,
+                    }
                 }
             }
         }

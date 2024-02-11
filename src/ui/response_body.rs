@@ -8,22 +8,15 @@ use relm4::{gtk, ComponentParts, ComponentSender};
 use serde_json;
 use sourceview5::{self, prelude::*};
 
-
 fn prettify_js(payload: &str) -> Result<String, serde_json::Error> {
     let obj: serde_json::Value = serde_json::from_str(payload)?;
     Ok(serde_json::to_string_pretty(&obj).unwrap())
 }
 
 #[derive(Debug, Clone)]
-pub enum ResponseBodyMsg {
-}
+pub enum ResponseBodyMsg {}
 
-pub enum ResponseBodyOutput {
-}
-
-
-pub struct ResponseBody {
-}
+pub struct ResponseBody {}
 
 pub struct Widgets {}
 
@@ -56,7 +49,10 @@ impl Component for ResponseBody {
         if let Some(ref language) = langmngr.language("rustaman-response") {
             buffer.set_language(Some(language));
         } else {
-            error!("Can't find rustaman-response.lang lang in {:?}", search_path)
+            error!(
+                "Can't find rustaman-response.lang lang in {:?}",
+                search_path
+            )
         }
         if let Some(ref scheme) = stmngr.scheme("rustaman-dark") {
             buffer.set_style_scheme(Some(scheme));
@@ -71,10 +67,14 @@ impl Component for ResponseBody {
             #[local_ref]
             root -> gtk::Box {
                 set_spacing: 5,
-                #[local_ref]
-                response_view -> SourceView {
+                gtk::ScrolledWindow {
                     set_hexpand: true,
                     set_vexpand: true,
+                    #[local_ref]
+                    response_view -> SourceView {
+                        set_hexpand: true,
+                        set_vexpand: true,
+                    }
                 }
             }
         }

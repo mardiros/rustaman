@@ -2,8 +2,6 @@
 // We can't replace them without raising the GTK requirement to 4.10.
 #![allow(deprecated)]
 
-use std::borrow::Borrow;
-
 use relm4::component::Connector;
 use relm4::factory::FactoryVecDeque;
 use relm4::gtk::prelude::*;

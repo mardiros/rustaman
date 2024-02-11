@@ -8,8 +8,8 @@ use std::io::Write;
 
 use clap::Parser;
 
-use relm4::gtk;
 use relm4::adw;
+use relm4::gtk;
 use relm4::gtk::glib::ObjectExt;
 use relm4::prelude::*;
 use sourceview5::{prelude::*, LanguageManager, StyleSchemeManager};
