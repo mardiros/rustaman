@@ -6,7 +6,7 @@ use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 use serde_json;
-use sourceview5::{self, prelude::*};
+use sourceview5;
 
 use crate::helpers::sourceview::create_buffer;
 

@@ -2,13 +2,12 @@
 // We can't replace them without raising the GTK requirement to 4.10.
 #![allow(deprecated)]
 
-use relm4::component::Connector;
 use relm4::factory::FactoryVecDeque;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
-use relm4::{gtk, ComponentParts, ComponentSender};
+use relm4::{gtk, gtk::gio, ComponentParts, ComponentSender};
 
-use crate::helpers;
+use crate::helpers::{self, http};
 use crate::models::Request;
 use crate::ui::environments::EnvironmentsMsg;
 use crate::ui::menu_item::MenuItemOutput;
@@ -204,16 +203,46 @@ impl Component for App {
                         .set_request_template(request_id, template.as_str());
                 }
 
-                let request =
-                    helpers::handlebars::render_template(template.as_str(), environ.as_str());
+                let req_templates = http::parse_template(template.as_str());
+                for req_template in req_templates.iter() {
+                    let request = helpers::handlebars::render_template(
+                        req_template.as_str(),
+                        environ.as_str(),
+                    )
+                    .unwrap();
+                    let httpreq = http::parse_request(request.as_str()).unwrap();
 
-                match request {
-                    Ok(req) => {
-                        debug!("{:?}", req);
+                    let mut default_port = 80;
+                    let client = gio::SocketClient::new();
+                    if httpreq.scheme == helpers::http::Scheme::HTTPS {
+                        client.set_tls(true);
+                        client.set_tls_validation_flags(httpreq.tls_flags);
+                        default_port = 443;
                     }
-                    Err(err) => {
-                        error!("{:?}", err);
-                    }
+                    let cancellable: Option<&gio::Cancellable> = None;
+
+                    let host_and_port = httpreq.host_and_port();
+                    debug!("Connecting to {:?}", host_and_port);
+                    let socket_con = client
+                        .connect_to_host(host_and_port.as_str(), default_port, cancellable)
+                        .unwrap();
+
+                    let stream: gio::IOStream = socket_con.upcast();
+                    let writer = stream.output_stream();
+                    let reader = stream.input_stream();
+
+                    let http_frame = httpreq.http_frame().to_string();
+                    debug!("Sending {:?}", http_frame);
+                    writer
+                        .write(http_frame.into_bytes().as_slice(), cancellable)
+                        .unwrap();
+
+                    let mut buf = vec![0; 1024];
+                    let read_size = reader.read_all(buf.as_mut_slice(), cancellable).unwrap();
+                    let resp =
+                        String::from_utf8(buf.iter().take(read_size.0).copied().collect()).unwrap();
+
+                    info!("Response: {}", resp)
                 }
             }
             _ => (),

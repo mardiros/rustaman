@@ -4,5 +4,4 @@ mod template;
 mod workspace;
 
 pub use self::environment::{Environment, Environments};
-pub use self::template::Template;
-pub use self::workspace::{Request, Workspace, DEFAULT_TEMPLATE};
+pub use self::workspace::{Request, Workspace};

@@ -2,11 +2,12 @@ use std::boxed::Box;
 
 use handlebars::{
     Context, Decorator, Handlebars, Helper, HelperResult, Output, RenderContext, RenderError,
+    RenderErrorReason,
 };
 use serde_json::value::Value as Json;
 use url::form_urlencoded;
 
-use crate::errors::{RustamanError, RustamanResult};
+use crate::errors::RustamanResult;
 
 // a decorator mutates current context data
 fn set_decorator(
@@ -30,7 +31,7 @@ fn set_decorator(
         rc.set_context(Context::wraps(new_ctx_data)?);
         Ok(())
     } else {
-        Err(RenderError::new("Cannot extend non-object data"))
+        Err(RenderErrorReason::Other("Cannot extend non-object data".to_string()).into())
     }
 }
 
