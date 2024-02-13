@@ -81,10 +81,14 @@ impl Component for App {
         let menu_items_container: &gtk::Box = menu_items.widget();
         menu_items_container.set_orientation(gtk::Orientation::Vertical);
 
-        let left_menu = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        left_menu.set_hexpand(true);
-        left_menu.set_vexpand(true);
-        left_menu.append(menu_items_container);
+        relm4::view! {
+            left_menu = gtk::ScrolledWindow {
+                set_hexpand: true,
+                set_vexpand: true,
+                #[local_ref]
+                menu_items_container -> gtk::Box,
+            }
+        }
 
         let request_editor =
             RequestEditor::builder()
