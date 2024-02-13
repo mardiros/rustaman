@@ -5,6 +5,7 @@
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
+use sourceview5::prelude::ViewExt;
 
 use crate::helpers::sourceview::create_buffer;
 use crate::models::Environment;
@@ -67,7 +68,8 @@ impl Component for EnvironmentEditor {
             false.into()
         });
         let environment_source = sourceview5::View::with_buffer(&buffer);
-        environment_source.set_margin_all(10);
+        environment_source.set_show_line_numbers(true);
+        // environment_source.set_margin_all(10);
         environment_source.add_controller(controller);
         buffer.set_text(environment.payload());
 

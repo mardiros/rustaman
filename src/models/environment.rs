@@ -2,12 +2,27 @@ use std::vec::Vec;
 
 use super::status::Status;
 
+
+pub const DEFAULT_ENVIRONMENT: &str = "%YAML 1.2\n---\n";
+
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Environment {
     id: usize,
     name: String,
     payload: String,
     status: Status,
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Environment {
+            id: 0,
+            name: "".to_string(),
+            payload: DEFAULT_ENVIRONMENT.to_string(),
+            status: Status::Active,
+        }
+    }
 }
 
 impl Environment {

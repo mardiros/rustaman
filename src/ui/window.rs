@@ -2,6 +2,7 @@
 // We can't replace them without raising the GTK requirement to 4.10.
 #![allow(deprecated)]
 
+use relm4::component::Connector;
 use relm4::factory::FactoryVecDeque;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
@@ -13,9 +14,9 @@ use crate::ui::environments::EnvironmentsMsg;
 use crate::ui::menu_item::MenuItemOutput;
 use crate::ui::request_editor::{RequestMsg, RequestOutput};
 use crate::ui::response_body::ResponseBody;
-use crate::ui::traffic_log::TrafficLog;
+use crate::ui::traffic_log::{TrafficLog, TrafficLogMsg};
 
-use super::super::models::Workspace;
+use super::super::models::{Environment, Workspace};
 use super::environments::EnvironmentsTabs;
 use super::menu_item::MenuItem;
 use super::request_editor::RequestEditor;
@@ -33,6 +34,7 @@ pub struct App {
     menu_items: FactoryVecDeque<MenuItem>,
     request_editor: Controller<RequestEditor>,
     environments: Controller<EnvironmentsTabs>,
+    traffic_log: Connector<TrafficLog>,
 }
 
 pub struct Widgets {}
@@ -79,14 +81,15 @@ impl Component for App {
         }
 
         let menu_items_container: &gtk::Box = menu_items.widget();
-        menu_items_container.set_orientation(gtk::Orientation::Vertical);
 
         relm4::view! {
             left_menu = gtk::ScrolledWindow {
                 set_hexpand: true,
                 set_vexpand: true,
                 #[local_ref]
-                menu_items_container -> gtk::Box,
+                menu_items_container -> gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
+                }
             }
         }
 
@@ -164,6 +167,7 @@ impl Component for App {
                 menu_items,
                 request_editor,
                 environments,
+                traffic_log,
             },
             widgets: Widgets {},
         }
@@ -194,11 +198,13 @@ impl Component for App {
                 }
             }
             AppMsg::RunHttpRequest => {
-                let mut environ = String::new();
+                let mut environ = Environment::default();
                 let mut template = String::new();
                 if let Some(env_id) = self.environments.widgets().environment_id() {
-                    environ = self.environments.widgets().get_environment();
-                    self.workspace.set_environ_payload(env_id, environ.as_str());
+                    let environ_string = self.environments.widgets().get_environment();
+                    self.workspace
+                        .set_environ_payload(env_id, environ_string.as_str());
+                    environ = self.workspace.environment(env_id).unwrap().clone();
                 }
                 if let Some(request_id) = self.request_editor.model().request_id() {
                     let request_editor = self.request_editor.widgets();
@@ -211,7 +217,7 @@ impl Component for App {
                 for req_template in req_templates.iter() {
                     let request = helpers::handlebars::render_template(
                         req_template.as_str(),
-                        environ.as_str(),
+                        environ.payload(),
                     )
                     .unwrap();
                     let httpreq = http::parse_request(request.as_str()).unwrap();
@@ -227,6 +233,8 @@ impl Component for App {
 
                     let host_and_port = httpreq.host_and_port();
                     debug!("Connecting to {:?}", host_and_port);
+                    self.traffic_log
+                        .emit(TrafficLogMsg::Connecting(host_and_port.clone()));
                     let socket_con = client
                         .connect_to_host(host_and_port.as_str(), default_port, cancellable)
                         .unwrap();
@@ -237,6 +245,11 @@ impl Component for App {
 
                     let http_frame = httpreq.http_frame().to_string();
                     debug!("Sending {:?}", http_frame);
+
+                    let obfuscated_frame = httpreq.obfuscate(&environ).http_frame().to_string();
+                    self.traffic_log
+                        .emit(TrafficLogMsg::SendingHttpRequest(obfuscated_frame));
+
                     writer
                         .write(http_frame.into_bytes().as_slice(), cancellable)
                         .unwrap();
@@ -246,7 +259,9 @@ impl Component for App {
                     let resp =
                         String::from_utf8(buf.iter().take(read_size.0).copied().collect()).unwrap();
 
-                    info!("Response: {}", resp)
+                    info!("Response: {}", resp);
+                    self.traffic_log
+                        .emit(TrafficLogMsg::ReceivingHttpResponse(resp));
                 }
             }
             _ => (),
