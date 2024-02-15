@@ -4,6 +4,7 @@
 
 use std::time::Duration;
 
+use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 
@@ -72,13 +73,14 @@ impl Component for StatusLine {
         relm4::view! {
             #[local_ref]
             root -> gtk::Box {
+                set_margin_start: 5,
                 #[local_ref]
                 status_line -> gtk::Label{
-                    set_margin_all: 5,
+                    set_margin_start: 5,
                 },
                 #[local_ref]
                 elapsed -> gtk::Label{
-                    set_margin_all: 5,
+                    set_margin_start: 5,
                 },
             }
         }

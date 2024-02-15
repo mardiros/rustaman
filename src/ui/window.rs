@@ -129,11 +129,14 @@ impl Component for App {
         relm4::view! {
             response_box = gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
-                set_spacing: 20,
+                set_spacing: 0,
                 set_hexpand: true,
                 set_vexpand: true,
                 #[local_ref]
-                status_line_widget -> gtk::Box,
+                status_line_widget -> gtk::Box {
+                    set_hexpand: true,
+                    set_vexpand: false,
+                },
                 gtk::Paned::new(gtk::Orientation::Vertical) {
                     set_start_child: Some(response_body.widget()),
                     set_end_child: Some(traffic_log.widget()),

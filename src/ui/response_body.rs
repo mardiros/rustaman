@@ -94,7 +94,7 @@ impl Component for ResponseBody {
     ) -> ComponentParts<Self> {
         let buffer = create_buffer("json");
         let response_view = sourceview5::View::with_buffer(&buffer);
-        response_view.set_show_line_numbers(true);
+        // response_view.set_show_line_numbers(true);
         response_view.set_margin_all(10);
 
         relm4::view! {
