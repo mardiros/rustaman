@@ -6,7 +6,7 @@ use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 use serde_json;
-use sourceview5;
+use sourceview5::{self, prelude::*};
 
 use crate::helpers::sourceview::create_buffer;
 
@@ -16,16 +16,66 @@ fn prettify_js(payload: &str) -> Result<String, serde_json::Error> {
 }
 
 #[derive(Debug, Clone)]
-pub enum ResponseBodyMsg {}
+pub enum ResponseBodyMsg {
+    ReceivingHttpResponse(String),
+}
 
-pub struct ResponseBody {}
+pub struct ResponseBody {
+    buffer: sourceview5::Buffer,
+}
+
+impl ResponseBody {
+    fn log_response(&self, response: &str) {
+        let mut is_json = false;
+        let mut has_content = true;
+        let mut text = String::new();
+        let mut lines = response.lines();
+        loop {
+            let line = lines.next();
+            match line {
+                Some(unwrapped) => {
+                    if unwrapped.is_empty() {
+                        break;
+                    }
+                    if unwrapped.starts_with("Content-Type: application/json") {
+                        is_json = true;
+                    }
+                }
+                None => has_content = false,
+            }
+        }
+        if has_content {
+            loop {
+                let line = lines.next();
+                match line {
+                    Some(unwrapped) => {
+                        text.push_str(unwrapped);
+                        text.push('\n');
+                    }
+                    None => break,
+                }
+            }
+        }
+        let response = if is_json && has_content {
+            match prettify_js(text.as_str()) {
+                Ok(pretty) => pretty,
+                Err(_) => text,
+            }
+        } else {
+            text
+        };
+
+        self.buffer.set_text(response.as_str());
+    }
+}
 
 pub struct Widgets {}
 
-impl SimpleComponent for ResponseBody {
+impl Component for ResponseBody {
     type Init = ();
     type Input = ResponseBodyMsg;
     type Output = ();
+    type CommandOutput = ();
     type Widgets = Widgets;
     type Root = gtk::Box;
 
@@ -40,6 +90,7 @@ impl SimpleComponent for ResponseBody {
     ) -> ComponentParts<Self> {
         let buffer = create_buffer("json");
         let response_view = sourceview5::View::with_buffer(&buffer);
+        response_view.set_show_line_numbers(true);
         response_view.set_margin_all(10);
 
         relm4::view! {
@@ -59,8 +110,16 @@ impl SimpleComponent for ResponseBody {
         }
 
         ComponentParts {
-            model: ResponseBody {},
+            model: ResponseBody { buffer },
             widgets: Widgets {},
+        }
+    }
+
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
+        match message {
+            ResponseBodyMsg::ReceivingHttpResponse(response) => {
+                self.log_response(response.as_str())
+            }
         }
     }
 

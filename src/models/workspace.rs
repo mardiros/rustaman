@@ -2,12 +2,11 @@ use std::vec::Vec;
 
 use super::super::errors::RustamanResult;
 use super::super::helpers::path;
-use super::environment::{DEFAULT_ENVIRONMENT, Environment, Environments};
+use super::environment::{Environment, Environments, DEFAULT_ENVIRONMENT};
 use super::status::Status;
 use super::template::Template;
 
 pub const DEFAULT_TEMPLATE: &str = "# TODO: DOCUMENT ME\n\nGET http://localhost/\n";
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Request {

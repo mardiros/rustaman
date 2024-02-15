@@ -1,6 +1,7 @@
 // Don't show GTK 4.10 deprecations.
 // We can't replace them without raising the GTK requirement to 4.10.
 #![allow(deprecated)]
+use std::time::SystemTime;
 
 use relm4::component::Connector;
 use relm4::factory::FactoryVecDeque;
@@ -13,13 +14,14 @@ use crate::models::Request;
 use crate::ui::environments::EnvironmentsMsg;
 use crate::ui::menu_item::MenuItemOutput;
 use crate::ui::request_editor::{RequestMsg, RequestOutput};
-use crate::ui::response_body::ResponseBody;
+use crate::ui::response_body::{ResponseBody, ResponseBodyMsg};
 use crate::ui::traffic_log::{TrafficLog, TrafficLogMsg};
 
 use super::super::models::{Environment, Workspace};
 use super::environments::EnvironmentsTabs;
 use super::menu_item::MenuItem;
 use super::request_editor::RequestEditor;
+use super::status_line::{StatusLine, StatusLineMsg};
 
 #[derive(Debug, Clone)]
 pub enum AppMsg {
@@ -34,7 +36,9 @@ pub struct App {
     menu_items: FactoryVecDeque<MenuItem>,
     request_editor: Controller<RequestEditor>,
     environments: Controller<EnvironmentsTabs>,
+    response_body: Connector<ResponseBody>,
     traffic_log: Connector<TrafficLog>,
+    status_line: Connector<StatusLine>,
 }
 
 pub struct Widgets {}
@@ -106,9 +110,10 @@ impl Component for App {
                 EnvironmentsMsg::RunHttpRequest => AppMsg::RunHttpRequest,
             });
 
-        let resp_body = ResponseBody::builder().launch(());
+        let response_body = ResponseBody::builder().launch(());
         let traffic_log = TrafficLog::builder().launch(());
-
+        let status_line = StatusLine::builder().launch(());
+        let status_line_widget = status_line.widget();
         relm4::view! {
             request_box = gtk::Box {
                 set_spacing: 20,
@@ -123,11 +128,14 @@ impl Component for App {
 
         relm4::view! {
             response_box = gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 20,
                 set_hexpand: true,
                 set_vexpand: true,
+                #[local_ref]
+                status_line_widget -> gtk::Box,
                 gtk::Paned::new(gtk::Orientation::Vertical) {
-                    set_start_child: Some(resp_body.widget()),
+                    set_start_child: Some(response_body.widget()),
                     set_end_child: Some(traffic_log.widget()),
                 }
             }
@@ -168,6 +176,8 @@ impl Component for App {
                 request_editor,
                 environments,
                 traffic_log,
+                status_line,
+                response_body,
             },
             widgets: Widgets {},
         }
@@ -231,6 +241,7 @@ impl Component for App {
                     }
                     let cancellable: Option<&gio::Cancellable> = None;
 
+                    let time = SystemTime::now();
                     let host_and_port = httpreq.host_and_port();
                     debug!("Connecting to {:?}", host_and_port);
                     self.traffic_log
@@ -259,7 +270,12 @@ impl Component for App {
                     let resp =
                         String::from_utf8(buf.iter().take(read_size.0).copied().collect()).unwrap();
 
-                    info!("Response: {}", resp);
+                    let duration = time.elapsed().unwrap(); // SystemTimeError!
+                    debug!("Response: {}", resp);
+                    self.status_line
+                        .emit(StatusLineMsg::ReceivingHttpResponse(resp.clone(), duration));
+                    self.response_body
+                        .emit(ResponseBodyMsg::ReceivingHttpResponse(resp.clone()));
                     self.traffic_log
                         .emit(TrafficLogMsg::ReceivingHttpResponse(resp));
                 }

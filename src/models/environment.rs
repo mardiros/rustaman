@@ -2,9 +2,7 @@ use std::vec::Vec;
 
 use super::status::Status;
 
-
 pub const DEFAULT_ENVIRONMENT: &str = "%YAML 1.2\n---\n";
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Environment {
