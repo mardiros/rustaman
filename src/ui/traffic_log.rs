@@ -13,6 +13,7 @@ use crate::helpers::sourceview::create_buffer;
 pub enum TrafficLogMsg {
     Connecting(String),
     SendingHttpRequest(String),
+    RequestSent(isize),
     ReceivingHttpResponse(String),
 }
 
@@ -77,6 +78,7 @@ impl Component for TrafficLog {
     }
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
+        debug!("Updating traffic");
         match message {
             TrafficLogMsg::Connecting(host) => {
                 self.log(">>> New request");
@@ -87,8 +89,15 @@ impl Component for TrafficLog {
             TrafficLogMsg::SendingHttpRequest(request) => {
                 self.log(request.as_str());
             }
+            TrafficLogMsg::RequestSent(request_length) => {
+                self.log(format!(">>> End of request ({} bytes sent)", request_length).as_str());
+            }
             TrafficLogMsg::ReceivingHttpResponse(response) => {
+                self.log("<<< Response");
                 self.log(response.as_str());
+                self.log(
+                    format!("<<< End of response ({} bytes received)", response.len()).as_str(),
+                );
             }
         }
     }

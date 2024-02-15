@@ -18,6 +18,7 @@ fn prettify_js(payload: &str) -> Result<String, serde_json::Error> {
 #[derive(Debug, Clone)]
 pub enum ResponseBodyMsg {
     ReceivingHttpResponse(String),
+    ReceivingError(String),
 }
 
 pub struct ResponseBody {
@@ -25,6 +26,9 @@ pub struct ResponseBody {
 }
 
 impl ResponseBody {
+    fn log_error(&self, error: &str) {
+        self.buffer.set_text(error);
+    }
     fn log_response(&self, response: &str) {
         let mut is_json = false;
         let mut has_content = true;
@@ -116,10 +120,12 @@ impl Component for ResponseBody {
     }
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
+        debug!("Updating response body");
         match message {
             ResponseBodyMsg::ReceivingHttpResponse(response) => {
                 self.log_response(response.as_str())
             }
+            ResponseBodyMsg::ReceivingError(error) => self.log_error(error.as_str()),
         }
     }
 

@@ -225,12 +225,26 @@ impl Component for App {
 
                 let req_templates = http::parse_template(template.as_str());
                 for req_template in req_templates.iter() {
-                    let request = helpers::handlebars::render_template(
+                    debug!("Processing {:?}", req_template);
+                    let template_rendered = helpers::handlebars::render_template(
                         req_template.as_str(),
                         environ.payload(),
-                    )
-                    .unwrap();
-                    let httpreq = http::parse_request(request.as_str()).unwrap();
+                    );
+                    if let Err(rustaman_err) = template_rendered {
+                        let error = format!("{:?}", rustaman_err);
+                        self.response_body
+                            .emit(ResponseBodyMsg::ReceivingError(error));
+                        return;
+                    }
+                    let request_parsed = http::parse_request(template_rendered.unwrap().as_str());
+                    if let Err(rustaman_err) = request_parsed {
+                        let error = format!("{:?}", rustaman_err);
+                        self.response_body
+                            .emit(ResponseBodyMsg::ReceivingError(error));
+                        return;
+                    }
+
+                    let httpreq = request_parsed.unwrap();
 
                     let mut default_port = 80;
                     let client = gio::SocketClient::new();
@@ -246,10 +260,18 @@ impl Component for App {
                     debug!("Connecting to {:?}", host_and_port);
                     self.traffic_log
                         .emit(TrafficLogMsg::Connecting(host_and_port.clone()));
-                    let socket_con = client
-                        .connect_to_host(host_and_port.as_str(), default_port, cancellable)
-                        .unwrap();
 
+                    let socket_con_result =
+                        client.connect_to_host(host_and_port.as_str(), default_port, cancellable);
+
+                    if let Err(gsocket_err) = socket_con_result {
+                        let error = format!("Connection failed: {:?}", gsocket_err);
+                        self.response_body
+                            .emit(ResponseBodyMsg::ReceivingError(error));
+                        return;
+                    }
+
+                    let socket_con = socket_con_result.unwrap();
                     let stream: gio::IOStream = socket_con.upcast();
                     let writer = stream.output_stream();
                     let reader = stream.input_stream();
@@ -261,14 +283,36 @@ impl Component for App {
                     self.traffic_log
                         .emit(TrafficLogMsg::SendingHttpRequest(obfuscated_frame));
 
-                    writer
-                        .write(http_frame.into_bytes().as_slice(), cancellable)
-                        .unwrap();
+                    let written = writer.write(http_frame.into_bytes().as_slice(), cancellable);
+                    match written {
+                        Ok(len) => {
+                            self.traffic_log.emit(TrafficLogMsg::RequestSent(len));
+                        }
+                        Err(err) => {
+                            self.response_body
+                                .emit(ResponseBodyMsg::ReceivingError(format!("{:?}", err)));
+                        }
+                    }
 
+                    let mut response: Vec<u8> = Vec::new();
                     let mut buf = vec![0; 1024];
-                    let read_size = reader.read_all(buf.as_mut_slice(), cancellable).unwrap();
-                    let resp =
-                        String::from_utf8(buf.iter().take(read_size.0).copied().collect()).unwrap();
+                    loop {
+                        let read_size = reader.read_all(buf.as_mut_slice(), cancellable).unwrap();
+                        if read_size.0 == 0 {
+                            debug!("no more bytes");
+                            break;
+                        }
+                        debug!("{} bytes received", read_size.0);
+
+                        response.extend_from_slice(&buf[0..read_size.0]);
+                        // let mut resppartvec: Vec<u8> = vec![0; 1024];
+                        // resppartvec.extend_from_slice(&buf[..read_size.0]);
+                        // self.response_body
+                        //     .emit(ResponseBodyMsg::ReceivingHttpResponse(
+                        //         String::from_utf8(resppartvec).unwrap(),
+                        //     ));
+                    }
+                    let resp = String::from_utf8(response).unwrap();
 
                     let duration = time.elapsed().unwrap(); // SystemTimeError!
                     debug!("Response: {}", resp);
@@ -278,7 +322,9 @@ impl Component for App {
                         .emit(ResponseBodyMsg::ReceivingHttpResponse(resp.clone()));
                     self.traffic_log
                         .emit(TrafficLogMsg::ReceivingHttpResponse(resp));
+                    debug!("Done with the request");
                 }
+                debug!("Done with all the requests")
             }
             _ => (),
         }
