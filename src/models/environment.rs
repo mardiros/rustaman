@@ -1,5 +1,7 @@
 use std::vec::Vec;
 
+use crate::errors::RustamanResult;
+
 use super::status::Status;
 
 pub const DEFAULT_ENVIRONMENT: &str = "%YAML 1.2\n---\n";
@@ -57,9 +59,9 @@ impl Environment {
         self.status = Status::Deleted;
     }
 
-    pub fn parsed_payload(&self) -> serde_yaml::Result<serde_yaml::Value> {
-        let parsed: serde_yaml::Result<serde_yaml::Value> = serde_yaml::from_str(self.payload());
-        parsed
+    pub fn parsed_payload(&self) -> RustamanResult<serde_yaml::Value> {
+        let parsed: serde_yaml::Value = serde_yaml::from_str(self.payload())?;
+        Ok(parsed)
     }
 
     pub fn obfuscated_string(&self) -> Vec<String> {

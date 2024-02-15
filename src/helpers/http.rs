@@ -9,6 +9,7 @@ use url::Url;
 
 use super::super::errors::{RustamanError, RustamanResult};
 use super::super::models::Environment;
+use super::handlebars;
 
 const READ_SIZE: usize = 1024;
 lazy_static! {
@@ -143,7 +144,7 @@ impl HttpRequest {
     }
 }
 
-pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
+fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     info!("Parsing request {}", request.len());
 
     let mut lines = request.lines();
@@ -283,11 +284,17 @@ pub fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     })
 }
 
-pub fn parse_template(template: &str) -> Vec<String> {
+pub fn split_template(template: &str) -> Vec<String> {
     let requests: Vec<String> = RE_SPLIT_END_CAPTURE
         .split(template)
         .map(|request| request.to_string())
         .collect();
     debug!("{:?}", requests);
     requests
+}
+
+pub fn load_template(template: &str, environ: &Environment) -> RustamanResult<HttpRequest> {
+    let context = environ.parsed_payload()?;
+    let template_rendered = handlebars::render_template(template, &context)?;
+    parse_request(template_rendered.as_str())
 }

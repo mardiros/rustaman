@@ -223,20 +223,10 @@ impl Component for App {
                         .set_request_template(request_id, template.as_str());
                 }
 
-                let req_templates = http::parse_template(template.as_str());
+                let req_templates = http::split_template(template.as_str());
                 for req_template in req_templates.iter() {
                     debug!("Processing {:?}", req_template);
-                    let template_rendered = helpers::handlebars::render_template(
-                        req_template.as_str(),
-                        environ.payload(),
-                    );
-                    if let Err(rustaman_err) = template_rendered {
-                        let error = format!("{:?}", rustaman_err);
-                        self.response_body
-                            .emit(ResponseBodyMsg::ReceivingError(error));
-                        return;
-                    }
-                    let request_parsed = http::parse_request(template_rendered.unwrap().as_str());
+                    let request_parsed = http::load_template(req_template.as_str(), &environ);
                     if let Err(rustaman_err) = request_parsed {
                         let error = format!("{:?}", rustaman_err);
                         self.response_body
@@ -302,15 +292,14 @@ impl Component for App {
                             debug!("no more bytes");
                             break;
                         }
+                        if let Some(err) = read_size.1 {
+                            let error = format!("Socket Reading Error: {:?}", err);
+                            self.response_body
+                                .emit(ResponseBodyMsg::ReceivingError(error));
+                            return;
+                        }
                         debug!("{} bytes received", read_size.0);
-
                         response.extend_from_slice(&buf[0..read_size.0]);
-                        // let mut resppartvec: Vec<u8> = vec![0; 1024];
-                        // resppartvec.extend_from_slice(&buf[..read_size.0]);
-                        // self.response_body
-                        //     .emit(ResponseBodyMsg::ReceivingHttpResponse(
-                        //         String::from_utf8(resppartvec).unwrap(),
-                        //     ));
                     }
                     let resp = String::from_utf8(response).unwrap();
 

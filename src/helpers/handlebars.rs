@@ -51,9 +51,8 @@ fn encode(
     Ok(())
 }
 
-pub fn render_template(template: &str, environment: &str) -> RustamanResult<String> {
+pub fn render_template(template: &str, context: &serde_yaml::Value) -> RustamanResult<String> {
     let mut hbar = Handlebars::new();
-    let context: serde_yaml::Value = serde_yaml::from_str(&environment)?;
     hbar.register_decorator("set", Box::new(set_decorator));
     hbar.register_helper("encode", Box::new(encode));
     let resp = hbar.render_template(template, &context)?;
