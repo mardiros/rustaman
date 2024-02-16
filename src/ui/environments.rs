@@ -97,7 +97,7 @@ impl Component for EnvironmentsTabs {
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
         // we forward all the message to the window
-        // sender.input_sender().emit(message)
+        sender.output_sender().emit(message)
     }
 
     fn update_view(&self, _widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {}

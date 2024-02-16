@@ -100,7 +100,7 @@ impl Component for RequestEditor {
         }
     }
 
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
         match message {
             RequestMsg::RequestChanged(request) => {
                 self.request = Some(request);

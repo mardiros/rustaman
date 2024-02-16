@@ -31,7 +31,7 @@ pub enum AppMsg {
 
 pub struct App {
     workspace: Workspace,
-    sidebar: Controller<SideBar>,
+    _sidebar: Controller<SideBar>,
     request_editor: Controller<RequestEditor>,
     environments: Controller<EnvironmentsTabs>,
     response_body: Connector<ResponseBody>,
@@ -63,7 +63,7 @@ impl Component for App {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let sidebar = SideBar::builder()
+        let _sidebar = SideBar::builder()
             .launch(workspace.requests().into())
             .forward(sender.input_sender(), |msg| match msg {
                 SideBarMsg::CreateRequest(request) => AppMsg::CreateRequest(request),
@@ -142,7 +142,7 @@ impl Component for App {
                 gtk::Paned::new(gtk::Orientation::Horizontal) {
                     set_wide_handle: true,
                     set_position: 250,
-                    set_start_child: Some(sidebar.widget()),
+                    set_start_child: Some(_sidebar.widget()),
                     set_end_child: Some(&workspace_box),
                 }
             }
@@ -151,7 +151,7 @@ impl Component for App {
         ComponentParts {
             model: App {
                 workspace,
-                sidebar,
+                _sidebar,
                 request_editor,
                 environments,
                 traffic_log,
@@ -164,7 +164,7 @@ impl Component for App {
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
         match message {
-            AppMsg::CreateRequest(request) => {
+            AppMsg::CreateRequest(_request) => {
                 // we have to save the request here
             }
             AppMsg::TogglingRequest(request_id, active) => {

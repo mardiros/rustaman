@@ -77,7 +77,7 @@ impl Component for TrafficLog {
         }
     }
 
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
         debug!("Updating traffic");
         match message {
             TrafficLogMsg::Connecting(host) => {

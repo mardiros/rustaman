@@ -11,7 +11,6 @@ use super::super::errors::{RustamanError, RustamanResult};
 use super::super::models::Environment;
 use super::handlebars;
 
-const READ_SIZE: usize = 1024;
 lazy_static! {
     pub static ref RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE: Regex =
         Regex::new(r"#![\s]*Authority:[\s]*(?P<host>.+):(?P<port>[0-9]+)").unwrap();
@@ -119,10 +118,6 @@ pub struct HttpRequest {
 impl HttpRequest {
     pub fn http_frame(&self) -> &str {
         self.http_frame.as_str()
-    }
-
-    pub fn authority(&self) -> (&str, u16) {
-        (self.host.as_str(), self.port)
     }
 
     pub fn host_and_port(&self) -> String {
