@@ -106,5 +106,5 @@ impl Component for EnvironmentEditor {
     ) {
     }
 
-    fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {}
+    fn update_view(&self, _widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {}
 }

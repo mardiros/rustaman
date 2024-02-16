@@ -3,6 +3,7 @@ pub(crate) mod environments;
 pub(crate) mod menu_item;
 pub(crate) mod request_editor;
 pub(crate) mod response_body;
+pub(crate) mod sidebar;
 pub(crate) mod status_line;
 pub(crate) mod traffic_log;
 pub(crate) mod window;

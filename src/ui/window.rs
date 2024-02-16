@@ -4,7 +4,6 @@
 use std::time::SystemTime;
 
 use relm4::component::Connector;
-use relm4::factory::FactoryVecDeque;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, gtk::gio, ComponentParts, ComponentSender};
@@ -12,15 +11,14 @@ use relm4::{gtk, gtk::gio, ComponentParts, ComponentSender};
 use crate::helpers::{self, http};
 use crate::models::Request;
 use crate::ui::environments::EnvironmentsMsg;
-use crate::ui::menu_item::MenuItemOutput;
 use crate::ui::request_editor::{RequestMsg, RequestOutput};
 use crate::ui::response_body::{ResponseBody, ResponseBodyMsg};
 use crate::ui::traffic_log::{TrafficLog, TrafficLogMsg};
 
 use super::super::models::{Environment, Workspace};
 use super::environments::EnvironmentsTabs;
-use super::menu_item::MenuItem;
 use super::request_editor::RequestEditor;
+use super::sidebar::{SideBar, SideBarMsg};
 use super::status_line::{StatusLine, StatusLineMsg};
 
 #[derive(Debug, Clone)]
@@ -33,7 +31,7 @@ pub enum AppMsg {
 
 pub struct App {
     workspace: Workspace,
-    menu_items: FactoryVecDeque<MenuItem>,
+    sidebar: Controller<SideBar>,
     request_editor: Controller<RequestEditor>,
     environments: Controller<EnvironmentsTabs>,
     response_body: Connector<ResponseBody>,
@@ -65,37 +63,15 @@ impl Component for App {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let menu_items =
-            FactoryVecDeque::builder()
-                .launch_default()
-                .forward(sender.input_sender(), |output| match output {
-                    MenuItemOutput::DeleteRequest(request_id) => AppMsg::DeleteRequest(request_id),
-                    MenuItemOutput::TogglingRequest(request_id, active) => {
-                        AppMsg::TogglingRequest(request_id, active)
-                    }
-                });
-
-        for request in workspace.requests() {
-            if request.active() {
-                sender
-                    .input_sender()
-                    .send(AppMsg::CreateRequest(request.clone()))
-                    .unwrap();
-            }
-        }
-
-        let menu_items_container: &gtk::Box = menu_items.widget();
-
-        relm4::view! {
-            left_menu = gtk::ScrolledWindow {
-                set_hexpand: true,
-                set_vexpand: true,
-                #[local_ref]
-                menu_items_container -> gtk::Box {
-                    set_orientation: gtk::Orientation::Vertical,
+        let sidebar = SideBar::builder()
+            .launch(workspace.requests().into())
+            .forward(sender.input_sender(), |msg| match msg {
+                SideBarMsg::CreateRequest(request) => AppMsg::CreateRequest(request),
+                SideBarMsg::DeleteRequest(request_id) => AppMsg::DeleteRequest(request_id),
+                SideBarMsg::TogglingRequest(request_id, active) => {
+                    AppMsg::TogglingRequest(request_id, active)
                 }
-            }
-        }
+            });
 
         let request_editor =
             RequestEditor::builder()
@@ -166,7 +142,7 @@ impl Component for App {
                 gtk::Paned::new(gtk::Orientation::Horizontal) {
                     set_wide_handle: true,
                     set_position: 250,
-                    set_start_child: Some(&left_menu),
+                    set_start_child: Some(sidebar.widget()),
                     set_end_child: Some(&workspace_box),
                 }
             }
@@ -175,7 +151,7 @@ impl Component for App {
         ComponentParts {
             model: App {
                 workspace,
-                menu_items,
+                sidebar,
                 request_editor,
                 environments,
                 traffic_log,
@@ -187,10 +163,9 @@ impl Component for App {
     }
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
-        let mut menu_items_guard = self.menu_items.guard();
         match message {
             AppMsg::CreateRequest(request) => {
-                menu_items_guard.push_back(request);
+                // we have to save the request here
             }
             AppMsg::TogglingRequest(request_id, active) => {
                 info!("toggling request {:?}. active {}", request_id, active);
@@ -198,15 +173,6 @@ impl Component for App {
                     if let Some(request) = self.workspace.request(request_id) {
                         self.request_editor
                             .emit(RequestMsg::RequestChanged(request.clone()));
-                    }
-
-                    for item in menu_items_guard.iter_mut() {
-                        if item.id() == request_id {
-                            item.set_selected(true);
-                        }
-                        if item.selected() && item.id() != request_id {
-                            item.set_selected(false);
-                        }
                     }
                 }
             }

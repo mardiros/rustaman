@@ -1,6 +1,6 @@
 use relm4::factory::{DynamicIndex, FactoryComponent, FactorySender};
-use relm4::gtk;
 use relm4::gtk::prelude::*;
+use relm4::{gtk, RelmWidgetExt};
 
 use super::super::models::Request;
 
@@ -68,9 +68,9 @@ impl FactoryComponent for MenuItem {
 
     fn init_widgets(
         &mut self,
-        index: &DynamicIndex,
+        _index: &DynamicIndex,
         root: &Self::Root,
-        returned_widget: &gtk::Widget,
+        _returned_widget: &gtk::Widget,
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let request_id = self.request.id();
@@ -80,6 +80,7 @@ impl FactoryComponent for MenuItem {
             #[local_ref]
             root -> gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
+                set_margin_all: 2,
                 set_hexpand: true,
                 set_vexpand: false,
 
