@@ -5,6 +5,7 @@ use relm4::{gtk, RelmWidgetExt};
 use super::super::models::Request;
 
 pub struct MenuItem {
+    visible: bool,
     selected: bool,
     request: Request,
 }
@@ -20,6 +21,23 @@ impl MenuItem {
     pub fn set_selected(&mut self, value: bool) {
         self.selected = value
     }
+    pub fn search(&mut self, search: &str) {
+        if search.len() > 0 {
+            self.visible = self
+                .request
+                .name()
+                .to_lowercase()
+                .contains(search.to_lowercase().as_str())
+        } else {
+            self.visible = true;
+        }
+        debug!(
+            "Search res {} {} => {}",
+            search,
+            self.request.name(),
+            self.visible
+        )
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -32,6 +50,7 @@ pub enum MenuItemOutput {
 }
 
 pub struct MenuItemWidgets {
+    root: gtk::Box,
     toggle: gtk::ToggleButton,
 }
 
@@ -46,13 +65,7 @@ impl FactoryComponent for MenuItem {
     type Index = DynamicIndex;
 
     fn init_root(&self) -> Self::Root {
-        relm4::view! {
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 10,
-            }
-        }
-        root
+        gtk::Box::default()
     }
 
     fn init_model(
@@ -63,6 +76,7 @@ impl FactoryComponent for MenuItem {
         Self {
             request,
             selected: false,
+            visible: true,
         }
     }
 
@@ -76,9 +90,15 @@ impl FactoryComponent for MenuItem {
         let request_id = self.request.id();
         let entry = gtk::Entry::new();
         let toggle = gtk::ToggleButton::new();
+        let inner_root = gtk::Box::default();
         relm4::view! {
             #[local_ref]
             root -> gtk::Box {
+                #[local_ref]
+                inner_root -> gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_spacing: 10,
+
                 set_orientation: gtk::Orientation::Horizontal,
                 set_margin_all: 2,
                 set_hexpand: true,
@@ -124,10 +144,14 @@ impl FactoryComponent for MenuItem {
                     }
                 }
             }
-        }
+        }                }
+
         entry.hide();
 
-        MenuItemWidgets { toggle }
+        MenuItemWidgets {
+            root: inner_root,
+            toggle,
+        }
     }
 
     fn update(&mut self, msg: Self::Input, _sender: FactorySender<Self>) {
@@ -135,6 +159,11 @@ impl FactoryComponent for MenuItem {
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, _sender: FactorySender<Self>) {
+        if self.visible {
+            widgets.root.show();
+        } else {
+            widgets.root.hide();
+        }
         widgets.toggle.set_active(self.selected)
     }
 }

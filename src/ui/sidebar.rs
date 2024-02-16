@@ -17,6 +17,7 @@ pub enum SideBarMsg {
     CreateRequest(Request),
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
+    SearchRequest(String),
 }
 
 pub struct SideBar {
@@ -68,6 +69,11 @@ impl Component for SideBar {
         }
 
         let menu_items_container: &gtk::Box = menu_items.widget();
+        let search_entry = gtk::SearchEntry::new();
+        let sender = sender.input_sender().clone();
+        search_entry.connect_search_changed(move |entry| {
+            sender.emit(SideBarMsg::SearchRequest(entry.text().into()));
+        });
 
         relm4::view! {
             #[local_ref]
@@ -77,7 +83,14 @@ impl Component for SideBar {
                 gtk::Box {
                     set_margin_all: 2,
                     set_orientation: gtk::Orientation::Horizontal,
-                    gtk::Entry {}
+
+                    #[local_ref]
+                    search_entry -> gtk::SearchEntry {
+                        set_vexpand: false,
+                        set_hexpand: true,
+                        set_valign: gtk::Align::Fill,
+                        // inline_css: "border: 2px solid blue",
+                    }
                 },
 
                 gtk::ScrolledWindow {
@@ -90,6 +103,7 @@ impl Component for SideBar {
                 }
             }
         }
+        search_entry.show();
         ComponentParts {
             model: SideBar { menu_items },
             widgets: Widgets {},
@@ -115,11 +129,18 @@ impl Component for SideBar {
                     }
                 }
             }
-
+            SideBarMsg::SearchRequest(search) => {
+                error!("~~ {}", search);
+                for item in menu_items_guard.iter_mut() {
+                    item.search(search.as_str());
+                }
+            }
             _ => (),
         }
         sender.output_sender().emit(message)
     }
 
-    fn update_view(&self, _widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {}
+    fn update_view(&self, _widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {
+        info!("update_view")
+    }
 }

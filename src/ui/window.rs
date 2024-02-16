@@ -27,6 +27,7 @@ pub enum AppMsg {
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
     RunHttpRequest,
+    SearchRequest(String),
 }
 
 pub struct App {
@@ -71,6 +72,7 @@ impl Component for App {
                 SideBarMsg::TogglingRequest(request_id, active) => {
                     AppMsg::TogglingRequest(request_id, active)
                 }
+                SideBarMsg::SearchRequest(search) => AppMsg::SearchRequest(search),
             });
 
         let request_editor =
