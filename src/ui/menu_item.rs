@@ -9,6 +9,7 @@ pub enum MenuMode {
     Toggle,
     Edit,
     Renaming,
+    Deleting,
 }
 pub struct MenuItem {
     visible: bool,
@@ -28,6 +29,11 @@ impl MenuItem {
     pub fn set_selected(&mut self, value: bool) {
         self.selected = value
     }
+
+    pub fn edit(&mut self) {
+        self.mode = MenuMode::Renaming
+    }
+
     pub fn set_name(&mut self, name: &str) {
         self.request.set_name(name);
         self.mode = MenuMode::Toggle
@@ -53,6 +59,7 @@ impl MenuItem {
 
 #[derive(Debug, Clone)]
 pub enum MenuItemMsg {
+    DeleteRequest,
     RenameRequest,
     CancelRenameRequest,
     ValidateRenameRequest,
@@ -178,6 +185,7 @@ impl FactoryComponent for MenuItem {
                                 },
                                 gtk::Button {
                                     set_label: "Delete",
+                                    connect_clicked => MenuItemMsg::DeleteRequest,
                                 }
                             }
                         }
@@ -202,11 +210,13 @@ impl FactoryComponent for MenuItem {
             MenuItemMsg::RenameRequest => self.mode = MenuMode::Edit,
             MenuItemMsg::CancelRenameRequest => self.mode = MenuMode::Toggle,
             MenuItemMsg::ValidateRenameRequest => self.mode = MenuMode::Renaming,
+            MenuItemMsg::DeleteRequest => self.mode = MenuMode::Deleting,
         }
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, sender: FactorySender<Self>) {
-        info!("Update View {:?}", self.mode);
+        info!("Update View {:?} {}", self.mode, self.request.id());
+        widgets.toggle.set_active(self.selected);
         match self.mode {
             MenuMode::Edit => {
                 widgets.edit_entry.show();
@@ -220,11 +230,17 @@ impl FactoryComponent for MenuItem {
                 widgets.toggle_container.show();
             }
             MenuMode::Renaming => {
-                debug!("Renaming reuqest");
+                debug!("Renaming request");
                 sender.output_sender().emit(MenuItemOutput::RenameRequest(
                     self.request.id(),
                     widgets.edit_entry.text().into(),
                 ))
+            }
+            MenuMode::Deleting => {
+                debug!("Renaming request");
+                sender
+                    .output_sender()
+                    .emit(MenuItemOutput::DeleteRequest(self.request.id()))
             }
         }
         if self.visible {
@@ -232,6 +248,5 @@ impl FactoryComponent for MenuItem {
         } else {
             widgets.root.hide();
         }
-        widgets.toggle.set_active(self.selected)
     }
 }

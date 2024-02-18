@@ -3,6 +3,8 @@
 #![allow(deprecated)]
 
 use relm4::factory::FactoryVecDeque;
+use relm4::gtk::glib::clone;
+use relm4::gtk::prelude::ButtonExt;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
@@ -15,12 +17,15 @@ use super::menu_item::MenuItem;
 
 #[derive(Debug, Clone)]
 pub enum SideBarMsg {
+    NewRequest,
     CreateRequest(Request),
+    RegisterRequest(Request),
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
     SearchRequest(String),
     RenameRequest(usize, String),
     RequestRenamed(usize, String),
+    RequestDeleted(usize),
 }
 
 pub struct SideBar {
@@ -69,17 +74,19 @@ impl Component for SideBar {
             if request.active() {
                 sender
                     .input_sender()
-                    .send(SideBarMsg::CreateRequest(request.clone()))
+                    .send(SideBarMsg::RegisterRequest(request.clone()))
                     .unwrap();
             }
         }
 
         let menu_items_container: &gtk::Box = menu_items.widget();
         let search_entry = gtk::SearchEntry::new();
-        let sender = sender.input_sender().clone();
+        let search_sender = sender.input_sender().clone();
         search_entry.connect_search_changed(move |entry| {
-            sender.emit(SideBarMsg::SearchRequest(entry.text().into()));
+            search_sender.emit(SideBarMsg::SearchRequest(entry.text().into()));
         });
+
+        let new_request_btn = gtk::Button::new();
 
         relm4::view! {
             #[local_ref]
@@ -97,8 +104,10 @@ impl Component for SideBar {
                         set_valign: gtk::Align::Fill,
                         // inline_css: "border: 2px solid blue",
                     },
-                    gtk::Button {
+                    #[local_ref]
+                    new_request_btn -> gtk::Button {
                         set_icon_name: icon_name::DOCUMENT_ADD_REGULAR,
+                        connect_clicked => SideBarMsg::NewRequest
                     }
                 },
 
@@ -122,7 +131,28 @@ impl Component for SideBar {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
         let mut menu_items_guard = self.menu_items.guard();
         match &message {
+            SideBarMsg::NewRequest => {
+                error!("NewRequest")
+            }
             SideBarMsg::CreateRequest(request) => {
+                error!("Create Request");
+                menu_items_guard.push_back(request.clone());
+                let request_id = request.id();
+
+                error!("Pushed back");
+                for item in menu_items_guard.iter_mut() {
+                    error!("Iter {}", item.id());
+                    if item.id() == request_id {
+                        error!("Select for edit ");
+                        item.set_selected(true);
+                        item.edit();
+                    }
+                    if item.selected() && item.id() != request_id {
+                        item.set_selected(false);
+                    }
+                }
+            }
+            SideBarMsg::RegisterRequest(request) => {
                 menu_items_guard.push_back(request.clone());
             }
             SideBarMsg::TogglingRequest(request_id, active) => {
@@ -149,6 +179,14 @@ impl Component for SideBar {
                     if item.id() == *request_id {
                         item.set_name(name);
                     }
+                }
+            }
+            SideBarMsg::DeleteRequest(request_id) => {
+                let index = menu_items_guard
+                    .iter()
+                    .position(|req| req.id() == *request_id);
+                if let Some(idx) = index {
+                    menu_items_guard.remove(idx);
                 }
             }
             _ => (),

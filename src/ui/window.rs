@@ -9,7 +9,6 @@ use relm4::prelude::*;
 use relm4::{gtk, gtk::gio, ComponentParts, ComponentSender};
 
 use crate::helpers::{self, http};
-use crate::models::Request;
 use crate::ui::environments::EnvironmentsMsg;
 use crate::ui::request_editor::{RequestMsg, RequestOutput};
 use crate::ui::response_body::{ResponseBody, ResponseBodyMsg};
@@ -23,11 +22,11 @@ use super::status_line::{StatusLine, StatusLineMsg};
 
 #[derive(Debug, Clone)]
 pub enum AppMsg {
-    CreateRequest(Request),
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
     RunHttpRequest,
     RenameRequest(usize, String),
+    NewRequest,
     Noop,
 }
 
@@ -68,16 +67,19 @@ impl Component for App {
         let sidebar = SideBar::builder()
             .launch(workspace.requests().into())
             .forward(sender.input_sender(), |msg| match msg {
-                SideBarMsg::CreateRequest(request) => AppMsg::CreateRequest(request),
+                SideBarMsg::NewRequest => AppMsg::NewRequest,
+                SideBarMsg::CreateRequest(_request) => AppMsg::Noop,
+                SideBarMsg::RegisterRequest(_request) => AppMsg::Noop,
                 SideBarMsg::DeleteRequest(request_id) => AppMsg::DeleteRequest(request_id),
                 SideBarMsg::TogglingRequest(request_id, active) => {
                     AppMsg::TogglingRequest(request_id, active)
                 }
-                SideBarMsg::SearchRequest(search) => AppMsg::Noop,
+                SideBarMsg::SearchRequest(_search) => AppMsg::Noop,
                 SideBarMsg::RenameRequest(request_id, name) => {
                     AppMsg::RenameRequest(request_id, name)
                 }
-                SideBarMsg::RequestRenamed(request_id, name) => AppMsg::Noop,
+                SideBarMsg::RequestRenamed(_request_id, _name) => AppMsg::Noop,
+                SideBarMsg::RequestDeleted(_request_id) => AppMsg::Noop,
             });
 
         let request_editor =
@@ -171,8 +173,11 @@ impl Component for App {
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
         match message {
-            AppMsg::CreateRequest(_request) => {
-                // we have to save the request here
+            AppMsg::NewRequest => {
+                error!("Create the request here");
+                let request = self.workspace.create_request();
+                self.sidebar
+                    .emit(SideBarMsg::CreateRequest(request.clone()));
             }
             AppMsg::TogglingRequest(request_id, active) => {
                 info!("toggling request {:?}. active {}", request_id, active);
@@ -188,6 +193,11 @@ impl Component for App {
                 self.workspace.safe_sync();
                 self.sidebar
                     .emit(SideBarMsg::RequestRenamed(request_id, name))
+            }
+            AppMsg::DeleteRequest(request_id) => {
+                self.workspace.delete_request(request_id);
+                self.workspace.safe_sync();
+                self.sidebar.emit(SideBarMsg::RequestDeleted(request_id))
             }
             AppMsg::RunHttpRequest => {
                 let mut environ = Environment::default();
