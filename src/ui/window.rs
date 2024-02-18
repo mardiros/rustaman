@@ -95,6 +95,7 @@ impl Component for App {
             .forward(sender.input_sender(), |msg| match msg {
                 EnvironmentsMsg::RunHttpRequest => AppMsg::RunHttpRequest,
                 EnvironmentsMsg::NewEnvironment => AppMsg::Noop,
+                EnvironmentsMsg::CancelCreate => AppMsg::Noop,
                 EnvironmentsMsg::CreateEnvironment(name) => AppMsg::CreateEnvironment(name),
                 EnvironmentsMsg::EnvironmentCreated(_env) => AppMsg::Noop,
             });

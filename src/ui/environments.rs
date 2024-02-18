@@ -14,6 +14,7 @@ use crate::ui::environ_editor::{EnvironmentEditor, EnvironmentOutput};
 pub enum EnvironmentsMsg {
     RunHttpRequest,
     NewEnvironment,
+    CancelCreate,
     CreateEnvironment(String),
     EnvironmentCreated(Environment),
 }
@@ -85,6 +86,16 @@ impl Component for EnvironmentsTabs {
         }
 
         let new_tab_entry = gtk::Entry::new();
+        let entry_sender = sender.input_sender().clone();
+        let controller = gtk::EventControllerKey::new();
+        controller.connect_key_pressed(move |_evt, key, _code, _mask| match key {
+            gtk::gdk::Key::Escape => {
+                entry_sender.emit(EnvironmentsMsg::CancelCreate);
+                true.into()
+            }
+            _ => false.into(),
+        });
+        new_tab_entry.add_controller(controller);
 
         let new_tab_btn = gtk::Button::new();
         let tab_label = gtk::Box::default();
@@ -146,6 +157,7 @@ impl Component for EnvironmentsTabs {
         // we forward all the message to the window
         match message.clone() {
             EnvironmentsMsg::NewEnvironment => self.mode = NewEnvironmentMode::Creating,
+            EnvironmentsMsg::CancelCreate => self.mode = NewEnvironmentMode::Append,
             EnvironmentsMsg::EnvironmentCreated(environment) => {
                 let editor = EnvironmentEditor::builder()
                     .launch(environment.clone())

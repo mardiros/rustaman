@@ -123,10 +123,6 @@ impl FactoryComponent for MenuItem {
         let controller = gtk::EventControllerKey::new();
         // controller.connect_im_update(
         controller.connect_key_pressed(move |_evt, key, _code, _mask| match key {
-            gtk::gdk::Key::Return => {
-                entry_sender.emit(MenuItemMsg::ValidateRenameRequest);
-                true.into()
-            }
             gtk::gdk::Key::Escape => {
                 entry_sender.emit(MenuItemMsg::CancelRenameRequest);
                 true.into()
@@ -156,6 +152,7 @@ impl FactoryComponent for MenuItem {
                     set_can_focus: true,
                     select_region: (0, self.request.name().len() as i32),
                     set_hexpand: true,
+                    connect_activate => MenuItemMsg::ValidateRenameRequest,
                 },
                 #[local_ref]
                 toggle_container -> gtk::Box{
