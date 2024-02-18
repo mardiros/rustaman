@@ -17,6 +17,9 @@ pub enum EnvironmentsMsg {
     CancelCreate,
     CreateEnvironment(String),
     EnvironmentCreated(Environment),
+    DeletingEnvironment(usize),
+    EnvironmentDeleted(usize),
+    Initialized,
 }
 
 pub enum NewEnvironmentMode {
@@ -71,18 +74,13 @@ impl Component for EnvironmentsTabs {
     ) -> ComponentParts<Self> {
         let notebook = gtk::Notebook::new();
 
-        let mut editors = Vec::new();
+        let editors = Vec::new();
         for environment in environments.iter() {
-            let editor = EnvironmentEditor::builder()
-                .launch(environment.clone())
-                .forward(sender.output_sender(), |msg| match msg {
-                    EnvironmentOutput::RunHttpRequest => EnvironmentsMsg::RunHttpRequest,
-                });
-            notebook.append_page(
-                editor.widget(),
-                Some(&gtk::Button::with_label(environment.name())),
-            );
-            editors.push(editor);
+            if environment.active() {
+                sender
+                    .input_sender()
+                    .emit(EnvironmentsMsg::EnvironmentCreated(environment.clone()));
+            }
         }
 
         let new_tab_entry = gtk::Entry::new();
@@ -139,6 +137,7 @@ impl Component for EnvironmentsTabs {
                 }
             }
         }
+        sender.input_sender().emit(EnvironmentsMsg::Initialized);
 
         ComponentParts {
             model: EnvironmentsTabs {
@@ -156,6 +155,7 @@ impl Component for EnvironmentsTabs {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
         // we forward all the message to the window
         match message.clone() {
+            EnvironmentsMsg::Initialized => self.notebook.set_page(0),
             EnvironmentsMsg::NewEnvironment => self.mode = NewEnvironmentMode::Creating,
             EnvironmentsMsg::CancelCreate => self.mode = NewEnvironmentMode::Append,
             EnvironmentsMsg::EnvironmentCreated(environment) => {
@@ -164,13 +164,54 @@ impl Component for EnvironmentsTabs {
                     .forward(sender.output_sender(), |msg| match msg {
                         EnvironmentOutput::RunHttpRequest => EnvironmentsMsg::RunHttpRequest,
                     });
-                self.notebook.insert_page(
+
+                let tab_label = gtk::Box::default();
+                let env_id = environment.id();
+                relm4::view! {
+                    #[local_ref]
+                    tab_label -> gtk:: Box {
+                        gtk::Button {
+                            set_label: environment.name(),
+                        },
+                        gtk::MenuButton {
+                            set_hexpand: false,
+
+                            #[wrap(Some)]
+                            set_popover = &gtk::Popover {
+                                gtk::Box {
+                                    set_orientation: gtk::Orientation::Vertical,
+
+                                    // gtk::Button {
+                                    //     set_label: "Rename",
+                                    // },
+                                    gtk::Button {
+                                        set_label: "Delete",
+                                        connect_clicked => EnvironmentsMsg::DeletingEnvironment(env_id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                let page_num = self.notebook.insert_page(
                     editor.widget(),
-                    Some(&gtk::Button::with_label(environment.name())),
+                    Some(&tab_label),
                     Some(self.notebook.n_pages() - 1),
                 );
                 self.editors.push(editor);
+                self.notebook.set_page(page_num as i32);
+
                 self.mode = NewEnvironmentMode::Append;
+            }
+            EnvironmentsMsg::EnvironmentDeleted(env_id) => {
+                let index = self
+                    .editors
+                    .iter()
+                    .position(|ed| ed.widgets().get_environment_id() == env_id);
+                if let Some(page_num) = index {
+                    self.notebook.remove_page(Some(page_num as u32));
+                }
+                self.notebook.set_page(0);
             }
             _ => {}
         }

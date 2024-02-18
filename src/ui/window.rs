@@ -29,6 +29,7 @@ pub enum AppMsg {
     NewRequest,
     Noop,
     CreateEnvironment(String),
+    DeletingEnvironment(usize),
 }
 
 pub struct App {
@@ -98,6 +99,9 @@ impl Component for App {
                 EnvironmentsMsg::CancelCreate => AppMsg::Noop,
                 EnvironmentsMsg::CreateEnvironment(name) => AppMsg::CreateEnvironment(name),
                 EnvironmentsMsg::EnvironmentCreated(_env) => AppMsg::Noop,
+                EnvironmentsMsg::DeletingEnvironment(env_id) => AppMsg::DeletingEnvironment(env_id),
+                EnvironmentsMsg::EnvironmentDeleted(_env_id) => AppMsg::Noop,
+                EnvironmentsMsg::Initialized => AppMsg::Noop,
             });
 
         let response_body = ResponseBody::builder().launch(());
@@ -208,6 +212,12 @@ impl Component for App {
                 let env = self.workspace.create_environment(name.as_str());
                 self.environments
                     .emit(EnvironmentsMsg::EnvironmentCreated(env.clone()));
+                self.workspace.safe_sync();
+            }
+            AppMsg::DeletingEnvironment(environment_id) => {
+                self.workspace.delete_environment(environment_id);
+                self.environments
+                    .emit(EnvironmentsMsg::EnvironmentDeleted(environment_id));
                 self.workspace.safe_sync();
             }
             AppMsg::RunHttpRequest => {
