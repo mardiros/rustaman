@@ -6,6 +6,7 @@ use relm4::factory::FactoryVecDeque;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
+use relm4_icons::icon_name;
 
 use crate::models::Request;
 use crate::ui::menu_item::MenuItemOutput;
@@ -95,6 +96,9 @@ impl Component for SideBar {
                         set_hexpand: true,
                         set_valign: gtk::Align::Fill,
                         // inline_css: "border: 2px solid blue",
+                    },
+                    gtk::Button {
+                        set_icon_name: icon_name::DOCUMENT_ADD_REGULAR,
                     }
                 },
 

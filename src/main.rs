@@ -11,6 +11,7 @@ use clap::Parser;
 use relm4::adw;
 use relm4::gtk;
 use relm4::prelude::*;
+use relm4_icons;
 use sourceview5::{LanguageManager, StyleSchemeManager};
 
 mod errors;
@@ -60,6 +61,8 @@ fn init_gtk() -> RustamanResult<()> {
     let path2: Vec<&str> = style_path.iter().map(|path| path.as_str()).collect();
     info!("Set style_path search path: {:?}", path2);
     stylemngr.set_search_path(path2.as_slice());
+
+    relm4_icons::initialize_icons();
     Ok(())
 }
 

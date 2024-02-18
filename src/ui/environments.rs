@@ -5,6 +5,7 @@
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
+use relm4_icons::icon_name;
 
 use crate::models::Environments;
 use crate::ui::environ_editor::{EnvironmentEditor, EnvironmentOutput};
@@ -70,9 +71,13 @@ impl Component for EnvironmentsTabs {
             );
             editors.push(editor);
         }
+
+        let new_tab_btn = gtk::Button::new();
+        new_tab_btn.set_icon_name(icon_name::TAB_NEW);
+
         notebook.append_page(
             &gtk::Box::new(gtk::Orientation::Horizontal, 5),
-            Some(&gtk::Button::with_label("+")),
+            Some(&new_tab_btn),
         );
 
         relm4::view! {
