@@ -28,6 +28,7 @@ pub enum AppMsg {
     RenameRequest(usize, String),
     NewRequest,
     Noop,
+    CreateEnvironment(String),
 }
 
 pub struct App {
@@ -93,6 +94,9 @@ impl Component for App {
             .launch(workspace.environments().to_vec())
             .forward(sender.input_sender(), |msg| match msg {
                 EnvironmentsMsg::RunHttpRequest => AppMsg::RunHttpRequest,
+                EnvironmentsMsg::NewEnvironment => AppMsg::Noop,
+                EnvironmentsMsg::CreateEnvironment(name) => AppMsg::CreateEnvironment(name),
+                EnvironmentsMsg::EnvironmentCreated(_env) => AppMsg::Noop,
             });
 
         let response_body = ResponseBody::builder().launch(());
@@ -199,11 +203,17 @@ impl Component for App {
                 self.workspace.safe_sync();
                 self.sidebar.emit(SideBarMsg::RequestDeleted(request_id))
             }
+            AppMsg::CreateEnvironment(name) => {
+                let env = self.workspace.create_environment(name.as_str());
+                self.environments
+                    .emit(EnvironmentsMsg::EnvironmentCreated(env.clone()));
+                self.workspace.safe_sync();
+            }
             AppMsg::RunHttpRequest => {
                 let mut environ = Environment::default();
                 let mut template = String::new();
-                if let Some(env_id) = self.environments.widgets().environment_id() {
-                    let environ_string = self.environments.widgets().get_environment();
+                if let Some(env_id) = self.environments.model().environment_id() {
+                    let environ_string = self.environments.model().get_environment();
                     self.workspace
                         .set_environ_payload(env_id, environ_string.as_str());
                     environ = self.workspace.environment(env_id).unwrap().clone();
