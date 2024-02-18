@@ -18,6 +18,8 @@ pub enum SideBarMsg {
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
     SearchRequest(String),
+    RenameRequest(usize, String),
+    RequestRenamed(usize, String),
 }
 
 pub struct SideBar {
@@ -56,6 +58,9 @@ impl Component for SideBar {
                     }
                     MenuItemOutput::TogglingRequest(request_id, active) => {
                         SideBarMsg::TogglingRequest(request_id, active)
+                    }
+                    MenuItemOutput::RenameRequest(request_id, name) => {
+                        SideBarMsg::RenameRequest(request_id, name)
                     }
                 });
 
@@ -133,6 +138,13 @@ impl Component for SideBar {
                 error!("~~ {}", search);
                 for item in menu_items_guard.iter_mut() {
                     item.search(search.as_str());
+                }
+            }
+            SideBarMsg::RequestRenamed(request_id, name) => {
+                for item in menu_items_guard.iter_mut() {
+                    if item.id() == *request_id {
+                        item.set_name(name);
+                    }
                 }
             }
             _ => (),

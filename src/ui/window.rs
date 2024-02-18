@@ -27,12 +27,13 @@ pub enum AppMsg {
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
     RunHttpRequest,
-    SearchRequest(String),
+    RenameRequest(usize, String),
+    Noop,
 }
 
 pub struct App {
     workspace: Workspace,
-    _sidebar: Controller<SideBar>,
+    sidebar: Controller<SideBar>,
     request_editor: Controller<RequestEditor>,
     environments: Controller<EnvironmentsTabs>,
     response_body: Connector<ResponseBody>,
@@ -64,7 +65,7 @@ impl Component for App {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let _sidebar = SideBar::builder()
+        let sidebar = SideBar::builder()
             .launch(workspace.requests().into())
             .forward(sender.input_sender(), |msg| match msg {
                 SideBarMsg::CreateRequest(request) => AppMsg::CreateRequest(request),
@@ -72,7 +73,11 @@ impl Component for App {
                 SideBarMsg::TogglingRequest(request_id, active) => {
                     AppMsg::TogglingRequest(request_id, active)
                 }
-                SideBarMsg::SearchRequest(search) => AppMsg::SearchRequest(search),
+                SideBarMsg::SearchRequest(search) => AppMsg::Noop,
+                SideBarMsg::RenameRequest(request_id, name) => {
+                    AppMsg::RenameRequest(request_id, name)
+                }
+                SideBarMsg::RequestRenamed(request_id, name) => AppMsg::Noop,
             });
 
         let request_editor =
@@ -144,7 +149,7 @@ impl Component for App {
                 gtk::Paned::new(gtk::Orientation::Horizontal) {
                     set_wide_handle: true,
                     set_position: 250,
-                    set_start_child: Some(_sidebar.widget()),
+                    set_start_child: Some(sidebar.widget()),
                     set_end_child: Some(&workspace_box),
                 }
             }
@@ -153,7 +158,7 @@ impl Component for App {
         ComponentParts {
             model: App {
                 workspace,
-                _sidebar,
+                sidebar,
                 request_editor,
                 environments,
                 traffic_log,
@@ -177,6 +182,12 @@ impl Component for App {
                             .emit(RequestMsg::RequestChanged(request.clone()));
                     }
                 }
+            }
+            AppMsg::RenameRequest(request_id, name) => {
+                self.workspace.set_request_name(request_id, name.as_str());
+                self.workspace.safe_sync();
+                self.sidebar
+                    .emit(SideBarMsg::RequestRenamed(request_id, name))
             }
             AppMsg::RunHttpRequest => {
                 let mut environ = Environment::default();

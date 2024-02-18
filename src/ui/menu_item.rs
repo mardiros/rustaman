@@ -4,10 +4,17 @@ use relm4::{gtk, RelmWidgetExt};
 
 use super::super::models::Request;
 
+#[derive(Debug)]
+pub enum MenuMode {
+    Toggle,
+    Edit,
+    Renaming,
+}
 pub struct MenuItem {
     visible: bool,
     selected: bool,
     request: Request,
+    mode: MenuMode,
 }
 
 impl MenuItem {
@@ -20,6 +27,10 @@ impl MenuItem {
 
     pub fn set_selected(&mut self, value: bool) {
         self.selected = value
+    }
+    pub fn set_name(&mut self, name: &str) {
+        self.request.set_name(name);
+        self.mode = MenuMode::Toggle
     }
     pub fn search(&mut self, search: &str) {
         if search.len() > 0 {
@@ -41,17 +52,24 @@ impl MenuItem {
 }
 
 #[derive(Debug, Clone)]
-pub enum MenuItemMsg {}
+pub enum MenuItemMsg {
+    RenameRequest,
+    CancelRenameRequest,
+    ValidateRenameRequest,
+}
 
 #[derive(Debug, Clone)]
 pub enum MenuItemOutput {
     DeleteRequest(usize),
     TogglingRequest(usize, bool),
+    RenameRequest(usize, String),
 }
 
 pub struct MenuItemWidgets {
     root: gtk::Box,
     toggle: gtk::ToggleButton,
+    edit_entry: gtk::Entry,
+    toggle_container: gtk::Box,
 }
 
 impl FactoryComponent for MenuItem {
@@ -77,6 +95,7 @@ impl FactoryComponent for MenuItem {
             request,
             selected: false,
             visible: true,
+            mode: MenuMode::Toggle,
         }
     }
 
@@ -88,9 +107,29 @@ impl FactoryComponent for MenuItem {
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let request_id = self.request.id();
-        let entry = gtk::Entry::new();
+
         let toggle = gtk::ToggleButton::new();
         let inner_root = gtk::Box::default();
+        let toggle_container = gtk::Box::default();
+
+        let entry_sender = sender.input_sender().clone();
+        let controller = gtk::EventControllerKey::new();
+        // controller.connect_im_update(
+        controller.connect_key_pressed(move |_evt, key, _code, _mask| match key {
+            gtk::gdk::Key::Return => {
+                entry_sender.emit(MenuItemMsg::ValidateRenameRequest);
+                true.into()
+            }
+            gtk::gdk::Key::Escape => {
+                entry_sender.emit(MenuItemMsg::CancelRenameRequest);
+                true.into()
+            }
+            _ => false.into(),
+        });
+
+        let edit_entry = gtk::Entry::new();
+        edit_entry.add_controller(controller);
+
         relm4::view! {
             #[local_ref]
             root -> gtk::Box {
@@ -105,14 +144,14 @@ impl FactoryComponent for MenuItem {
                 set_vexpand: false,
 
                 #[local_ref]
-                entry -> gtk::Entry {
+                edit_entry -> gtk::Entry {
                     set_text: self.request.name(),
                     set_can_focus: true,
                     select_region: (0, self.request.name().len() as i32),
                     set_hexpand: true,
                 },
-
-                gtk::Box{
+                #[local_ref]
+                toggle_container -> gtk::Box{
                     set_orientation: gtk::Orientation::Horizontal,
                     set_hexpand: true,
 
@@ -135,6 +174,7 @@ impl FactoryComponent for MenuItem {
 
                                 gtk::Button {
                                     set_label: "Rename",
+                                    connect_clicked => MenuItemMsg::RenameRequest,
                                 },
                                 gtk::Button {
                                     set_label: "Delete",
@@ -146,19 +186,47 @@ impl FactoryComponent for MenuItem {
             }
         }                }
 
-        entry.hide();
+        edit_entry.hide();
 
         MenuItemWidgets {
             root: inner_root,
             toggle,
+            toggle_container,
+            edit_entry,
         }
     }
 
     fn update(&mut self, msg: Self::Input, _sender: FactorySender<Self>) {
         info!("Update {:?}", msg);
+        match msg {
+            MenuItemMsg::RenameRequest => self.mode = MenuMode::Edit,
+            MenuItemMsg::CancelRenameRequest => self.mode = MenuMode::Toggle,
+            MenuItemMsg::ValidateRenameRequest => self.mode = MenuMode::Renaming,
+        }
     }
 
-    fn update_view(&self, widgets: &mut Self::Widgets, _sender: FactorySender<Self>) {
+    fn update_view(&self, widgets: &mut Self::Widgets, sender: FactorySender<Self>) {
+        info!("Update View {:?}", self.mode);
+        match self.mode {
+            MenuMode::Edit => {
+                widgets.edit_entry.show();
+                widgets.toggle_container.hide();
+                widgets.edit_entry.grab_focus();
+            }
+            MenuMode::Toggle => {
+                widgets.edit_entry.set_text(self.request.name());
+                widgets.toggle.set_label(self.request.name());
+                widgets.edit_entry.hide();
+                widgets.toggle_container.show();
+            }
+            MenuMode::Renaming => {
+                debug!("Renaming reuqest");
+                sender.output_sender().emit(MenuItemOutput::RenameRequest(
+                    self.request.id(),
+                    widgets.edit_entry.text().into(),
+                ))
+            }
+        }
         if self.visible {
             widgets.root.show();
         } else {
