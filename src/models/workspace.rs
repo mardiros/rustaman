@@ -130,10 +130,6 @@ impl Workspace {
         self.filepath.as_str()
     }
 
-    pub fn name(&self) -> &str {
-        self.payload.name.as_str()
-    }
-
     pub fn requests(&self) -> &[Request] {
         self.payload.requests.as_slice()
     }

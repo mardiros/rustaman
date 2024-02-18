@@ -22,44 +22,6 @@ lazy_static! {
     pub static ref RE_SPLIT_END_CAPTURE: Regex = Regex::new(r"#![\s]*EndCapture").unwrap();
 }
 
-fn parse_response(response: &str) -> Option<serde_yaml::Value> {
-    let mut is_json = false;
-    let mut has_content = true;
-    let mut text = String::new();
-    let mut lines = response.lines();
-    loop {
-        let line = lines.next();
-        match line {
-            Some(unwrapped) => {
-                if unwrapped.is_empty() {
-                    break;
-                }
-                if unwrapped.starts_with("Content-Type: application/json") {
-                    is_json = true;
-                }
-            }
-            None => has_content = false,
-        }
-    }
-    if has_content {
-        loop {
-            let line = lines.next();
-            match line {
-                Some(unwrapped) => {
-                    text.push_str(unwrapped);
-                    text.push('\n');
-                }
-                None => break,
-            }
-        }
-    };
-    if is_json && has_content {
-        let resp: serde_yaml::Value = serde_json::from_str(text.as_str()).unwrap();
-        Some(resp)
-    } else {
-        None
-    }
-}
 
 fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
     let resp = RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE

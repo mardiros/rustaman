@@ -3,7 +3,6 @@
 #![allow(deprecated)]
 
 use relm4::factory::FactoryVecDeque;
-use relm4::gtk::glib::clone;
 use relm4::gtk::prelude::ButtonExt;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
