@@ -12,7 +12,7 @@ use relm4_icons::icon_name;
 use crate::models::Request;
 use crate::ui::menu_item::MenuItemOutput;
 
-use super::menu_item::MenuItem;
+use super::menu_item::{MenuItem, MenuMode};
 
 #[derive(Debug, Clone)]
 pub enum SideBarMsg {
@@ -133,21 +133,10 @@ impl Component for SideBar {
             SideBarMsg::NewRequest => {}
             SideBarMsg::CreateRequest(request) => {
                 debug!("Create Request");
-                menu_items_guard.push_back(request.clone());
-                let request_id = request.id();
-
-                for item in menu_items_guard.iter_mut() {
-                    if item.id() == request_id {
-                        item.set_selected(true);
-                        item.edit();
-                    }
-                    if item.selected() && item.id() != request_id {
-                        item.set_selected(false);
-                    }
-                }
+                menu_items_guard.push_back((request.clone(), MenuMode::Edit));
             }
             SideBarMsg::RegisterRequest(request) => {
-                menu_items_guard.push_back(request.clone());
+                menu_items_guard.push_back((request.clone(), MenuMode::Toggle));
             }
             SideBarMsg::TogglingRequest(request_id, active) => {
                 if *active {
