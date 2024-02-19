@@ -183,7 +183,7 @@ impl Component for App {
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
         match message {
             AppMsg::NewRequest => {
-                error!("Create the request here");
+                debug!("Creating new request");
                 let request = self.workspace.create_request();
                 self.sidebar
                     .emit(SideBarMsg::CreateRequest(request.clone()));

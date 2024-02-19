@@ -22,7 +22,6 @@ lazy_static! {
     pub static ref RE_SPLIT_END_CAPTURE: Regex = Regex::new(r"#![\s]*EndCapture").unwrap();
 }
 
-
 fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
     let resp = RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE
         .captures(line)

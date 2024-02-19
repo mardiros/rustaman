@@ -67,7 +67,6 @@ impl Component for RequestEditor {
         let controller = gtk::EventControllerKey::new();
         controller.connect_key_pressed(move |_evt, key, _code, mask| {
             if key == gtk::gdk::Key::Return && mask == gtk::gdk::ModifierType::CONTROL_MASK {
-                error!("Emmitting {:?}", RequestOutput::RunHttpRequest);
                 sender.emit(RequestOutput::RunHttpRequest);
                 return true.into();
             }

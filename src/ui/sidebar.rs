@@ -130,19 +130,14 @@ impl Component for SideBar {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
         let mut menu_items_guard = self.menu_items.guard();
         match &message {
-            SideBarMsg::NewRequest => {
-                error!("NewRequest")
-            }
+            SideBarMsg::NewRequest => {}
             SideBarMsg::CreateRequest(request) => {
-                error!("Create Request");
+                debug!("Create Request");
                 menu_items_guard.push_back(request.clone());
                 let request_id = request.id();
 
-                error!("Pushed back");
                 for item in menu_items_guard.iter_mut() {
-                    error!("Iter {}", item.id());
                     if item.id() == request_id {
-                        error!("Select for edit ");
                         item.set_selected(true);
                         item.edit();
                     }
@@ -155,8 +150,8 @@ impl Component for SideBar {
                 menu_items_guard.push_back(request.clone());
             }
             SideBarMsg::TogglingRequest(request_id, active) => {
-                info!("toggling request {:?}. active {}", request_id, active);
                 if *active {
+                    info!("Activating request {}", request_id);
                     for item in menu_items_guard.iter_mut() {
                         if item.id() == *request_id {
                             item.set_selected(true);
@@ -168,7 +163,6 @@ impl Component for SideBar {
                 }
             }
             SideBarMsg::SearchRequest(search) => {
-                error!("~~ {}", search);
                 for item in menu_items_guard.iter_mut() {
                     item.search(search.as_str());
                 }
