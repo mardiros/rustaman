@@ -89,7 +89,7 @@ impl Component for ResponseBody {
 
     fn init(
         _request: Self::Init,
-        root: &Self::Root,
+        root: Self::Root,
         _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let buffer = create_buffer("json");

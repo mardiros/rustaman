@@ -57,7 +57,7 @@ impl Component for RequestEditor {
 
     fn init(
         request: Self::Init,
-        root: &Self::Root,
+        root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let buffer = create_buffer("rustaman-request");

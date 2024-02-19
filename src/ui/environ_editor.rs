@@ -53,7 +53,7 @@ impl Component for EnvironmentEditor {
 
     fn init(
         environment: Self::Init,
-        root: &Self::Root,
+        root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let buffer = create_buffer("yaml");

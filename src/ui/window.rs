@@ -63,7 +63,7 @@ impl Component for App {
 
     fn init(
         workspace: Self::Init,
-        root: &Self::Root,
+        root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let sidebar = SideBar::builder()

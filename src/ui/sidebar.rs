@@ -51,7 +51,7 @@ impl Component for SideBar {
 
     fn init(
         requests: Self::Init,
-        root: &Self::Root,
+        root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let menu_items =

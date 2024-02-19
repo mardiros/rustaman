@@ -64,7 +64,7 @@ impl Component for StatusLine {
 
     fn init(
         _request: Self::Init,
-        root: &Self::Root,
+        root: Self::Root,
         _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let status_line = gtk::Label::new(None);

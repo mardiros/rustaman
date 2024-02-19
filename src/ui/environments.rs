@@ -69,7 +69,7 @@ impl Component for EnvironmentsTabs {
 
     fn init(
         environments: Self::Init,
-        root: &Self::Root,
+        root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let notebook = gtk::Notebook::new();
