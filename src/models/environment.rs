@@ -41,6 +41,9 @@ impl Environment {
     pub fn name(&self) -> &str {
         self.name.as_str()
     }
+    pub fn set_name(&mut self, name: &str) {
+        self.name = name.to_owned()
+    }
     pub fn payload(&self) -> &str {
         self.payload.as_str()
     }

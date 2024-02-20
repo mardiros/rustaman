@@ -12,16 +12,25 @@ use crate::ui::environ_editor::{EnvironmentEditor, EnvironmentOutput};
 
 #[derive(Debug, Clone)]
 pub enum EnvironmentsMsg {
-    RunHttpRequest,
     NewEnvironment,
     CancelCreate,
     CreateEnvironment(String),
     EnvironmentCreated(Environment),
-    DeletingEnvironment(usize),
+    RenamingEnvironment(usize),
+    RenameEnvironment(usize, String),
+    EnvironmentRenamed(usize, String),
+    DeleteEnvironment(usize),
     EnvironmentDeleted(usize),
     Initialized,
 }
 
+#[derive(Debug, Clone)]
+pub enum EnvironmentsOutput {
+    RunHttpRequest,
+    CreateEnvironment(String),
+    RenameEnvironment(usize, String),
+    DeleteEnvironment(usize),
+}
 pub enum NewEnvironmentMode {
     Append,
     Creating,
@@ -30,6 +39,7 @@ pub enum NewEnvironmentMode {
 pub struct EnvironmentsTabs {
     mode: NewEnvironmentMode,
     notebook: gtk::Notebook,
+    tab_labels: Vec<(gtk::Label, gtk::Entry)>,
     editors: Vec<Controller<EnvironmentEditor>>,
 }
 
@@ -58,7 +68,7 @@ impl Widgets {}
 impl Component for EnvironmentsTabs {
     type Init = Environments;
     type Input = EnvironmentsMsg;
-    type Output = EnvironmentsMsg;
+    type Output = EnvironmentsOutput;
     type CommandOutput = ();
     type Widgets = Widgets;
     type Root = gtk::Box;
@@ -97,6 +107,7 @@ impl Component for EnvironmentsTabs {
 
         let new_tab_btn = gtk::Button::new();
         let tab_label = gtk::Box::default();
+        let tab_labels = Vec::new();
 
         relm4::view! {
             #[local_ref]
@@ -108,7 +119,7 @@ impl Component for EnvironmentsTabs {
                 },
                 #[local_ref]
                 new_tab_entry -> gtk::Entry {
-                    set_hexpand: true,
+                    set_width_chars: 12,
                     connect_activate[sender] => move |entry| {
                         let buffer = entry.buffer();
                         sender.input(EnvironmentsMsg::CreateEnvironment(buffer.text().into()));
@@ -144,6 +155,7 @@ impl Component for EnvironmentsTabs {
                 mode: NewEnvironmentMode::Append,
                 notebook,
                 editors,
+                tab_labels,
             },
             widgets: Widgets {
                 new_tab_btn,
@@ -158,20 +170,38 @@ impl Component for EnvironmentsTabs {
             EnvironmentsMsg::Initialized => self.notebook.set_page(0),
             EnvironmentsMsg::NewEnvironment => self.mode = NewEnvironmentMode::Creating,
             EnvironmentsMsg::CancelCreate => self.mode = NewEnvironmentMode::Append,
+            EnvironmentsMsg::CreateEnvironment(environment) => sender
+                .output_sender()
+                .emit(EnvironmentsOutput::CreateEnvironment(environment)),
             EnvironmentsMsg::EnvironmentCreated(environment) => {
                 let editor = EnvironmentEditor::builder()
                     .launch(environment.clone())
                     .forward(sender.output_sender(), |msg| match msg {
-                        EnvironmentOutput::RunHttpRequest => EnvironmentsMsg::RunHttpRequest,
+                        EnvironmentOutput::RunHttpRequest => EnvironmentsOutput::RunHttpRequest,
                     });
 
                 let tab_label = gtk::Box::default();
                 let env_id = environment.id();
+                let tab_label_labl = gtk::Label::default();
+                let tab_label_entry = gtk::Entry::new();
+                tab_label_entry.hide();
                 relm4::view! {
                     #[local_ref]
                     tab_label -> gtk:: Box {
-                        gtk::Button {
+                        #[local_ref]
+                        tab_label_labl -> gtk::Label {
+                            set_margin_end: 10,
                             set_label: environment.name(),
+                        },
+                        #[local_ref]
+                        tab_label_entry -> gtk::Entry {
+                            set_text: environment.name(),
+                            set_width_chars: 12,
+                            connect_activate[sender] => move |entry| {
+                                let buffer = entry.buffer();
+                                sender.input(EnvironmentsMsg::RenameEnvironment(env_id, buffer.text().into()));
+                                buffer.delete_text(0, None);
+                            }
                         },
                         gtk::MenuButton {
                             set_hexpand: false,
@@ -181,12 +211,13 @@ impl Component for EnvironmentsTabs {
                                 gtk::Box {
                                     set_orientation: gtk::Orientation::Vertical,
 
-                                    // gtk::Button {
-                                    //     set_label: "Rename",
-                                    // },
+                                    gtk::Button {
+                                        set_label: "Rename",
+                                        connect_clicked => EnvironmentsMsg::RenamingEnvironment(env_id)
+                                    },
                                     gtk::Button {
                                         set_label: "Delete",
-                                        connect_clicked => EnvironmentsMsg::DeletingEnvironment(env_id)
+                                        connect_clicked => EnvironmentsMsg::DeleteEnvironment(env_id)
                                     }
                                 }
                             }
@@ -200,9 +231,40 @@ impl Component for EnvironmentsTabs {
                 );
                 self.editors.push(editor);
                 self.notebook.set_page(page_num as i32);
+                self.tab_labels.push((tab_label_labl, tab_label_entry));
 
                 self.mode = NewEnvironmentMode::Append;
             }
+            EnvironmentsMsg::RenamingEnvironment(env_id) => {
+                let index = self
+                    .editors
+                    .iter()
+                    .position(|ed| ed.widgets().get_environment_id() == env_id);
+                if let Some(page_num) = index {
+                    let (lbl, entry) = self.tab_labels.get_mut(page_num).unwrap();
+                    lbl.hide();
+                    entry.show();
+                    entry.grab_focus();
+                }
+            }
+            EnvironmentsMsg::RenameEnvironment(env_id, name) => sender
+                .output_sender()
+                .emit(EnvironmentsOutput::RenameEnvironment(env_id, name)),
+            EnvironmentsMsg::EnvironmentRenamed(env_id, name) => {
+                let index = self
+                    .editors
+                    .iter()
+                    .position(|ed| ed.widgets().get_environment_id() == env_id);
+                if let Some(page_num) = index {
+                    let (lbl, entry) = self.tab_labels.get_mut(page_num).unwrap();
+                    lbl.set_label(name.as_str());
+                    lbl.show();
+                    entry.hide();
+                }
+            }
+            EnvironmentsMsg::DeleteEnvironment(env_id) => sender
+                .output_sender()
+                .emit(EnvironmentsOutput::DeleteEnvironment(env_id)),
             EnvironmentsMsg::EnvironmentDeleted(env_id) => {
                 let index = self
                     .editors
@@ -213,9 +275,7 @@ impl Component for EnvironmentsTabs {
                 }
                 self.notebook.set_page(0);
             }
-            _ => {}
         }
-        sender.output_sender().emit(message)
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {

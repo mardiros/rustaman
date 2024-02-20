@@ -225,6 +225,15 @@ impl Workspace {
         }
         self.safe_sync();
     }
+    pub fn set_environment_name(&mut self, id: usize, name: &str) {
+        for environment in &mut self.payload.environments {
+            if environment.id() == id {
+                environment.set_name(name);
+                break;
+            }
+        }
+        self.safe_sync();
+    }
 
     pub fn delete_environment(&mut self, id: usize) {
         for environment in &mut self.payload.environments {

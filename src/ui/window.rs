@@ -9,7 +9,7 @@ use relm4::prelude::*;
 use relm4::{gtk, gtk::gio, ComponentParts, ComponentSender};
 
 use crate::helpers::{self, http};
-use crate::ui::environments::EnvironmentsMsg;
+use crate::ui::environments::{EnvironmentsMsg, EnvironmentsOutput};
 use crate::ui::request_editor::{RequestMsg, RequestOutput};
 use crate::ui::response_body::{ResponseBody, ResponseBodyMsg};
 use crate::ui::traffic_log::{TrafficLog, TrafficLogMsg};
@@ -29,7 +29,8 @@ pub enum AppMsg {
     NewRequest,
     Noop,
     CreateEnvironment(String),
-    DeletingEnvironment(usize),
+    RenameEnvironment(usize, String),
+    DeleteEnvironment(usize),
 }
 
 pub struct App {
@@ -94,14 +95,12 @@ impl Component for App {
         let environments = EnvironmentsTabs::builder()
             .launch(workspace.environments().to_vec())
             .forward(sender.input_sender(), |msg| match msg {
-                EnvironmentsMsg::RunHttpRequest => AppMsg::RunHttpRequest,
-                EnvironmentsMsg::NewEnvironment => AppMsg::Noop,
-                EnvironmentsMsg::CancelCreate => AppMsg::Noop,
-                EnvironmentsMsg::CreateEnvironment(name) => AppMsg::CreateEnvironment(name),
-                EnvironmentsMsg::EnvironmentCreated(_env) => AppMsg::Noop,
-                EnvironmentsMsg::DeletingEnvironment(env_id) => AppMsg::DeletingEnvironment(env_id),
-                EnvironmentsMsg::EnvironmentDeleted(_env_id) => AppMsg::Noop,
-                EnvironmentsMsg::Initialized => AppMsg::Noop,
+                EnvironmentsOutput::RunHttpRequest => AppMsg::RunHttpRequest,
+                EnvironmentsOutput::CreateEnvironment(name) => AppMsg::CreateEnvironment(name),
+                EnvironmentsOutput::RenameEnvironment(env_id, name) => {
+                    AppMsg::RenameEnvironment(env_id, name)
+                }
+                EnvironmentsOutput::DeleteEnvironment(env_id) => AppMsg::DeleteEnvironment(env_id),
             });
 
         let response_body = ResponseBody::builder().launch(());
@@ -214,11 +213,16 @@ impl Component for App {
                     .emit(EnvironmentsMsg::EnvironmentCreated(env.clone()));
                 self.workspace.safe_sync();
             }
-            AppMsg::DeletingEnvironment(environment_id) => {
+            AppMsg::RenameEnvironment(environment_id, name) => {
+                self.workspace
+                    .set_environment_name(environment_id, name.as_str());
+                self.environments
+                    .emit(EnvironmentsMsg::EnvironmentRenamed(environment_id, name));
+            }
+            AppMsg::DeleteEnvironment(environment_id) => {
                 self.workspace.delete_environment(environment_id);
                 self.environments
                     .emit(EnvironmentsMsg::EnvironmentDeleted(environment_id));
-                self.workspace.safe_sync();
             }
             AppMsg::RunHttpRequest => {
                 let mut environ = Environment::default();
