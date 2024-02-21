@@ -18,6 +18,7 @@ pub enum EnvironmentsMsg {
     EnvironmentCreated(Environment),
     RenamingEnvironment(usize),
     RenameEnvironment(usize, String),
+    CancelRename(usize),
     EnvironmentRenamed(usize, String),
     DeleteEnvironment(usize),
     EnvironmentDeleted(usize),
@@ -184,6 +185,18 @@ impl Component for EnvironmentsTabs {
                 let env_id = environment.id();
                 let tab_label_labl = gtk::Label::default();
                 let tab_label_entry = gtk::Entry::new();
+
+                let entry_sender = sender.input_sender().clone();
+                let controller = gtk::EventControllerKey::new();
+                controller.connect_key_pressed(move |_evt, key, _code, _mask| match key {
+                    gtk::gdk::Key::Escape => {
+                        entry_sender.emit(EnvironmentsMsg::CancelRename(env_id));
+                        true.into()
+                    }
+                    _ => false.into(),
+                });
+                tab_label_entry.add_controller(controller);
+
                 tab_label_entry.hide();
                 relm4::view! {
                     #[local_ref]
@@ -245,6 +258,17 @@ impl Component for EnvironmentsTabs {
                     lbl.hide();
                     entry.show();
                     entry.grab_focus();
+                }
+            }
+            EnvironmentsMsg::CancelRename(env_id) => {
+                let index = self
+                    .editors
+                    .iter()
+                    .position(|ed| ed.widgets().get_environment_id() == env_id);
+                if let Some(page_num) = index {
+                    let (lbl, entry) = self.tab_labels.get_mut(page_num).unwrap();
+                    lbl.show();
+                    entry.hide();
                 }
             }
             EnvironmentsMsg::RenameEnvironment(env_id, name) => sender
