@@ -121,12 +121,13 @@ impl FactoryComponent for MenuItem {
         let request_id = self.request.id();
 
         let toggle = gtk::ToggleButton::new();
+
         let inner_root = gtk::Box::default();
         let toggle_container = gtk::Box::default();
 
+        let edit_entry = gtk::Entry::new();
         let entry_sender = sender.input_sender().clone();
         let controller = gtk::EventControllerKey::new();
-        // controller.connect_im_update(
         controller.connect_key_pressed(move |_evt, key, _code, _mask| match key {
             gtk::gdk::Key::Escape => {
                 entry_sender.emit(MenuItemMsg::CancelRenameRequest);
@@ -134,8 +135,6 @@ impl FactoryComponent for MenuItem {
             }
             _ => false.into(),
         });
-
-        let edit_entry = gtk::Entry::new();
         edit_entry.add_controller(controller);
 
         relm4::view! {
