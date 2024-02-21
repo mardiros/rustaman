@@ -21,6 +21,7 @@ pub enum SideBarMsg {
     RegisterRequest(Request),
     TogglingRequest(usize, bool),
     DeleteRequest(usize),
+    SearchingRequest,
     SearchRequest(String),
     RenameRequest(usize, String),
     RequestRenamed(usize, String),
@@ -29,6 +30,7 @@ pub enum SideBarMsg {
 
 pub struct SideBar {
     menu_items: FactoryVecDeque<MenuItem>,
+    search_entry: gtk::SearchEntry,
 }
 
 impl SideBar {}
@@ -122,7 +124,7 @@ impl Component for SideBar {
         }
         search_entry.show();
         ComponentParts {
-            model: SideBar { menu_items },
+            model: SideBar { menu_items, search_entry },
             widgets: Widgets {},
         }
     }
@@ -150,6 +152,9 @@ impl Component for SideBar {
                         }
                     }
                 }
+            }
+            SideBarMsg::SearchingRequest => {
+                self.search_entry.grab_focus();
             }
             SideBarMsg::SearchRequest(search) => {
                 for item in menu_items_guard.iter_mut() {

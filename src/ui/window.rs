@@ -28,6 +28,7 @@ pub enum AppMsg {
     RenameRequest(usize, String),
     NewRequest,
     Noop,
+    SearchingRequest,
     CreateEnvironment(String),
     RenameEnvironment(usize, String),
     DeleteEnvironment(usize),
@@ -77,6 +78,7 @@ impl Component for App {
                 SideBarMsg::TogglingRequest(request_id, active) => {
                     AppMsg::TogglingRequest(request_id, active)
                 }
+                SideBarMsg::SearchingRequest => AppMsg::Noop,
                 SideBarMsg::SearchRequest(_search) => AppMsg::Noop,
                 SideBarMsg::RenameRequest(request_id, name) => {
                     AppMsg::RenameRequest(request_id, name)
@@ -161,7 +163,11 @@ impl Component for App {
                 gtk::gdk::Key::n => {
                     root_sender.emit(AppMsg::NewRequest);
                     true.into()
-                }
+                },
+                gtk::gdk::Key::p | gtk::gdk::Key::k => {
+                    root_sender.emit(AppMsg::SearchingRequest);
+                    true.into()
+                },
                 _ => false.into(),
             }
         });
@@ -222,6 +228,9 @@ impl Component for App {
                 self.workspace.delete_request(request_id);
                 self.workspace.safe_sync();
                 self.sidebar.emit(SideBarMsg::RequestDeleted(request_id))
+            }
+            AppMsg::SearchingRequest => {
+                self.sidebar.emit(SideBarMsg::SearchingRequest)
             }
             AppMsg::CreateEnvironment(name) => {
                 let env = self.workspace.create_environment(name.as_str());
