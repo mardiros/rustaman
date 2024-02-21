@@ -12,6 +12,7 @@ use crate::helpers::{self, http};
 use crate::ui::environments::{EnvironmentsMsg, EnvironmentsOutput};
 use crate::ui::request_editor::{RequestMsg, RequestOutput};
 use crate::ui::response_body::{ResponseBody, ResponseBodyMsg};
+use crate::ui::sidebar::SideBarOutput;
 use crate::ui::traffic_log::{TrafficLog, TrafficLogMsg};
 
 use super::super::models::{Environment, Workspace};
@@ -22,12 +23,11 @@ use super::status_line::{StatusLine, StatusLineMsg};
 
 #[derive(Debug, Clone)]
 pub enum AppMsg {
-    TogglingRequest(usize, bool),
+    TogglingRequest(usize),
     DeleteRequest(usize),
     RunHttpRequest,
     RenameRequest(usize, String),
     NewRequest,
-    Noop,
     SearchingRequest,
     CreateEnvironment(String),
     RenameEnvironment(usize, String),
@@ -71,20 +71,12 @@ impl Component for App {
         let sidebar = SideBar::builder()
             .launch(workspace.requests().into())
             .forward(sender.input_sender(), |msg| match msg {
-                SideBarMsg::NewRequest => AppMsg::NewRequest,
-                SideBarMsg::CreateRequest(_request) => AppMsg::Noop,
-                SideBarMsg::RegisterRequest(_request) => AppMsg::Noop,
-                SideBarMsg::DeleteRequest(request_id) => AppMsg::DeleteRequest(request_id),
-                SideBarMsg::TogglingRequest(request_id, active) => {
-                    AppMsg::TogglingRequest(request_id, active)
-                }
-                SideBarMsg::SearchingRequest => AppMsg::Noop,
-                SideBarMsg::SearchRequest(_search) => AppMsg::Noop,
-                SideBarMsg::RenameRequest(request_id, name) => {
+                SideBarOutput::NewRequest => AppMsg::NewRequest,
+                SideBarOutput::DeleteRequest(request_id) => AppMsg::DeleteRequest(request_id),
+                SideBarOutput::TogglingRequest(request_id) => AppMsg::TogglingRequest(request_id),
+                SideBarOutput::RenameRequest(request_id, name) => {
                     AppMsg::RenameRequest(request_id, name)
                 }
-                SideBarMsg::RequestRenamed(_request_id, _name) => AppMsg::Noop,
-                SideBarMsg::RequestDeleted(_request_id) => AppMsg::Noop,
             });
 
         let request_editor =
@@ -163,11 +155,11 @@ impl Component for App {
                 gtk::gdk::Key::n => {
                     root_sender.emit(AppMsg::NewRequest);
                     true.into()
-                },
+                }
                 gtk::gdk::Key::p | gtk::gdk::Key::k => {
                     root_sender.emit(AppMsg::SearchingRequest);
                     true.into()
-                },
+                }
                 _ => false.into(),
             }
         });
@@ -209,13 +201,11 @@ impl Component for App {
                 self.sidebar
                     .emit(SideBarMsg::CreateRequest(request.clone()));
             }
-            AppMsg::TogglingRequest(request_id, active) => {
-                info!("toggling request {:?}. active {}", request_id, active);
-                if active {
-                    if let Some(request) = self.workspace.request(request_id) {
-                        self.request_editor
-                            .emit(RequestMsg::RequestChanged(request.clone()));
-                    }
+            AppMsg::TogglingRequest(request_id) => {
+                info!("toggling request {:?}", request_id);
+                if let Some(request) = self.workspace.request(request_id) {
+                    self.request_editor
+                        .emit(RequestMsg::RequestChanged(request.clone()));
                 }
             }
             AppMsg::RenameRequest(request_id, name) => {
@@ -229,9 +219,7 @@ impl Component for App {
                 self.workspace.safe_sync();
                 self.sidebar.emit(SideBarMsg::RequestDeleted(request_id))
             }
-            AppMsg::SearchingRequest => {
-                self.sidebar.emit(SideBarMsg::SearchingRequest)
-            }
+            AppMsg::SearchingRequest => self.sidebar.emit(SideBarMsg::SearchingRequest),
             AppMsg::CreateEnvironment(name) => {
                 let env = self.workspace.create_environment(name.as_str());
                 self.environments
@@ -357,7 +345,6 @@ impl Component for App {
                 }
                 debug!("Done with all the requests")
             }
-            _ => (),
         }
     }
 

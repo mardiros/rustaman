@@ -28,6 +28,14 @@ pub enum SideBarMsg {
     RequestDeleted(usize),
 }
 
+#[derive(Debug, Clone)]
+pub enum SideBarOutput {
+    NewRequest,
+    TogglingRequest(usize),
+    DeleteRequest(usize),
+    RenameRequest(usize, String),
+}
+
 pub struct SideBar {
     menu_items: FactoryVecDeque<MenuItem>,
     search_entry: gtk::SearchEntry,
@@ -42,7 +50,7 @@ impl Widgets {}
 impl Component for SideBar {
     type Init = Vec<Request>;
     type Input = SideBarMsg;
-    type Output = SideBarMsg;
+    type Output = SideBarOutput;
     type CommandOutput = ();
     type Widgets = Widgets;
     type Root = gtk::Box;
@@ -124,7 +132,10 @@ impl Component for SideBar {
         }
         search_entry.show();
         ComponentParts {
-            model: SideBar { menu_items, search_entry },
+            model: SideBar {
+                menu_items,
+                search_entry,
+            },
             widgets: Widgets {},
         }
     }
@@ -132,13 +143,20 @@ impl Component for SideBar {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
         let mut menu_items_guard = self.menu_items.guard();
         match &message {
-            SideBarMsg::NewRequest => {}
+            SideBarMsg::NewRequest => {
+                sender.output_sender().emit(SideBarOutput::NewRequest);
+            }
             SideBarMsg::CreateRequest(request) => {
                 debug!("Create Request");
                 menu_items_guard.push_back((request.clone(), MenuMode::Edit));
             }
             SideBarMsg::RegisterRequest(request) => {
                 menu_items_guard.push_back((request.clone(), MenuMode::Toggle));
+            }
+            SideBarMsg::RenameRequest(request_id, name) => {
+                sender
+                    .output_sender()
+                    .emit(SideBarOutput::RenameRequest(*request_id, name.clone()));
             }
             SideBarMsg::TogglingRequest(request_id, active) => {
                 if *active {
@@ -151,6 +169,9 @@ impl Component for SideBar {
                             item.set_selected(false);
                         }
                     }
+                    sender
+                        .output_sender()
+                        .emit(SideBarOutput::TogglingRequest(*request_id))
                 }
             }
             SideBarMsg::SearchingRequest => {
@@ -175,10 +196,12 @@ impl Component for SideBar {
                 if let Some(idx) = index {
                     menu_items_guard.remove(idx);
                 }
+                sender
+                    .output_sender()
+                    .emit(SideBarOutput::DeleteRequest(*request_id))
             }
             _ => (),
         }
-        sender.output_sender().emit(message)
     }
 
     fn update_view(&self, _widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {
