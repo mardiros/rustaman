@@ -97,17 +97,17 @@ impl Component for SideBar {
                     set_orientation: gtk::Orientation::Horizontal,
 
                     #[local_ref]
+                    new_request_btn -> gtk::Button {
+                        set_icon_name: icon_name::DOCUMENT_ADD_REGULAR,
+                        connect_clicked => SideBarMsg::NewRequest
+                    },
+                    #[local_ref]
                     search_entry -> gtk::SearchEntry {
                         set_vexpand: false,
                         set_hexpand: true,
                         set_valign: gtk::Align::Fill,
                         // inline_css: "border: 2px solid blue",
                     },
-                    #[local_ref]
-                    new_request_btn -> gtk::Button {
-                        set_icon_name: icon_name::DOCUMENT_ADD_REGULAR,
-                        connect_clicked => SideBarMsg::NewRequest
-                    }
                 },
 
                 gtk::ScrolledWindow {
