@@ -151,6 +151,22 @@ impl Component for App {
             }
         }
 
+        let root_sender = sender.input_sender().clone();
+        let controller = gtk::EventControllerKey::new();
+        controller.connect_key_pressed(move |_evt, key, _code, mask| {
+            if mask != gtk::gdk::ModifierType::CONTROL_MASK {
+                return false.into();
+            }
+            match key {
+                gtk::gdk::Key::n => {
+                    root_sender.emit(AppMsg::NewRequest);
+                    true.into()
+                }
+                _ => false.into(),
+            }
+        });
+        root.add_controller(controller);
+
         relm4::view! {
             #[local_ref]
             root -> gtk::ApplicationWindow {
