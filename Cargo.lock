@@ -1246,7 +1246,7 @@ dependencies = [
 
 [[package]]
 name = "rustaman"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "dirs-next",
