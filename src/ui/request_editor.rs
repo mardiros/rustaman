@@ -13,6 +13,7 @@ use crate::models::Request;
 #[derive(Debug, Clone)]
 pub enum RequestMsg {
     RequestChanged(Request),
+    ToggleOff,
 }
 
 #[derive(Debug, Clone)]
@@ -32,6 +33,8 @@ impl RequestEditor {
 
 pub struct Widgets {
     buffer: sourceview5::Buffer,
+    request_source_container: gtk::ScrolledWindow,
+    help_container: gtk::Box,
 }
 
 impl Widgets {
@@ -73,6 +76,8 @@ impl Component for RequestEditor {
             false.into()
         });
 
+        let help_container = gtk::Box::default();
+        let request_source_container = gtk::ScrolledWindow::default();
         // request_source.set_margin_all(10);
         request_source.set_show_line_numbers(true);
         request_source.add_controller(controller);
@@ -81,7 +86,32 @@ impl Component for RequestEditor {
             #[local_ref]
             root -> gtk::Box {
                 set_spacing: 5,
-                gtk::ScrolledWindow {
+                // inline_css: "background-color: #444",
+
+                #[local_ref]
+                help_container -> gtk::Box {
+                    set_spacing: 15,
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_halign: gtk::Align::Start,
+                    set_valign: gtk::Align::Center,
+                    set_hexpand_set: false,
+                    set_margin_start: 100,
+
+                    gtk::Label {
+                        set_halign: gtk::Align::Start,
+                        set_markup: "<big>ctrl+n: new request</big>"
+                    },
+                    gtk::Label {
+                        set_halign: gtk::Align::Start,
+                        set_markup: "<big>ctrl+p: search request</big>"
+                    },
+                    gtk::Label {
+                        set_halign: gtk::Align::Start,
+                        set_markup: "<big>ctrl+p: ctrl+Enter</big>"
+                    },
+                },
+                #[local_ref]
+                request_source_container -> gtk::ScrolledWindow {
                     set_hexpand: true,
                     set_vexpand: true,
                     #[local_ref]
@@ -92,10 +122,15 @@ impl Component for RequestEditor {
                 }
             }
         }
+        request_source_container.hide();
 
         ComponentParts {
             model: RequestEditor { request },
-            widgets: Widgets { buffer },
+            widgets: Widgets {
+                buffer,
+                request_source_container,
+                help_container,
+            },
         }
     }
 
@@ -104,12 +139,20 @@ impl Component for RequestEditor {
             RequestMsg::RequestChanged(request) => {
                 self.request = Some(request);
             }
+            RequestMsg::ToggleOff => {
+                self.request = None;
+            }
         }
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {
         if let Some(request) = self.request.as_ref() {
+            widgets.help_container.hide();
+            widgets.request_source_container.show();
             widgets.buffer.set_text(request.template());
+        } else {
+            widgets.request_source_container.hide();
+            widgets.help_container.show();
         }
     }
 }

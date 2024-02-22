@@ -34,6 +34,7 @@ pub enum SideBarOutput {
     TogglingRequest(usize),
     DeleteRequest(usize),
     RenameRequest(usize, String),
+    ToggleOff,
 }
 
 pub struct SideBar {
@@ -172,6 +173,14 @@ impl Component for SideBar {
                     sender
                         .output_sender()
                         .emit(SideBarOutput::TogglingRequest(*request_id))
+                } else {
+                    for item in menu_items_guard.iter_mut() {
+                        if item.id() == *request_id {
+                            debug!("Delelecting the current request");
+                            item.set_selected(false);
+                            sender.output_sender().emit(SideBarOutput::ToggleOff)
+                        }
+                    }
                 }
             }
             SideBarMsg::SearchingRequest => {

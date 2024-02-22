@@ -25,6 +25,7 @@ use super::status_line::{StatusLine, StatusLineMsg};
 pub enum AppMsg {
     TogglingRequest(usize),
     DeleteRequest(usize),
+    ToggleOff,
     RunHttpRequest,
     RenameRequest(usize, String),
     NewRequest,
@@ -77,6 +78,7 @@ impl Component for App {
                 SideBarOutput::RenameRequest(request_id, name) => {
                     AppMsg::RenameRequest(request_id, name)
                 }
+                SideBarOutput::ToggleOff => AppMsg::ToggleOff,
             });
 
         let request_editor =
@@ -207,6 +209,9 @@ impl Component for App {
                     self.request_editor
                         .emit(RequestMsg::RequestChanged(request.clone()));
                 }
+            }
+            AppMsg::ToggleOff => {
+                self.request_editor.emit(RequestMsg::ToggleOff);
             }
             AppMsg::RenameRequest(request_id, name) => {
                 self.workspace.set_request_name(request_id, name.as_str());

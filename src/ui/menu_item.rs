@@ -168,7 +168,7 @@ impl FactoryComponent for MenuItem {
                             set_label: self.request.name(),
                             set_hexpand: true,
                             set_focus_on_click: false,
-                            connect_toggled[sender] => move |btn| {
+                            connect_clicked[sender] => move |btn| {
                                 sender.output(MenuItemOutput::TogglingRequest(request_id, btn.is_active())).unwrap();
                             },
                         },
