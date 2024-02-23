@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<style-scheme id="rustaman-dark" _name="Rustaman Dark" version="1.0">
+<style-scheme id="rustaman-light" _name="Rustaman Dark" version="1.0">
   <author>Guillaume Gauvrit</author>
-  <_description>Default theme for Rustaman</_description>
+  <_description>Default light theme for Rustaman</_description>
 
   <metadata>
-    <property name="variant">dark</property>
-    <property name="light-variant">rustaman-light</property>
+    <property name="variant">light</property>
+    <property name="dark-variant">rustaman-dark</property>
   </metadata>
 
-  <color name="background"          value="#1e2223"/>
-  <color name="alt-background"      value="#30393e"/>
-  <color name="background-pattern"  value="#19343c"/>
-  <color name="current-line"        value="#1c2a35"/>
-  <color name="line-numbers"        value="#1d272d"/>
-  <color name="selection"           value="#93872d"/>
-  <color name="selection-unfocused" value="#7c5034"/>
-  <color name="alt-selection"       value="#7c5034"/>
-  <color name="foreground"          value="#91a1a1"/>
-  <color name="light-gray"          value="#9090a5"/>
+  <color name="background"          value="#F2EEDE"/>
+  <color name="alt-background"      value="#F0F0F0"/>
+  <color name="background-pattern"  value="#E5E5E5"/>
+  <color name="current-line"        value="#E8E8E8"/>
+  <color name="line-numbers"        value="#D3D3D3"/>
+  <color name="selection"           value="#FFCC00"/>
+  <color name="selection-unfocused" value="#FFA07A"/>
+  <color name="alt-selection"       value="#FFA07A"/>
+  <color name="foreground"          value="#333333"/>
+  <color name="light-gray"          value="#555555"/>
 
   <color name="yellow"              value="#B58900"/>
   <color name="orange"              value="#c17616"/>
   <color name="red"                 value="#DC322F"/>
-  <color name="magenta"             value="#C586C0"/>
-  <color name="violet"              value="#897ab6"/>
-  <color name="blue"                value="#268BD2"/>
+  <color name="magenta"             value="#B576B0"/>
+  <color name="violet"              value="#695a86"/>
+  <color name="blue"                value="#066BC2"/>
   <color name="cyan"                value="#3a99ac"/>
-  <color name="green"               value="#7AC234"/>
+  <color name="green"               value="#0E6B37"/>
   <color name="dark-green"          value="#4E9A00"/>
 
 

@@ -6,7 +6,7 @@ extern crate serde_derive;
 use std::env;
 use std::io::Write;
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 use relm4::adw;
 use relm4::gtk;
@@ -21,15 +21,25 @@ mod ui;
 
 use crate::errors::RustamanResult;
 
+#[derive(Debug, Clone, ValueEnum)]
+enum ColorScheme {
+    Dark,
+    Light,
+    Auto,
+}
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// filepath to the workspace to load
     #[arg(short, long)]
     workspace: Option<String>,
+
+    #[arg(short, long, value_enum)]
+    color_scheme: Option<ColorScheme>,
 }
 
-fn init_gtk() -> RustamanResult<()> {
+fn init_gtk(color_scheme: Option<ColorScheme>) -> RustamanResult<()> {
     let conf_path = helpers::path::rustaman_config_dir()
         .unwrap()
         .to_str()
@@ -39,7 +49,11 @@ fn init_gtk() -> RustamanResult<()> {
     gtk::init().expect("Unable to initialize gtk");
 
     let sm = adw::StyleManager::default();
-    sm.set_color_scheme(adw::ColorScheme::ForceDark);
+    debug!("{:?}", sm.color_scheme());
+    match color_scheme {
+        Some(ColorScheme::Light) => sm.set_color_scheme(adw::ColorScheme::ForceLight),
+        _ => sm.set_color_scheme(adw::ColorScheme::ForceDark),
+    }
 
     let langmngr = LanguageManager::default();
     let mut search_path = langmngr.search_path();
@@ -68,7 +82,7 @@ fn init_gtk() -> RustamanResult<()> {
 
 fn run() -> RustamanResult<()> {
     let args = Args::parse();
-    init_gtk()?;
+    init_gtk(args.color_scheme)?;
 
     let workspace = if let Some(filepath) = args.workspace {
         models::Workspace::from_file(filepath.as_str())
