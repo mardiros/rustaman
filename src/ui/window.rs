@@ -45,6 +45,30 @@ pub struct App {
     status_line: Connector<StatusLine>,
 }
 
+
+impl App {
+
+    fn refresh_environment(&mut self) -> Environment {
+        let mut environ = Environment::default();
+        if let Some(env_id) = self.environments.model().environment_id() {
+            let environ_string = self.environments.model().get_environment();
+            self.workspace
+                .set_environ_payload(env_id, environ_string.as_str());
+            environ = self.workspace.environment(env_id).unwrap().clone();
+        }
+        environ
+    }
+    fn refresh_request(&mut self) -> Vec<String> {
+        let mut template = String::new();
+        if let Some(request_id) = self.request_editor.model().request_id() {
+            let request_editor = self.request_editor.widgets();
+            template = request_editor.get_template();
+            self.workspace
+                .set_request_template(request_id, template.as_str());
+        }
+        http::split_template(template.as_str())
+    }
+}
 pub struct Widgets {}
 
 impl Component for App {
@@ -243,22 +267,8 @@ impl Component for App {
                     .emit(EnvironmentsMsg::EnvironmentDeleted(environment_id));
             }
             AppMsg::RunHttpRequest => {
-                let mut environ = Environment::default();
-                let mut template = String::new();
-                if let Some(env_id) = self.environments.model().environment_id() {
-                    let environ_string = self.environments.model().get_environment();
-                    self.workspace
-                        .set_environ_payload(env_id, environ_string.as_str());
-                    environ = self.workspace.environment(env_id).unwrap().clone();
-                }
-                if let Some(request_id) = self.request_editor.model().request_id() {
-                    let request_editor = self.request_editor.widgets();
-                    template = request_editor.get_template();
-                    self.workspace
-                        .set_request_template(request_id, template.as_str());
-                }
-
-                let req_templates = http::split_template(template.as_str());
+                let environ = self.refresh_environment();
+                let req_templates = self.refresh_request();
                 for req_template in req_templates.iter() {
                     debug!("Processing {:?}", req_template);
                     let request_parsed = http::load_template(req_template.as_str(), &environ);
