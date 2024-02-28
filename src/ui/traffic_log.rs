@@ -11,9 +11,8 @@ use crate::helpers::sourceview::create_buffer;
 
 #[derive(Debug, Clone)]
 pub enum TrafficLogMsg {
-    Connecting(String),
     SendingHttpRequest(String),
-    RequestSent(isize),
+    RequestSent(usize),
     ReceivingHttpResponse(String),
 }
 
@@ -80,13 +79,8 @@ impl Component for TrafficLog {
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>, _root: &Self::Root) {
         debug!("Updating traffic");
         match message {
-            TrafficLogMsg::Connecting(host) => {
-                self.log(">>> New request");
-                let authority = format!("#! Authority: {}", host.as_str());
-                self.log(authority.as_str());
-                self.log("");
-            }
             TrafficLogMsg::SendingHttpRequest(request) => {
+                self.log(">>> New request");
                 self.log(request.as_str());
             }
             TrafficLogMsg::RequestSent(request_length) => {

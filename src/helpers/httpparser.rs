@@ -1,15 +1,14 @@
+use std::collections::HashMap;
 use std::convert::From;
 use std::str::FromStr;
 
 use lazy_static::lazy_static;
-use relm4::gtk::gio::TlsCertificateFlags;
-
-use regex::Regex;
-use url::Url;
 
 use super::super::errors::{RustamanError, RustamanResult};
 use super::super::models::Environment;
 use super::handlebars;
+use regex::Regex;
+use reqwest::Method;
 
 lazy_static! {
     pub static ref RE_EXTRACT_AUTHORITY_FROM_DIRECTIVE: Regex =
@@ -68,23 +67,41 @@ impl<'a> From<&'a str> for Scheme {
 
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
-    pub scheme: Scheme,
-    host: String,
-    port: u16,
+    // pub scheme: Scheme,
+    pub method: Method,
+    pub url: String,
+    pub body: Option<String>,
+    pub headers: HashMap<String, String>,
+    // host: String,
+    // port: u16,
     pub http_frame: String,
-    pub tls_flags: TlsCertificateFlags,
+    pub verify_cert: bool,
     pub capture: Option<String>,
 }
 
 impl HttpRequest {
+    pub fn verify_cert(&self) -> bool {
+        self.verify_cert
+    }
+    pub fn method(&self) -> Method {
+        self.method.clone()
+    }
+    pub fn url(&self) -> &str {
+        self.url.as_str()
+    }
+    pub fn headers(&self) -> &HashMap<String, String> {
+        &self.headers
+    }
+    pub fn body(&self) -> Option<String> {
+        match &self.body {
+            Some(b) => Some(b.to_string()),
+            None => None,
+        }
+    }
+
     pub fn http_frame(&self) -> &str {
         self.http_frame.as_str()
     }
-
-    pub fn host_and_port(&self) -> String {
-        format!("{}:{}", self.host.as_str(), self.port)
-    }
-
     /// Obfusface the http_frame
     pub fn obfuscate(&self, env: &Environment) -> HttpRequest {
         let mut req = self.clone();
@@ -93,7 +110,7 @@ impl HttpRequest {
             .iter()
             .map(|x| {
                 let obf = format!("{}...", &x[0..3]);
-                req.http_frame = req.http_frame.replace(x.as_str(), obf.as_str())
+                req.http_frame = req.http_frame.replace(x.as_str(), obf.as_str());
             })
             .collect();
         req
@@ -105,8 +122,8 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
 
     let mut lines = request.lines();
     let mut line = lines.next();
-    let mut authority: Option<(String, u16)> = None;
-    let mut tls_flags = TlsCertificateFlags::all();
+    // let mut authority: Option<(String, u16)> = None;
+    let mut verify_cert = true;
     let mut capture = None;
 
     loop {
@@ -119,11 +136,11 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         }
         if let Some(auth) = extract_authority_from_directive(unwrapped) {
             debug!("Authority found from the request comment: {:?}", auth);
-            authority = Some(auth);
+            // authority = Some(auth);
         } else if let Some(cap) = extract_capture_name(unwrapped) {
             capture = Some(cap);
         } else if extract_insecure_flag(unwrapped) {
-            tls_flags = TlsCertificateFlags::empty();
+            verify_cert = false;
         } else {
             debug!("Ignoring comment {}", unwrapped);
         }
@@ -138,7 +155,7 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
 
     info!("Parsing First line {:?}", line);
     let verb_url_version: Vec<&str> = RE_SPLIT_HTTP_FIRST_LINE.split(line.unwrap()).collect();
-    let (verb, url, version) = match verb_url_version.len() {
+    let (verb, url, _version) = match verb_url_version.len() {
         2 => (verb_url_version[0], verb_url_version[1], "HTTP/1.1"),
         3 => (
             verb_url_version[0],
@@ -153,35 +170,11 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
             )));
         }
     };
-    let url = url.parse::<Url>()?;
-    if authority.is_none() {
-        let host = url.host_str().ok_or(RustamanError::RequestParsingError(
-            "Host not found in HTTP Request".to_string(),
-        ))?;
-        let port = url
-            .port_or_known_default()
-            .ok_or(RustamanError::RequestParsingError(
-                "Unknown http port to query".to_string(),
-            ))?;
-        authority = Some((host.to_string(), port));
-    }
-    let mut query = url.path().to_string();
-    if let Some(qr) = url.query() {
-        query.push('?');
-        query.push_str(qr);
-    }
-    if let Some(frag) = url.fragment() {
-        query.push('#');
-        query.push_str(frag);
-    }
+    let method = Method::from_str(verb).unwrap();
 
-    let scheme = Scheme::from(url.scheme());
-    if let Scheme::Err(error) = scheme {
-        info!("Scheme parsed from {:?}", url);
-        return Err(RustamanError::RequestParsingError(error));
-    }
-
-    let mut http_frame = format!("{} {} {}\r\n", verb, query, version);
+    let mut http_frame = line.unwrap().to_string();
+    http_frame.push_str("\r\n");
+    let mut headers = HashMap::new();
     loop {
         let line = lines.next();
         match line {
@@ -189,16 +182,18 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
                 if unwrapped.is_empty() {
                     break;
                 }
-                http_frame.push_str(unwrapped);
-                http_frame.push_str("\r\n");
+                let header = unwrapped.split_once(':');
+                if let Some((key, val)) = header {
+                    headers.insert(key.to_string(), val.to_string());
+                    http_frame.push_str(unwrapped);
+                    http_frame.push_str("\r\n");
+                } else {
+                    // FIXME: multiline header
+                    break;
+                }
             }
             None => break,
         }
-    }
-    if let Some(domain) = url.domain() {
-        http_frame.push_str("Host: ");
-        http_frame.push_str(domain);
-        http_frame.push_str("\r\n");
     }
 
     let mut body = String::new();
@@ -208,34 +203,25 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
             Some(unwrapped) => {
                 body.push_str(unwrapped);
                 body.push_str("\r\n");
+
+                http_frame.push_str(unwrapped);
+                http_frame.push_str("\r\n");
             }
             None => break,
         }
     }
-    if !body.is_empty() {
-        let length = format!("{}", body.len());
-        http_frame.push_str("Content-Length: ");
-        http_frame.push_str(length.as_str());
-        http_frame.push_str("\r\n");
-    }
-    if !http_frame.contains("\nUser-Agent:") {
-        http_frame.push_str("User-Agent: Rustaman\r\n");
-    }
-    http_frame.push_str("Connection: close\r\n");
-    http_frame.push_str("\r\n");
 
-    if !body.is_empty() {
-        http_frame.push_str(body.as_str());
-    }
-    let authority = authority.unwrap();
-    let (host, port) = (authority.0, authority.1);
     info!("Http request built");
     Ok(HttpRequest {
-        scheme,
-        host,
-        port,
+        // scheme,
+        method,
+        url: url.to_string(),
+        headers,
+        body: if body.is_empty() { None } else { Some(body) },
+        // host,
+        // port,
         http_frame,
-        tls_flags,
+        verify_cert,
         capture,
     })
 }

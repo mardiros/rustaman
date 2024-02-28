@@ -41,11 +41,14 @@ impl ResponseBody {
                     if unwrapped.is_empty() {
                         break;
                     }
-                    if unwrapped.starts_with("Content-Type: application/json") {
+                    if unwrapped.starts_with("content-type: application/json") {
                         is_json = true;
                     }
                 }
-                None => has_content = false,
+                None => {
+                    has_content = false;
+                    break;
+                }
             }
         }
         if has_content {

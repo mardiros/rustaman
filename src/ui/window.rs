@@ -6,16 +6,18 @@ use std::time::SystemTime;
 use relm4::component::Connector;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
-use relm4::{gtk, gtk::gio, ComponentParts, ComponentSender};
+use relm4::{gtk, ComponentParts, ComponentSender};
 
-use crate::helpers::{self, http};
+use reqwest;
+
+use crate::helpers::httpparser;
 use crate::ui::environments::{EnvironmentsMsg, EnvironmentsOutput};
 use crate::ui::request_editor::{RequestMsg, RequestOutput};
 use crate::ui::response_body::{ResponseBody, ResponseBodyMsg};
 use crate::ui::sidebar::SideBarOutput;
 use crate::ui::traffic_log::{TrafficLog, TrafficLogMsg};
 
-use super::super::models::{Environment, Workspace};
+use super::super::models::{Environment, Workspace, USER_AGENT};
 use super::environments::EnvironmentsTabs;
 use super::request_editor::RequestEditor;
 use super::sidebar::{SideBar, SideBarMsg};
@@ -45,9 +47,7 @@ pub struct App {
     status_line: Connector<StatusLine>,
 }
 
-
 impl App {
-
     fn refresh_environment(&mut self) -> Environment {
         let mut environ = Environment::default();
         if let Some(env_id) = self.environments.model().environment_id() {
@@ -66,7 +66,7 @@ impl App {
             self.workspace
                 .set_request_template(request_id, template.as_str());
         }
-        http::split_template(template.as_str())
+        httpparser::split_template(template.as_str())
     }
 }
 pub struct Widgets {}
@@ -271,7 +271,7 @@ impl Component for App {
                 let req_templates = self.refresh_request();
                 for req_template in req_templates.iter() {
                     debug!("Processing {:?}", req_template);
-                    let request_parsed = http::load_template(req_template.as_str(), &environ);
+                    let request_parsed = httpparser::load_template(req_template.as_str(), &environ);
                     if let Err(rustaman_err) = request_parsed {
                         let error = format!("{:?}", rustaman_err);
                         self.response_body
@@ -280,73 +280,47 @@ impl Component for App {
                     }
 
                     let httpreq = request_parsed.unwrap();
-
-                    let mut default_port = 80;
-                    let client = gio::SocketClient::new();
-                    if httpreq.scheme == helpers::http::Scheme::HTTPS {
-                        client.set_tls(true);
-                        client.set_tls_validation_flags(httpreq.tls_flags);
-                        default_port = 443;
+                    let mut cbuilder =
+                        reqwest::blocking::ClientBuilder::new().user_agent(USER_AGENT);
+                    if !httpreq.verify_cert() {
+                        cbuilder = cbuilder.danger_accept_invalid_certs(true);
                     }
-                    let cancellable: Option<&gio::Cancellable> = None;
+                    let cli = cbuilder.build().unwrap();
+                    let mut req = cli.request(httpreq.method(), httpreq.url());
+                    for (key, val) in httpreq.headers() {
+                        req = req.header(key, val);
+                    }
+                    if let Some(body) = httpreq.body() {
+                        req = req.body(body.to_string());
+                    }
 
                     let time = SystemTime::now();
-                    let host_and_port = httpreq.host_and_port();
-                    debug!("Connecting to {:?}", host_and_port);
-                    self.traffic_log
-                        .emit(TrafficLogMsg::Connecting(host_and_port.clone()));
-
-                    let socket_con_result =
-                        client.connect_to_host(host_and_port.as_str(), default_port, cancellable);
-
-                    if let Err(gsocket_err) = socket_con_result {
-                        let error = format!("Connection failed: {:?}", gsocket_err);
-                        self.response_body
-                            .emit(ResponseBodyMsg::ReceivingError(error));
-                        return;
-                    }
-
-                    let socket_con = socket_con_result.unwrap();
-                    let stream: gio::IOStream = socket_con.upcast();
-                    let writer = stream.output_stream();
-                    let reader = stream.input_stream();
-
-                    let http_frame = httpreq.http_frame().to_string();
-                    debug!("Sending {:?}", http_frame);
 
                     let obfuscated_frame = httpreq.obfuscate(&environ).http_frame().to_string();
                     self.traffic_log
                         .emit(TrafficLogMsg::SendingHttpRequest(obfuscated_frame));
 
-                    let written = writer.write(http_frame.into_bytes().as_slice(), cancellable);
-                    match written {
-                        Ok(len) => {
-                            self.traffic_log.emit(TrafficLogMsg::RequestSent(len));
-                        }
-                        Err(err) => {
-                            self.response_body
-                                .emit(ResponseBodyMsg::ReceivingError(format!("{:?}", err)));
-                        }
-                    }
+                    self.traffic_log
+                        .emit(TrafficLogMsg::RequestSent(httpreq.http_frame().len()));
+                    let response = req.send().unwrap();
+                    let mut resp = String::new();
+                    // response.read_to_string(&mut resp).unwrap();
+                    let version = format!("{:?}", response.version());
+                    resp.push_str(version.as_str());
+                    resp.push(' ');
 
-                    let mut response: Vec<u8> = Vec::new();
-                    let mut buf = vec![0; 1024];
-                    loop {
-                        let read_size = reader.read_all(buf.as_mut_slice(), cancellable).unwrap();
-                        if read_size.0 == 0 {
-                            debug!("no more bytes");
-                            break;
-                        }
-                        if let Some(err) = read_size.1 {
-                            let error = format!("Socket Reading Error: {:?}", err);
-                            self.response_body
-                                .emit(ResponseBodyMsg::ReceivingError(error));
-                            return;
-                        }
-                        debug!("{} bytes received", read_size.0);
-                        response.extend_from_slice(&buf[0..read_size.0]);
+                    resp.push_str(response.status().as_str());
+                    resp.push(' ');
+                    resp.push_str(response.status().canonical_reason().unwrap_or(""));
+                    resp.push_str("\r\n");
+                    for (key, hval) in response.headers() {
+                        resp.push_str(key.to_string().as_str());
+                        resp.push_str(": ");
+                        resp.push_str(&String::from_utf8_lossy(hval.as_bytes()));
+                        resp.push_str("\r\n");
                     }
-                    let resp = String::from_utf8(response).unwrap();
+                    resp.push_str("\r\n");
+                    resp.push_str(&response.text().unwrap());
 
                     let duration = time.elapsed().unwrap(); // SystemTimeError!
                     debug!("Response: {}", resp);
