@@ -302,7 +302,16 @@ impl Component for App {
 
                     self.traffic_log
                         .emit(TrafficLogMsg::RequestSent(httpreq.http_frame().len()));
-                    let response = req.send().unwrap();
+                    
+                    let req_response = req.send();
+                    if let Err(err) = req_response {
+                        self.response_body
+                        .emit(ResponseBodyMsg::ReceivingError(err.to_string()));
+                        self.traffic_log
+                        .emit(TrafficLogMsg::ReceivingError(err.to_string()));
+                return
+                    }
+                    let response = req_response.unwrap();
                     let mut resp = String::new();
                     // response.read_to_string(&mut resp).unwrap();
                     let version = format!("{:?}", response.version());

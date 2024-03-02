@@ -14,6 +14,7 @@ pub enum TrafficLogMsg {
     SendingHttpRequest(String),
     RequestSent(usize),
     ReceivingHttpResponse(String),
+    ReceivingError(String),
 }
 
 pub struct TrafficLog {
@@ -92,6 +93,11 @@ impl Component for TrafficLog {
                 self.log(
                     format!("<<< End of response ({} bytes received)", response.len()).as_str(),
                 );
+            }
+            TrafficLogMsg::ReceivingError(error) => {
+                self.log("<<< Response error");
+                self.log(error.as_str());
+                self.log("<<< End of response");
             }
         }
     }
