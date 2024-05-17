@@ -192,9 +192,12 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
                     break;
                 }
             }
-            None => break,
+            None => {
+                break;
+            }
         }
     }
+    http_frame.push_str("\r\n");
 
     let mut body = String::new();
     loop {
