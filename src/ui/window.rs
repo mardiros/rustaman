@@ -9,6 +9,8 @@ use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
 
 use reqwest;
+use reqwest::header::HOST;
+use url::Url;
 
 use crate::helpers::httpparser;
 use crate::ui::environments::{EnvironmentsMsg, EnvironmentsOutput};
@@ -267,17 +269,20 @@ impl Component for App {
             AppMsg::RenameEnvironment(environment_id, name) => {
                 self.workspace
                     .set_environment_name(environment_id, name.as_str());
+                self.workspace.safe_sync();
                 self.environments
                     .emit(EnvironmentsMsg::EnvironmentRenamed(environment_id, name));
             }
             AppMsg::DeleteEnvironment(environment_id) => {
                 self.workspace.delete_environment(environment_id);
+                self.workspace.safe_sync();
                 self.environments
                     .emit(EnvironmentsMsg::EnvironmentDeleted(environment_id));
             }
             AppMsg::RunHttpRequest => {
                 let environ = self.refresh_environment();
                 let req_templates = self.refresh_request();
+                self.workspace.safe_sync();
                 for req_template in req_templates.iter() {
                     debug!("Processing {:?}", req_template);
                     let request_parsed = httpparser::load_template(req_template.as_str(), &environ);
@@ -296,9 +301,22 @@ impl Component for App {
                     }
                     let cli = cbuilder.build().unwrap();
                     let mut req = cli.request(httpreq.method(), httpreq.url());
+                    let mut has_host: bool = false;
                     for (key, val) in httpreq.headers() {
+                        has_host = has_host || key.to_lowercase() == "host";
                         req = req.header(key, val);
                     }
+
+                    if !has_host {
+                        // Parse the URL with `reqwest`
+                        let parsed_url_result = Url::parse(httpreq.url());
+                        if let Ok(parsed_url) = parsed_url_result {
+                            // Extract the host from the URL
+                            let host = parsed_url.host_str().unwrap_or("No host found");
+                            req = req.header(HOST, host);
+                        }
+                    }
+
                     if let Some(body) = httpreq.body() {
                         req = req.body(body.to_string());
                     }
