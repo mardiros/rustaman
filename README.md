@@ -71,3 +71,22 @@ Or in release mode with the error level:
 ```
     RUST_BACKTRACE=1 RUST_LOG=rustaman=error cargo run --release
 ```
+
+
+### Development Environment Setup for Ubuntu 22.04.4 LTS
+
+You must have libglib2.0-dev, libcairo2-dev,libpango1.0-dev,libgraphene-1.0-dev,
+libgdk-pixbuf2.0-dev,libgtk-4-dev,libadwaita-1-dev,libgtksourceview-5-dev installed on 
+your OS to get it working
+
+```bash
+sudo apt-get update
+sudo apt-get install libglib2.0-dev \
+    libcairo2-dev  \
+    libpango1.0-dev  \
+    libgraphene-1.0-dev  \
+    libgdk-pixbuf2.0-dev  \
+    libgtk-4-dev  \
+    libadwaita-1-dev  \
+    libgtksourceview-5-dev 
+```
