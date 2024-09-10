@@ -7,7 +7,7 @@ use relm4::gtk::prelude::ButtonExt;
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
-use relm4_icons::icon_name;
+use relm4_icons::icon_names;
 
 use crate::models::Request;
 use crate::ui::menu_item::MenuItemOutput;
@@ -109,7 +109,7 @@ impl Component for SideBar {
 
                     #[local_ref]
                     new_request_btn -> gtk::Button {
-                        set_icon_name: icon_name::DOCUMENT_ADD_REGULAR,
+                        set_icon_name: icon_names::DOCUMENT_ADD_REGULAR,
                         connect_clicked => SideBarMsg::NewRequest
                     },
                     #[local_ref]

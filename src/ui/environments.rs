@@ -5,7 +5,7 @@
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender};
-use relm4_icons::icon_name;
+use relm4_icons::icon_names;
 
 use crate::models::{Environment, Environments};
 use crate::ui::environ_editor::{EnvironmentEditor, EnvironmentOutput};
@@ -115,7 +115,7 @@ impl Component for EnvironmentsTabs {
             tab_label -> gtk::Box {
                 #[local_ref]
                 new_tab_btn -> gtk::Button {
-                    set_icon_name: icon_name::TAB_NEW,
+                    set_icon_name: icon_names::TAB_NEW,
                     connect_clicked => EnvironmentsMsg::NewEnvironment,
                 },
                 #[local_ref]
@@ -168,7 +168,9 @@ impl Component for EnvironmentsTabs {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>, _root: &Self::Root) {
         // we forward all the message to the window
         match message.clone() {
-            EnvironmentsMsg::Initialized => self.notebook.set_page(0),
+            EnvironmentsMsg::Initialized => {
+                self.notebook.emit_change_current_page(0);
+            }
             EnvironmentsMsg::NewEnvironment => self.mode = NewEnvironmentMode::Creating,
             EnvironmentsMsg::CancelCreate => self.mode = NewEnvironmentMode::Append,
             EnvironmentsMsg::CreateEnvironment(environment) => sender
@@ -243,7 +245,7 @@ impl Component for EnvironmentsTabs {
                     Some(self.notebook.n_pages() - 1),
                 );
                 self.editors.push(editor);
-                self.notebook.set_page(page_num as i32);
+                self.notebook.emit_change_current_page(page_num as i32);
                 self.tab_labels.push((tab_label_labl, tab_label_entry));
 
                 self.mode = NewEnvironmentMode::Append;
@@ -297,7 +299,7 @@ impl Component for EnvironmentsTabs {
                 if let Some(page_num) = index {
                     self.notebook.remove_page(Some(page_num as u32));
                 }
-                self.notebook.set_page(0);
+                self.notebook.emit_change_current_page(0);
             }
         }
     }

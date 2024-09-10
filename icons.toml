@@ -1,0 +1,9 @@
+# Recommended: Specify your app ID *OR* your base resource path for more robust icon loading
+app_id = "relm4.rustaman"
+
+# List of icon names you found (shipped with this crate)
+# Note: the file ending `-symbolic.svg` isn't part of the icon name.
+icons = ["document-add-regular", "tab-new"]
+
+# Optional: Specify a folder containing your own SVG icons
+# icon_folder = "assets/icons"

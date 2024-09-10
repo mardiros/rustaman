@@ -8,7 +8,6 @@ use std::io::Write;
 
 use clap::{Parser, ValueEnum};
 
-use relm4::adw;
 use relm4::gtk;
 use relm4::prelude::*;
 use relm4_icons;

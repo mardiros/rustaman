@@ -1,4 +1,3 @@
-use relm4::adw;
 use sourceview5::{self, prelude::*};
 
 pub fn create_buffer(language: &str) -> sourceview5::Buffer {
