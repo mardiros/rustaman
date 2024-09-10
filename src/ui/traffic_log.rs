@@ -81,6 +81,7 @@ impl Component for TrafficLog {
         debug!("Updating traffic");
         match message {
             TrafficLogMsg::SendingHttpRequest(request) => {
+                self.log("```http");
                 self.log(">>> New request");
                 self.log(request.as_str());
             }
@@ -93,11 +94,13 @@ impl Component for TrafficLog {
                 self.log(
                     format!("<<< End of response ({} bytes received)", response.len()).as_str(),
                 );
+                self.log("```");
             }
             TrafficLogMsg::ReceivingError(error) => {
                 self.log("<<< Response error");
                 self.log(error.as_str());
                 self.log("<<< End of response");
+                self.log("```");
             }
         }
     }

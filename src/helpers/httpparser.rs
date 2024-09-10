@@ -155,7 +155,7 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
 
     info!("Parsing First line {:?}", line);
     let verb_url_version: Vec<&str> = RE_SPLIT_HTTP_FIRST_LINE.split(line.unwrap()).collect();
-    let (verb, url, _version) = match verb_url_version.len() {
+    let (verb, url, version) = match verb_url_version.len() {
         2 => (verb_url_version[0], verb_url_version[1], "HTTP/1.1"),
         3 => (
             verb_url_version[0],
@@ -173,6 +173,8 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     let method = Method::from_str(verb).unwrap();
 
     let mut http_frame = line.unwrap().to_string();
+    http_frame.push_str(" ");
+    http_frame.push_str(version);
     http_frame.push_str("\r\n");
     let mut headers = HashMap::new();
     loop {
