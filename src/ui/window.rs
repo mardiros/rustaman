@@ -35,6 +35,7 @@ pub enum AppMsg {
     CreateEnvironment(String),
     RenameEnvironment(usize, String),
     DeleteEnvironment(usize),
+    SaveHttpRequest(usize, String),
 }
 
 pub struct App {
@@ -110,6 +111,9 @@ impl Component for App {
                 .launch(None)
                 .forward(sender.input_sender(), |msg| match msg {
                     RequestOutput::RunHttpRequest => AppMsg::RunHttpRequest,
+                    RequestOutput::SaveHttpRequest(id, template) => {
+                        AppMsg::SaveHttpRequest(id, template)
+                    }
                 });
 
         let environments = EnvironmentsTabs::builder()
@@ -248,6 +252,11 @@ impl Component for App {
                 self.workspace.safe_sync();
                 self.sidebar.emit(SideBarMsg::RequestDeleted(request_id))
             }
+            AppMsg::SaveHttpRequest(id, template) => {
+                self.workspace.set_request_template(id, template.as_str());
+                self.workspace.safe_sync();
+            }
+
             AppMsg::SearchingRequest => self.sidebar.emit(SideBarMsg::SearchingRequest),
             AppMsg::CreateEnvironment(name) => {
                 let env = self.workspace.create_environment(name.as_str());
@@ -302,14 +311,14 @@ impl Component for App {
 
                     self.traffic_log
                         .emit(TrafficLogMsg::RequestSent(httpreq.http_frame().len()));
-                    
+
                     let req_response = req.send();
                     if let Err(err) = req_response {
                         self.response_body
-                        .emit(ResponseBodyMsg::ReceivingError(err.to_string()));
+                            .emit(ResponseBodyMsg::ReceivingError(err.to_string()));
                         self.traffic_log
-                        .emit(TrafficLogMsg::ReceivingError(err.to_string()));
-                return
+                            .emit(TrafficLogMsg::ReceivingError(err.to_string()));
+                        return;
                     }
                     let response = req_response.unwrap();
                     let mut resp = String::new();

@@ -19,6 +19,7 @@ pub enum RequestMsg {
 #[derive(Debug, Clone)]
 pub enum RequestOutput {
     RunHttpRequest,
+    SaveHttpRequest(usize, String),
 }
 
 pub struct RequestEditor {
@@ -32,6 +33,7 @@ impl RequestEditor {
 }
 
 pub struct Widgets {
+    request_id: usize,
     buffer: sourceview5::Buffer,
     request_source_container: gtk::ScrolledWindow,
     help_container: gtk::Box,
@@ -130,6 +132,7 @@ impl Component for RequestEditor {
                 buffer,
                 request_source_container,
                 help_container,
+                request_id: 0,
             },
         }
     }
@@ -145,11 +148,19 @@ impl Component for RequestEditor {
         }
     }
 
-    fn update_view(&self, widgets: &mut Self::Widgets, _sender: ComponentSender<Self>) {
+    fn update_view(&self, widgets: &mut Self::Widgets, sender: ComponentSender<Self>) {
         if let Some(request) = self.request.as_ref() {
+            if widgets.request_id > 0 {
+                sender.output_sender().emit(RequestOutput::SaveHttpRequest(
+                    widgets.request_id,
+                    widgets.get_template(),
+                ));
+            }
+
             widgets.help_container.hide();
             widgets.request_source_container.show();
             widgets.buffer.set_text(request.template());
+            widgets.request_id = request.id()
         } else {
             widgets.request_source_container.hide();
             widgets.help_container.show();
