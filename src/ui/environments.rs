@@ -169,7 +169,7 @@ impl Component for EnvironmentsTabs {
         // we forward all the message to the window
         match message.clone() {
             EnvironmentsMsg::Initialized => {
-                self.notebook.emit_change_current_page(0);
+                self.notebook.set_current_page(Some(0));
             }
             EnvironmentsMsg::NewEnvironment => self.mode = NewEnvironmentMode::Creating,
             EnvironmentsMsg::CancelCreate => self.mode = NewEnvironmentMode::Append,
