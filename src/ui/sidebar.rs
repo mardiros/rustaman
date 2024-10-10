@@ -198,18 +198,17 @@ impl Component for SideBar {
                     }
                 }
             }
-            SideBarMsg::DeleteRequest(request_id) => {
+            SideBarMsg::DeleteRequest(request_id) => sender
+                .output_sender()
+                .emit(SideBarOutput::DeleteRequest(*request_id)),
+            SideBarMsg::RequestDeleted(request_id) => {
                 let index = menu_items_guard
                     .iter()
                     .position(|req| req.id() == *request_id);
                 if let Some(idx) = index {
                     menu_items_guard.remove(idx);
                 }
-                sender
-                    .output_sender()
-                    .emit(SideBarOutput::DeleteRequest(*request_id))
             }
-            _ => (),
         }
     }
 

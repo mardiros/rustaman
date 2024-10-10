@@ -36,14 +36,6 @@ fn extract_authority_from_directive(line: &str) -> Option<(String, u16)> {
     resp
 }
 
-fn extract_capture_name(line: &str) -> Option<String> {
-    let resp = RE_EXTRACT_CAPTURE.captures(line).and_then(|cap| {
-        let cap = cap.name("capture");
-        cap.map(|capture| capture.as_str().to_string())
-    });
-    resp
-}
-
 fn extract_insecure_flag(line: &str) -> bool {
     RE_EXTRACT_INSECURE_FLAG.is_match(line)
 }
@@ -76,7 +68,6 @@ pub struct HttpRequest {
     // port: u16,
     pub http_frame: String,
     pub verify_cert: bool,
-    pub capture: Option<String>,
 }
 
 impl HttpRequest {
@@ -124,7 +115,6 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
     let mut line = lines.next();
     // let mut authority: Option<(String, u16)> = None;
     let mut verify_cert = true;
-    let mut capture = None;
 
     loop {
         if line.is_none() {
@@ -137,8 +127,6 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         if let Some(auth) = extract_authority_from_directive(unwrapped) {
             debug!("Authority found from the request comment: {:?}", auth);
             // authority = Some(auth);
-        } else if let Some(cap) = extract_capture_name(unwrapped) {
-            capture = Some(cap);
         } else if extract_insecure_flag(unwrapped) {
             verify_cert = false;
         } else {
@@ -227,7 +215,6 @@ fn parse_request(request: &str) -> RustamanResult<HttpRequest> {
         // port,
         http_frame,
         verify_cert,
-        capture,
     })
 }
 
