@@ -62,8 +62,8 @@ impl Environment {
         self.status = Status::Deleted;
     }
 
-    pub fn parsed_payload(&self) -> RustamanResult<serde_yaml::Value> {
-        let parsed: serde_yaml::Value = serde_yaml::from_str(self.payload())?;
+    pub fn parsed_payload(&self) -> RustamanResult<serde_yaml_ng::Value> {
+        let parsed: serde_yaml_ng::Value = serde_yaml_ng::from_str(self.payload())?;
         Ok(parsed)
     }
 
@@ -74,10 +74,10 @@ impl Environment {
                 let obf = data.get("__obfuscated__");
                 info!("{:?}", obf);
                 match obf {
-                    Some(serde_yaml::Value::Sequence(seq)) => seq
+                    Some(serde_yaml_ng::Value::Sequence(seq)) => seq
                         .iter()
                         .map(|i| {
-                            if let serde_yaml::Value::String(ref s) = i {
+                            if let serde_yaml_ng::Value::String(ref s) = i {
                                 Some(s.clone())
                             } else {
                                 None
@@ -94,7 +94,7 @@ impl Environment {
         let val: Vec<String> = keys
             .iter()
             .map(|k| {
-                if let Some(serde_yaml::Value::String(s)) = payload.as_ref().unwrap().get(k) {
+                if let Some(serde_yaml_ng::Value::String(s)) = payload.as_ref().unwrap().get(k) {
                     Some(s)
                 } else {
                     None

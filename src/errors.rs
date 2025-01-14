@@ -7,7 +7,7 @@ use std::io;
 pub enum RustamanError {
     RenderError(handlebars::RenderError),
     RequestParsingError(String),
-    EnvironmentParsingError(serde_yaml::Error),
+    EnvironmentParsingError(serde_yaml_ng::Error),
     UrlParseError(url::ParseError),
     IOError(io::Error),
 }
@@ -41,8 +41,8 @@ impl Error for RustamanError {
     }
 }
 
-impl From<serde_yaml::Error> for RustamanError {
-    fn from(err: serde_yaml::Error) -> RustamanError {
+impl From<serde_yaml_ng::Error> for RustamanError {
+    fn from(err: serde_yaml_ng::Error) -> RustamanError {
         RustamanError::EnvironmentParsingError(err)
     }
 }
